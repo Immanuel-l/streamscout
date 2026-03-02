@@ -1,8 +1,25 @@
+import MediaRow from '../components/common/MediaRow'
+import { useTrendingMovies } from '../hooks/useMovies'
+import { useTrendingTv } from '../hooks/useTv'
+
 function Home() {
+  const movies = useTrendingMovies()
+  const tv = useTrendingTv()
+
   return (
-    <div>
-      <h1 className="font-display text-5xl text-accent-400 mb-6">Trending</h1>
-      <p className="text-surface-300">Trending Filme und Serien dieser Woche.</p>
+    <div className="space-y-10">
+      <MediaRow
+        title="Trending Filme"
+        items={movies.data}
+        isLoading={movies.isLoading}
+        error={movies.error}
+      />
+      <MediaRow
+        title="Trending Serien"
+        items={tv.data}
+        isLoading={tv.isLoading}
+        error={tv.error}
+      />
     </div>
   )
 }

@@ -1,6 +1,15 @@
 @import "tailwindcss";
 
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @theme {
+  --animate-fade-in: fade-in 0.4s ease-out both;
   --font-display: "Bebas Neue", sans-serif;
   --font-body: "DM Sans", sans-serif;
 
@@ -40,4 +49,15 @@ body {
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--color-surface-600) transparent;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
