@@ -7,6 +7,7 @@ import MovieDetail from './pages/MovieDetail'
 import TvDetail from './pages/TvDetail'
 import Watchlist from './pages/Watchlist'
 import Random from './pages/Random'
+import Mood from './pages/Mood'
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="tv/:id" element={<TvDetail />} />
         <Route path="watchlist" element={<Watchlist />} />
         <Route path="random" element={<Random />} />
+        <Route path="mood/:slug" element={<Mood />} />
       </Route>
     </Routes>
   )
