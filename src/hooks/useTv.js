@@ -34,13 +34,22 @@ export function useTvProviders(id) {
   })
 }
 
-export function useTvSimilar(id) {
+export function useTvSimilar(id, genreIds, keywordIds) {
+  const genreString = genreIds?.join('|')
+  const keywordString = keywordIds?.length > 0 ? keywordIds.slice(0, 10).join('|') : undefined
   return useQuery({
-    queryKey: ['tv', id, 'similar'],
-    queryFn: () => getTvSimilar(id),
-    enabled: !!id,
+    queryKey: ['tv', id, 'similar', genreString, keywordString],
+    queryFn: () =>
+      discoverTv({
+        with_genres: genreString,
+        ...(keywordString && { with_keywords: keywordString }),
+        sort_by: 'popularity.desc',
+      }),
+    enabled: !!id && !!genreString,
     select: (data) =>
-      data.results.map((s) => ({ ...s, media_type: 'tv' })),
+      data.results
+        .filter((s) => s.id !== Number(id))
+        .map((s) => ({ ...s, media_type: 'tv' })),
   })
 }
 

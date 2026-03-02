@@ -34,13 +34,22 @@ export function useMovieProviders(id) {
   })
 }
 
-export function useMovieSimilar(id) {
+export function useMovieSimilar(id, genreIds, keywordIds) {
+  const genreString = genreIds?.join('|')
+  const keywordString = keywordIds?.length > 0 ? keywordIds.slice(0, 10).join('|') : undefined
   return useQuery({
-    queryKey: ['movie', id, 'similar'],
-    queryFn: () => getMovieSimilar(id),
-    enabled: !!id,
+    queryKey: ['movie', id, 'similar', genreString, keywordString],
+    queryFn: () =>
+      discoverMovies({
+        with_genres: genreString,
+        ...(keywordString && { with_keywords: keywordString }),
+        sort_by: 'popularity.desc',
+      }),
+    enabled: !!id && !!genreString,
     select: (data) =>
-      data.results.map((m) => ({ ...m, media_type: 'movie' })),
+      data.results
+        .filter((m) => m.id !== Number(id))
+        .map((m) => ({ ...m, media_type: 'movie' })),
   })
 }
 

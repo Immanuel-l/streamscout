@@ -11,7 +11,9 @@ function MovieDetail() {
   const { id } = useParams()
   const { data: movie, isLoading, error } = useMovieDetails(id)
   const providers = useMovieProviders(id)
-  const similar = useMovieSimilar(id)
+  const genreIds = movie?.genres?.map((g) => g.id)
+  const keywordIds = movie?.keywords?.keywords?.map((k) => k.id)
+  const similar = useMovieSimilar(id, genreIds, keywordIds)
 
   if (isLoading) return <DetailSkeleton />
   if (error) return <p className="text-red-400">Film konnte nicht geladen werden. Bitte versuch es später nochmal.</p>

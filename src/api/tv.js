@@ -2,7 +2,7 @@ import tmdb from './tmdb'
 import { ALLOWED_PROVIDER_STRING } from '../utils/providers'
 
 export const getTvDetails = (id) =>
-  tmdb.get(`/tv/${id}`).then((res) => res.data)
+  tmdb.get(`/tv/${id}`, { params: { append_to_response: 'keywords' } }).then((res) => res.data)
 
 export const getTvProviders = (id) =>
   tmdb.get(`/tv/${id}/watch/providers`).then((res) => res.data.results?.DE)

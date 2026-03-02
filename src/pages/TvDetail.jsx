@@ -66,7 +66,9 @@ function TvDetail() {
   const { id } = useParams()
   const { data: show, isLoading, error } = useTvDetails(id)
   const providers = useTvProviders(id)
-  const similar = useTvSimilar(id)
+  const genreIds = show?.genres?.map((g) => g.id)
+  const keywordIds = show?.keywords?.results?.map((k) => k.id)
+  const similar = useTvSimilar(id, genreIds, keywordIds)
 
   if (isLoading) return <DetailSkeleton />
   if (error) return <p className="text-red-400">Serie konnte nicht geladen werden. Bitte versuch es später nochmal.</p>

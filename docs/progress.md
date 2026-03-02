@@ -13,11 +13,11 @@
 - [x] Schritt 10: Mood-Suche
 - [x] Schritt 11: Feinschliff
 - [x] Schritt 12: Providers eingrenzen auf Amazon Prime Video, Netflix, Disney+, WOW, Apple TV+, Paramount+, HBO MAX, RTL+, unterbrochen durch Limit (vielleicht noch JOYN?). Das ganze auch auf Home seite, suche, entdecken, Zufall usw. ausbreiten. Nur noch diese daten anzeigen
-- [x] Schritt 13: Verbesserung der MediaCards für bessere sichtbarkeit und Provider anzeigen
+- [x] Schritt 13: Verbesserung der MediaCards für bessere sichtbarkeit und Provider anzeigen und sind in der Detail ansicht auch klickbar
 
 ## offen
 
 - [ ] Schritt 14: Kinofilm section
-- Links zu den Filmen und Serien bei den anbietern
 - bei ähnlichen Filme und ähnlichen Serien auch das rausnehmen, dass da sachen angezeigt werden, die nirgends gestreamt werden
 - Bei Serien ist es so, dass bei vielen anbietern nicht alle staffel gezeigt werden, kriegen wir es hin, dass auch angezeigt wird welche Staffeln bei welchen Anbieter laufen oder welcher Anbieter alle hat?
+- Wie kommen die beliebten Filme und Serien auf der Startseite zustande? Also woran wird das ausgemacht, wie kann man das noch anpassen
