@@ -10,6 +10,7 @@ const tabs = [
 ]
 
 function WatchlistCard({ item, index = 0, onRemove }) {
+  const title = item.title || item.name
   const poster = posterUrl(item.poster_path, 'w342')
   const linkPath = item.media_type === 'tv' ? `/tv/${item.id}` : `/movie/${item.id}`
 
@@ -23,7 +24,7 @@ function WatchlistCard({ item, index = 0, onRemove }) {
           {poster ? (
             <img
               src={poster}
-              alt={item.title}
+              alt={title}
               loading="lazy"
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
@@ -53,7 +54,7 @@ function WatchlistCard({ item, index = 0, onRemove }) {
       </button>
 
       <div className="mt-2 px-1">
-        <p className="text-surface-200 text-sm font-medium leading-tight line-clamp-1">{item.title}</p>
+        <p className="text-surface-200 text-sm font-medium leading-tight line-clamp-1">{title}</p>
       </div>
     </div>
   )

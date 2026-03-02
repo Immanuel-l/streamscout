@@ -80,6 +80,8 @@ function MediaRow({ title, items, isLoading, error }) {
 
       {isLoading ? (
         <MediaRowSkeleton />
+      ) : !items?.length ? (
+        <p className="text-surface-500 text-sm">Keine Inhalte verfügbar.</p>
       ) : (
         <div className="group/row relative">
           {/* Fade edges */}

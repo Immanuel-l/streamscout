@@ -100,12 +100,22 @@ function MovieDetail() {
 
           <div>
             <h2 className="font-display text-2xl tracking-wide text-white mb-3">Wo streamen?</h2>
-            <ProviderList providers={providers.data} />
+            {providers.isLoading ? (
+              <div className="flex gap-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="w-10 h-10 rounded-full bg-surface-800 animate-pulse" />
+                ))}
+              </div>
+            ) : providers.error ? (
+              <p className="text-surface-500 text-sm">Streaming-Infos konnten nicht geladen werden.</p>
+            ) : (
+              <ProviderList providers={providers.data} />
+            )}
           </div>
         </div>
       </div>
 
-      {similar.data?.length > 0 && (
+      {(similar.isLoading || similar.data?.length > 0) && (
         <div className="mt-14">
           <MediaRow
             title="Ähnliche Filme"
