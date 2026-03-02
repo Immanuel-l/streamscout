@@ -87,7 +87,7 @@ function Mood() {
 
       {/* Results */}
       {error && (
-        <p className="text-red-400 text-sm">Fehler beim Laden: {error.message}</p>
+        <p className="text-red-400 text-sm">Ergebnisse konnten nicht geladen werden. Bitte versuch es später nochmal.</p>
       )}
 
       {isLoading ? (

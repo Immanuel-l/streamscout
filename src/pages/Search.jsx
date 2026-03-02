@@ -45,7 +45,7 @@ function Search() {
       </div>
 
       {error && (
-        <p className="text-red-400 text-sm">Fehler beim Suchen: {error.message}</p>
+        <p className="text-red-400 text-sm">Suche fehlgeschlagen. Bitte versuch es später nochmal.</p>
       )}
 
       {hasQuery && isLoading && <SearchGridSkeleton />}

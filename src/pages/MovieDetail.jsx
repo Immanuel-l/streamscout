@@ -14,7 +14,7 @@ function MovieDetail() {
   const similar = useMovieSimilar(id)
 
   if (isLoading) return <DetailSkeleton />
-  if (error) return <p className="text-red-400">Fehler: {error.message}</p>
+  if (error) return <p className="text-red-400">Film konnte nicht geladen werden. Bitte versuch es später nochmal.</p>
   if (!movie) return null
 
   const year = movie.release_date ? new Date(movie.release_date).getFullYear() : null

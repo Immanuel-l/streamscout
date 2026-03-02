@@ -69,7 +69,7 @@ function TvDetail() {
   const similar = useTvSimilar(id)
 
   if (isLoading) return <DetailSkeleton />
-  if (error) return <p className="text-red-400">Fehler: {error.message}</p>
+  if (error) return <p className="text-red-400">Serie konnte nicht geladen werden. Bitte versuch es später nochmal.</p>
   if (!show) return null
 
   const year = show.first_air_date ? new Date(show.first_air_date).getFullYear() : null

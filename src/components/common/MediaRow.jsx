@@ -22,7 +22,7 @@ function MediaRow({ title, items, isLoading, error }) {
       <h2 className="font-display text-3xl sm:text-4xl tracking-wide text-white">{title}</h2>
 
       {error && (
-        <p className="text-red-400 text-sm">Fehler beim Laden: {error.message}</p>
+        <p className="text-red-400 text-sm">Inhalte konnten nicht geladen werden. Bitte versuch es später nochmal.</p>
       )}
 
       {isLoading ? (
