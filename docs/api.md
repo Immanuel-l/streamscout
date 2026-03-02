@@ -37,6 +37,7 @@ const options = {
 ### Streaming-Verfügbarkeit
 - `GET /movie/{id}/watch/providers` (Film)
 - `GET /tv/{id}/watch/providers` (Serie)
+- `GET /tv/{id}/season/{season_number}/watch/providers` (Staffel)
 - Ergebnis filtern nach `results.DE`
 - Aufgeteilt in: `flatrate` (Abo), `rent` (Leihen), `buy` (Kaufen)
 - Daten stammen von JustWatch

@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom'
-import { useTvDetails, useTvProviders, useTvSimilar } from '../hooks/useTv'
+import { useTvDetails, useTvProviders, useTvSimilar, useTvSeasonProviders } from '../hooks/useTv'
 import { backdropUrl, posterUrl, IMAGE_BASE } from '../api/tmdb'
+import { ALLOWED_PROVIDER_SET } from '../utils/providers'
 import DetailSkeleton from '../components/detail/DetailSkeleton'
 import RatingRing from '../components/detail/RatingRing'
 import ProviderList from '../components/detail/ProviderList'
@@ -16,47 +17,147 @@ const statusMap = {
   'Pilot': 'Pilot',
 }
 
-function SeasonList({ seasons }) {
-  if (!seasons?.length) return null
+function formatSeasonRange(seasonNumbers, totalSeasons) {
+  if (seasonNumbers.length === totalSeasons) return null
+  const sorted = [...seasonNumbers].sort((a, b) => a - b)
+  const ranges = []
+  let start = sorted[0]
+  let end = sorted[0]
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i] === end + 1) {
+      end = sorted[i]
+    } else {
+      ranges.push(start === end ? `${start}` : `${start}–${end}`)
+      start = sorted[i]
+      end = sorted[i]
+    }
+  }
+  ranges.push(start === end ? `${start}` : `${start}–${end}`)
+  return `Staffel ${ranges.join(', ')}`
+}
 
-  const filtered = seasons.filter((s) => s.season_number > 0)
+function SeasonList({ seasons, tvId }) {
+  const filtered = seasons?.filter((s) => s.season_number > 0) ?? []
+  const seasonNumbers = filtered.map((s) => s.season_number)
+  const seasonProviders = useTvSeasonProviders(tvId, seasonNumbers)
+
   if (filtered.length === 0) return null
+
+  const providerBySeasonNum = {}
+  for (const sp of seasonProviders) {
+    providerBySeasonNum[sp.seasonNumber] = sp
+  }
+
+  // Build per-provider season coverage (flatrate only, filtered)
+  const providerCoverage = {}
+  const allLoaded = seasonProviders.every((sp) => !sp.isLoading)
+  if (allLoaded) {
+    for (const sp of seasonProviders) {
+      const flatrate = sp.data?.flatrate?.filter((p) => ALLOWED_PROVIDER_SET.has(p.provider_id)) ?? []
+      for (const p of flatrate) {
+        if (!providerCoverage[p.provider_id]) {
+          providerCoverage[p.provider_id] = { provider: p, seasons: [] }
+        }
+        providerCoverage[p.provider_id].seasons.push(sp.seasonNumber)
+      }
+    }
+  }
+
+  const totalSeasons = filtered.length
+  const allSeasonProviders = Object.values(providerCoverage)
+    .filter((c) => c.seasons.length === totalSeasons)
+  const partialProviders = Object.values(providerCoverage)
+    .filter((c) => c.seasons.length < totalSeasons)
+    .sort((a, b) => b.seasons.length - a.seasons.length)
 
   return (
     <div>
       <h2 className="font-display text-2xl tracking-wide text-white mb-3">
         Staffeln ({filtered.length})
       </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {filtered.map((season) => (
-          <div
-            key={season.id}
-            className="flex gap-3 p-3 rounded-xl bg-surface-800/60 border border-surface-700/50"
-          >
-            {season.poster_path ? (
+
+      {/* Provider summary */}
+      {allLoaded && Object.keys(providerCoverage).length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 mb-4 text-sm">
+          {allSeasonProviders.map(({ provider }) => (
+            <span key={provider.provider_id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30">
               <img
-                src={`${IMAGE_BASE}/w185${season.poster_path}`}
-                alt={season.name}
-                className="w-16 h-24 rounded-lg object-cover flex-shrink-0"
+                src={`${IMAGE_BASE}/w45${provider.logo_path}`}
+                alt={provider.provider_name}
+                className="w-5 h-5 rounded-full object-cover"
               />
-            ) : (
-              <div className="w-16 h-24 rounded-lg bg-surface-700 flex items-center justify-center flex-shrink-0">
-                <span className="text-surface-500 text-xs">S{season.season_number}</span>
-              </div>
-            )}
-            <div className="min-w-0 flex flex-col justify-center">
-              <p className="text-white text-sm font-medium truncate">{season.name}</p>
-              <p className="text-surface-400 text-xs mt-0.5">
-                {season.episode_count} Episoden
-              </p>
-              {season.air_date && (
-                <p className="text-surface-500 text-xs mt-0.5">
-                  {new Date(season.air_date).getFullYear()}
-                </p>
+              <span className="text-emerald-400 text-xs font-medium">Alle Staffeln</span>
+            </span>
+          ))}
+          {partialProviders.map(({ provider, seasons: coveredSeasons }) => (
+            <span key={provider.provider_id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-800 border border-surface-700/50">
+              <img
+                src={`${IMAGE_BASE}/w45${provider.logo_path}`}
+                alt={provider.provider_name}
+                className="w-5 h-5 rounded-full object-cover"
+              />
+              <span className="text-surface-300 text-xs">
+                {formatSeasonRange(coveredSeasons, totalSeasons)}
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {filtered.map((season) => {
+          const sp = providerBySeasonNum[season.season_number]
+          const flatrate = sp?.data?.flatrate?.filter((p) => ALLOWED_PROVIDER_SET.has(p.provider_id)) ?? []
+
+          return (
+            <div
+              key={season.id}
+              className="flex gap-3 p-3 rounded-xl bg-surface-800/60 border border-surface-700/50"
+            >
+              {season.poster_path ? (
+                <img
+                  src={`${IMAGE_BASE}/w185${season.poster_path}`}
+                  alt={season.name}
+                  className="w-16 h-24 rounded-lg object-cover flex-shrink-0"
+                />
+              ) : (
+                <div className="w-16 h-24 rounded-lg bg-surface-700 flex items-center justify-center flex-shrink-0">
+                  <span className="text-surface-500 text-xs">S{season.season_number}</span>
+                </div>
               )}
+              <div className="min-w-0 flex flex-col justify-center">
+                <p className="text-white text-sm font-medium truncate">{season.name}</p>
+                <p className="text-surface-400 text-xs mt-0.5">
+                  {season.episode_count} Episoden
+                </p>
+                {season.air_date && (
+                  <p className="text-surface-500 text-xs mt-0.5">
+                    {new Date(season.air_date).getFullYear()}
+                  </p>
+                )}
+                {sp?.isLoading ? (
+                  <div className="flex gap-1 mt-1.5">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="w-6 h-6 rounded-full bg-surface-700 animate-pulse" />
+                    ))}
+                  </div>
+                ) : flatrate.length > 0 ? (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {flatrate.map((p) => (
+                      <img
+                        key={p.provider_id}
+                        src={`${IMAGE_BASE}/w45${p.logo_path}`}
+                        alt={p.provider_name}
+                        title={p.provider_name}
+                        className="w-6 h-6 rounded-full object-cover"
+                      />
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
@@ -209,7 +310,7 @@ function TvDetail() {
 
       {/* Seasons */}
       <div className="mt-14">
-        <SeasonList seasons={show.seasons} />
+        <SeasonList seasons={show.seasons} tvId={id} />
       </div>
 
       {/* Similar */}

@@ -16,6 +16,9 @@ export const getTvRecommendations = (id, page = 1) =>
 export const getTvSeason = (id, seasonNumber) =>
   tmdb.get(`/tv/${id}/season/${seasonNumber}`).then((res) => res.data)
 
+export const getTvSeasonProviders = (id, seasonNumber) =>
+  tmdb.get(`/tv/${id}/season/${seasonNumber}/watch/providers`).then((res) => res.data.results?.DE)
+
 export const discoverTv = (params = {}) =>
   tmdb.get('/discover/tv', { params: { watch_region: 'DE', with_watch_providers: ALLOWED_PROVIDER_STRING, ...params } }).then((res) => res.data)
 

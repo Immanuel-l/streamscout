@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
-import { discoverTv, getTvDetails, getTvProviders, getTvSimilar, getTvRecommendations, getTvSeason } from '../api/tv'
+import { useQuery, useQueries } from '@tanstack/react-query'
+import { discoverTv, getTvDetails, getTvProviders, getTvSimilar, getTvRecommendations, getTvSeason, getTvSeasonProviders } from '../api/tv'
 
 export function usePopularTv() {
   return useQuery({
@@ -60,6 +60,23 @@ export function useTvRecommendations(id) {
     enabled: !!id,
     select: (data) =>
       data.results.map((s) => ({ ...s, media_type: 'tv' })),
+  })
+}
+
+export function useTvSeasonProviders(id, seasonNumbers) {
+  return useQueries({
+    queries: (seasonNumbers ?? []).map((num) => ({
+      queryKey: ['tv', id, 'season', num, 'providers'],
+      queryFn: () => getTvSeasonProviders(id, num),
+      enabled: !!id,
+      staleTime: 24 * 60 * 60 * 1000,
+    })),
+    combine: (results) =>
+      results.map((r, i) => ({
+        seasonNumber: seasonNumbers[i],
+        data: r.data,
+        isLoading: r.isLoading,
+      })),
   })
 }
 
