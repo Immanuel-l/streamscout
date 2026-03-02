@@ -37,7 +37,7 @@ function ProviderList({ providers }) {
                 src={providerLogoUrl(p.logo_path)}
                 alt={p.provider_name}
                 title={p.provider_name}
-                className="w-10 h-10 rounded-lg object-cover"
+                className="w-10 h-10 rounded-full object-cover"
               />
             ))}
           </div>

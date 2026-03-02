@@ -9,12 +9,15 @@ const tabs = [
   { key: 'tv', label: 'Serien' },
 ]
 
-function WatchlistCard({ item, onRemove }) {
+function WatchlistCard({ item, index = 0, onRemove }) {
   const poster = posterUrl(item.poster_path, 'w342')
   const linkPath = item.media_type === 'tv' ? `/tv/${item.id}` : `/movie/${item.id}`
 
   return (
-    <div className="group relative animate-fade-in">
+    <div
+      className="group relative animate-fade-in"
+      style={{ animationDelay: `${(index % 20) * 50}ms` }}
+    >
       <Link to={linkPath}>
         <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-surface-800">
           {poster ? (
@@ -103,10 +106,11 @@ function Watchlist() {
       {/* Grid */}
       {filtered.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
-          {filtered.map((item) => (
+          {filtered.map((item, i) => (
             <WatchlistCard
               key={`${item.media_type}-${item.id}`}
               item={item}
+              index={i}
               onRemove={remove}
             />
           ))}

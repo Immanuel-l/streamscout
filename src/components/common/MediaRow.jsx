@@ -1,10 +1,11 @@
+import { useRef, useState, useEffect, useCallback } from 'react'
 import MediaCard from './MediaCard'
 
 function MediaRowSkeleton() {
   return (
     <div className="flex gap-4 overflow-hidden">
       {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="flex-shrink-0 w-36 sm:w-44">
+        <div key={i} className="flex-shrink-0 w-40 sm:w-48 md:w-52">
           <div className="aspect-[2/3] rounded-xl bg-surface-800 animate-pulse" />
           <div className="mt-2 px-1 space-y-1.5">
             <div className="h-4 bg-surface-800 rounded animate-pulse w-3/4" />
@@ -16,7 +17,59 @@ function MediaRowSkeleton() {
   )
 }
 
+function ArrowButton({ direction, onClick }) {
+  const isLeft = direction === 'left'
+  return (
+    <button
+      onClick={onClick}
+      aria-label={isLeft ? 'Zurück scrollen' : 'Weiter scrollen'}
+      className={`absolute top-0 ${isLeft ? 'left-0' : 'right-0'} z-10 h-full w-12 sm:w-14 flex items-center ${isLeft ? 'justify-start' : 'justify-end'} opacity-0 group-hover/row:opacity-100 transition-opacity duration-300 cursor-pointer`}
+    >
+      <span className="w-10 h-10 rounded-full bg-surface-950/80 backdrop-blur-sm border border-surface-700/50 flex items-center justify-center text-white hover:bg-surface-800 hover:border-surface-600 transition-colors">
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          {isLeft ? (
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          ) : (
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          )}
+        </svg>
+      </span>
+    </button>
+  )
+}
+
 function MediaRow({ title, items, isLoading, error }) {
+  const scrollRef = useRef(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+
+  const checkScroll = useCallback(() => {
+    const el = scrollRef.current
+    if (!el) return
+    setCanScrollLeft(el.scrollLeft > 10)
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10)
+  }, [])
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    checkScroll()
+    el.addEventListener('scroll', checkScroll, { passive: true })
+    const ro = new ResizeObserver(checkScroll)
+    ro.observe(el)
+    return () => {
+      el.removeEventListener('scroll', checkScroll)
+      ro.disconnect()
+    }
+  }, [checkScroll, items])
+
+  function scroll(direction) {
+    const el = scrollRef.current
+    if (!el) return
+    const amount = el.clientWidth * 0.75
+    el.scrollBy({ left: direction === 'left' ? -amount : amount, behavior: 'smooth' })
+  }
+
   return (
     <section className="space-y-4">
       <h2 className="font-display text-3xl sm:text-4xl tracking-wide text-white">{title}</h2>
@@ -28,12 +81,38 @@ function MediaRow({ title, items, isLoading, error }) {
       {isLoading ? (
         <MediaRowSkeleton />
       ) : (
-        <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
-          {items?.map((media, i) => (
-            <div key={media.id} className="snap-start">
-              <MediaCard media={media} index={i} />
+        <div className="group/row relative">
+          {/* Fade edges */}
+          {canScrollLeft && (
+            <div className="absolute left-0 top-0 bottom-0 w-12 sm:w-16 bg-gradient-to-r from-surface-950 to-transparent z-[5] pointer-events-none" />
+          )}
+          {canScrollRight && (
+            <div className="absolute right-0 top-0 bottom-0 w-12 sm:w-16 bg-gradient-to-l from-surface-950 to-transparent z-[5] pointer-events-none" />
+          )}
+
+          {/* Arrow buttons — desktop only */}
+          {canScrollLeft && (
+            <div className="hidden sm:block">
+              <ArrowButton direction="left" onClick={() => scroll('left')} />
             </div>
-          ))}
+          )}
+          {canScrollRight && (
+            <div className="hidden sm:block">
+              <ArrowButton direction="right" onClick={() => scroll('right')} />
+            </div>
+          )}
+
+          {/* Scroll container */}
+          <div
+            ref={scrollRef}
+            className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth"
+          >
+            {items?.map((media, i) => (
+              <div key={media.id} className="flex-shrink-0 w-40 sm:w-48 md:w-52">
+                <MediaCard media={media} index={i} />
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </section>

@@ -31,7 +31,7 @@ function MediaCard({ media, index = 0, showType = false }) {
   return (
     <Link
       to={linkPath}
-      className="group relative flex-shrink-0 w-36 sm:w-44 animate-fade-in"
+      className="group relative w-full animate-fade-in"
       style={{ animationDelay: `${(index % 20) * 50}ms` }}
     >
       <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-surface-800">

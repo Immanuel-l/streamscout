@@ -41,7 +41,7 @@ function Search() {
     <div className="space-y-8">
       <div>
         <h1 className="font-display text-5xl tracking-wide text-white mb-6">Suche</h1>
-        <SearchBar value={query} onChange={setQuery} />
+        <SearchBar value={query} onChange={setQuery} suggestions={data?.slice(0, 5) || []} />
       </div>
 
       {error && (
