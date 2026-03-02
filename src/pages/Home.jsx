@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import MediaRow from '../components/common/MediaRow'
-import { usePopularMovies } from '../hooks/useMovies'
-import { usePopularTv } from '../hooks/useTv'
+import { useTrendingAll, usePopularMovies, useTopRatedMovies, useNewMovies } from '../hooks/useMovies'
+import { usePopularTv, useTopRatedTv, useNewTv } from '../hooks/useTv'
 import { moods } from '../utils/moods'
 
 function MoodSection() {
@@ -26,11 +26,23 @@ function MoodSection() {
 }
 
 function Home() {
+  const trending = useTrendingAll()
   const movies = usePopularMovies()
   const tv = usePopularTv()
+  const topMovies = useTopRatedMovies()
+  const topTv = useTopRatedTv()
+  const newMovies = useNewMovies()
+  const newTv = useNewTv()
 
   return (
     <div className="space-y-10">
+      <MediaRow
+        title="Gerade im Trend"
+        items={trending.data}
+        isLoading={trending.isLoading}
+        error={trending.error}
+      />
+
       <MediaRow
         title="Beliebte Filme"
         items={movies.data}
@@ -45,6 +57,34 @@ function Home() {
         items={tv.data}
         isLoading={tv.isLoading}
         error={tv.error}
+      />
+
+      <MediaRow
+        title="Bestbewertete Filme"
+        items={topMovies.data}
+        isLoading={topMovies.isLoading}
+        error={topMovies.error}
+      />
+
+      <MediaRow
+        title="Bestbewertete Serien"
+        items={topTv.data}
+        isLoading={topTv.isLoading}
+        error={topTv.error}
+      />
+
+      <MediaRow
+        title="Neu erschienen"
+        items={newMovies.data}
+        isLoading={newMovies.isLoading}
+        error={newMovies.error}
+      />
+
+      <MediaRow
+        title="Neue Serien"
+        items={newTv.data}
+        isLoading={newTv.isLoading}
+        error={newTv.error}
       />
     </div>
   )

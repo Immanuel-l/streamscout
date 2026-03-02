@@ -4,9 +4,28 @@ import { discoverTv, getTvDetails, getTvProviders, getTvSimilar, getTvRecommenda
 export function usePopularTv() {
   return useQuery({
     queryKey: ['popular', 'tv'],
-    queryFn: () => discoverTv({ sort_by: 'popularity.desc' }),
+    queryFn: () => discoverTv({ sort_by: 'popularity.desc', 'vote_average.gte': 5.5, 'vote_count.gte': 50 }),
     select: (data) =>
-      data.results.map((s) => ({ ...s, media_type: 'tv' })),
+      data.results.slice(0, 12).map((s) => ({ ...s, media_type: 'tv' })),
+  })
+}
+
+export function useTopRatedTv() {
+  return useQuery({
+    queryKey: ['toprated', 'tv'],
+    queryFn: () => discoverTv({ sort_by: 'vote_average.desc', 'vote_count.gte': 200 }),
+    select: (data) =>
+      data.results.slice(0, 12).map((s) => ({ ...s, media_type: 'tv' })),
+  })
+}
+
+export function useNewTv() {
+  const today = new Date().toISOString().split('T')[0]
+  return useQuery({
+    queryKey: ['new', 'tv'],
+    queryFn: () => discoverTv({ sort_by: 'first_air_date.desc', 'first_air_date.lte': today, 'vote_count.gte': 5 }),
+    select: (data) =>
+      data.results.slice(0, 12).map((s) => ({ ...s, media_type: 'tv' })),
   })
 }
 
