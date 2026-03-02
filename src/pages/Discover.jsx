@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useCallback } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
@@ -93,22 +93,25 @@ function Discover() {
   hasNextRef.current = hasNextPage
   isFetchingRef.current = isFetchingNextPage
 
-  // Observer created once, never re-created on state changes
-  const sentinelRef = useRef(null)
-  useEffect(() => {
-    const el = sentinelRef.current
-    if (!el) return
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasNextRef.current && !isFetchingRef.current) {
-          fetchRef.current()
-        }
-      },
-      { rootMargin: '600px' }
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Callback ref — sets up/tears down observer when sentinel enters/leaves DOM
+  const observerRef = useRef(null)
+  const sentinelRef = useCallback((node) => {
+    if (observerRef.current) {
+      observerRef.current.disconnect()
+      observerRef.current = null
+    }
+    if (node) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasNextRef.current && !isFetchingRef.current) {
+            fetchRef.current()
+          }
+        },
+        { rootMargin: '600px' }
+      )
+      observer.observe(node)
+      observerRef.current = observer
+    }
   }, [])
 
   function resetFilters() {
