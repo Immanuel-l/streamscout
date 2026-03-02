@@ -5,6 +5,7 @@ const navLinks = [
   { to: '/', label: 'Home' },
   { to: '/search', label: 'Suche' },
   { to: '/discover', label: 'Entdecken' },
+  { to: '/random', label: 'Zufall' },
   { to: '/watchlist', label: 'Merkliste' },
 ]
 
