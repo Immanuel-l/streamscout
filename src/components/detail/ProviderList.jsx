@@ -41,13 +41,20 @@ function ProviderList({ providers }) {
           </p>
           <div className="flex flex-wrap gap-2">
             {filtered[key].map((p) => (
-              <img
+              <a
                 key={p.provider_id}
-                src={providerLogoUrl(p.logo_path)}
-                alt={p.provider_name}
-                title={p.provider_name}
-                className="w-10 h-10 rounded-full object-cover"
-              />
+                href={providers.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={`${p.provider_name} – Verfügbarkeit anzeigen`}
+                className="transition-transform hover:scale-110"
+              >
+                <img
+                  src={providerLogoUrl(p.logo_path)}
+                  alt={p.provider_name}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              </a>
             ))}
           </div>
         </div>
