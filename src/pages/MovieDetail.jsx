@@ -5,6 +5,7 @@ import DetailSkeleton from '../components/detail/DetailSkeleton'
 import RatingRing from '../components/detail/RatingRing'
 import ProviderList from '../components/detail/ProviderList'
 import MediaRow from '../components/common/MediaRow'
+import WatchlistButton from '../components/common/WatchlistButton'
 
 function MovieDetail() {
   const { id } = useParams()
@@ -56,9 +57,15 @@ function MovieDetail() {
 
         <div className="flex-1 min-w-0 space-y-5">
           <div>
-            <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl tracking-wide text-white leading-tight">
-              {movie.title}
-            </h1>
+            <div className="flex items-start gap-4">
+              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl tracking-wide text-white leading-tight">
+                {movie.title}
+              </h1>
+              <WatchlistButton
+                media={{ id: movie.id, media_type: 'movie', title: movie.title, poster_path: movie.poster_path }}
+                size="lg"
+              />
+            </div>
             {movie.tagline && (
               <p className="text-accent-400 text-sm mt-2 italic">{movie.tagline}</p>
             )}

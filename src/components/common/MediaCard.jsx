@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { posterUrl } from '../../api/tmdb'
+import WatchlistButton from './WatchlistButton'
 
 function RatingBadge({ rating }) {
   const score = Math.round(rating * 10)
@@ -56,6 +57,10 @@ function MediaCard({ media, index = 0, showType = false }) {
             {typeLabels[type]}
           </span>
         )}
+
+        <div className="absolute bottom-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <WatchlistButton media={{ ...media, media_type: type }} />
+        </div>
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-3">
           <div>

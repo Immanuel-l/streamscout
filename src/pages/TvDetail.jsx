@@ -5,6 +5,7 @@ import DetailSkeleton from '../components/detail/DetailSkeleton'
 import RatingRing from '../components/detail/RatingRing'
 import ProviderList from '../components/detail/ProviderList'
 import MediaRow from '../components/common/MediaRow'
+import WatchlistButton from '../components/common/WatchlistButton'
 
 const statusMap = {
   'Returning Series': 'Laufend',
@@ -113,9 +114,15 @@ function TvDetail() {
 
         <div className="flex-1 min-w-0 space-y-5">
           <div>
-            <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl tracking-wide text-white leading-tight">
-              {show.name}
-            </h1>
+            <div className="flex items-start gap-4">
+              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl tracking-wide text-white leading-tight">
+                {show.name}
+              </h1>
+              <WatchlistButton
+                media={{ id: show.id, media_type: 'tv', name: show.name, poster_path: show.poster_path }}
+                size="lg"
+              />
+            </div>
             {show.tagline && (
               <p className="text-accent-400 text-sm mt-2 italic">{show.tagline}</p>
             )}
