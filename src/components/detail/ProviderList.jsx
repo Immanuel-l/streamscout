@@ -1,4 +1,5 @@
 import { IMAGE_BASE } from '../../api/tmdb'
+import { ALLOWED_PROVIDER_SET } from '../../utils/providers'
 
 const providerLogoUrl = (path) => `${IMAGE_BASE}/w92${path}`
 
@@ -13,7 +14,15 @@ const sectionOrder = ['flatrate', 'rent', 'buy']
 function ProviderList({ providers }) {
   if (!providers) return null
 
-  const sections = sectionOrder.filter((key) => providers[key]?.length > 0)
+  // Filter each section to only allowed providers
+  const filtered = {}
+  for (const key of sectionOrder) {
+    if (providers[key]) {
+      filtered[key] = providers[key].filter((p) => ALLOWED_PROVIDER_SET.has(p.provider_id))
+    }
+  }
+
+  const sections = sectionOrder.filter((key) => filtered[key]?.length > 0)
 
   if (sections.length === 0) {
     return (
@@ -31,7 +40,7 @@ function ProviderList({ providers }) {
             {sectionLabels[key]}
           </p>
           <div className="flex flex-wrap gap-2">
-            {providers[key].map((p) => (
+            {filtered[key].map((p) => (
               <img
                 key={p.provider_id}
                 src={providerLogoUrl(p.logo_path)}

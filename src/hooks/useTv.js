@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { getTrendingTv, discoverTv, getTvDetails, getTvProviders, getTvSimilar, getTvRecommendations, getTvSeason } from '../api/tv'
+import { discoverTv, getTvDetails, getTvProviders, getTvSimilar, getTvRecommendations, getTvSeason } from '../api/tv'
 
-export function useTrendingTv(timeWindow = 'week') {
+export function usePopularTv() {
   return useQuery({
-    queryKey: ['trending', 'tv', timeWindow],
-    queryFn: () => getTrendingTv(timeWindow),
+    queryKey: ['popular', 'tv'],
+    queryFn: () => discoverTv({ sort_by: 'popularity.desc' }),
     select: (data) =>
       data.results.map((s) => ({ ...s, media_type: 'tv' })),
   })

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { getMovieGenres, getTvGenres, getMovieWatchProviders, getTvWatchProviders } from '../api/common'
+import { ALLOWED_PROVIDER_SET } from '../utils/providers'
 
 export function useGenres(mediaType) {
   return useQuery({
@@ -16,7 +17,7 @@ export function useWatchProviders(mediaType) {
     staleTime: 24 * 60 * 60 * 1000,
     select: (data) =>
       data
-        .sort((a, b) => a.display_priority - b.display_priority)
-        .slice(0, 15),
+        .filter((p) => ALLOWED_PROVIDER_SET.has(p.provider_id))
+        .sort((a, b) => a.display_priority - b.display_priority),
   })
 }

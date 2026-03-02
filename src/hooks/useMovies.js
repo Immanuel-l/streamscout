@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { getTrendingMovies, discoverMovies, getMovieDetails, getMovieProviders, getMovieSimilar, getMovieRecommendations } from '../api/movies'
+import { discoverMovies, getMovieDetails, getMovieProviders, getMovieSimilar, getMovieRecommendations } from '../api/movies'
 
-export function useTrendingMovies(timeWindow = 'week') {
+export function usePopularMovies() {
   return useQuery({
-    queryKey: ['trending', 'movies', timeWindow],
-    queryFn: () => getTrendingMovies(timeWindow),
+    queryKey: ['popular', 'movies'],
+    queryFn: () => discoverMovies({ sort_by: 'popularity.desc' }),
     select: (data) =>
       data.results.map((m) => ({ ...m, media_type: 'movie' })),
   })

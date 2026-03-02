@@ -1,4 +1,5 @@
 import tmdb from './tmdb'
+import { ALLOWED_PROVIDER_STRING } from '../utils/providers'
 
 export const getTvDetails = (id) =>
   tmdb.get(`/tv/${id}`).then((res) => res.data)
@@ -16,7 +17,7 @@ export const getTvSeason = (id, seasonNumber) =>
   tmdb.get(`/tv/${id}/season/${seasonNumber}`).then((res) => res.data)
 
 export const discoverTv = (params = {}) =>
-  tmdb.get('/discover/tv', { params: { watch_region: 'DE', ...params } }).then((res) => res.data)
+  tmdb.get('/discover/tv', { params: { watch_region: 'DE', with_watch_providers: ALLOWED_PROVIDER_STRING, ...params } }).then((res) => res.data)
 
 export const getTrendingTv = (timeWindow = 'week') =>
   tmdb.get(`/trending/tv/${timeWindow}`).then((res) => res.data)
