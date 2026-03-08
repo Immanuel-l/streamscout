@@ -53,7 +53,7 @@ function Search() {
       {hasResults && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
           {data.map((media, i) => (
-            <MediaCard key={`${media.media_type}-${media.id}`} media={media} index={i} showType />
+            <MediaCard key={`${media.media_type}-${media.id}`} media={media} index={i} />
           ))}
         </div>
       )}

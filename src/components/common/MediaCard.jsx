@@ -9,7 +9,7 @@ import WatchlistButton from './WatchlistButton'
 
 const typeLabels = { movie: 'Film', tv: 'Serie' }
 
-function MediaCard({ media, index = 0, showType = false, eager = false, animate = true }) {
+function MediaCard({ media, index = 0, eager = false, animate = true }) {
   const [hovered, setHovered] = useState(false)
 
   const title = media.title || media.name
@@ -72,7 +72,7 @@ function MediaCard({ media, index = 0, showType = false, eager = false, animate 
         )}
 
         {/* Type badge */}
-        {showType && typeLabels[type] && (
+        {typeLabels[type] && (
           <span className="absolute top-2 left-2 z-10 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-surface-900/80 text-accent-400 backdrop-blur-sm">
             {typeLabels[type]}
           </span>
