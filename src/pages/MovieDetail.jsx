@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom'
-import { useMovieDetails, useMovieProviders, useMovieSimilar } from '../hooks/useMovies'
+import { useMovieDetails, useMovieProviders, useMovieSimilar, useNowPlaying } from '../hooks/useMovies'
 import { backdropUrl, posterUrl } from '../api/tmdb'
 import DetailSkeleton from '../components/detail/DetailSkeleton'
 import RatingRing from '../components/detail/RatingRing'
@@ -11,6 +11,7 @@ function MovieDetail() {
   const { id } = useParams()
   const { data: movie, isLoading, error } = useMovieDetails(id)
   const providers = useMovieProviders(id)
+  const { data: nowPlayingIds } = useNowPlaying()
   const genreIds = movie?.genres?.map((g) => g.id)
   const keywordIds = movie?.keywords?.keywords?.map((k) => k.id)
   const similar = useMovieSimilar(id, genreIds, keywordIds)
@@ -25,6 +26,13 @@ function MovieDetail() {
   const runtime = movie.runtime ? `${hours}h ${minutes}min` : null
   const backdrop = backdropUrl(movie.backdrop_path)
   const poster = posterUrl(movie.poster_path)
+
+  const isInCinema = nowPlayingIds?.has(Number(id))
+  const deRelease = movie.release_dates?.results?.find((r) => r.iso_3166_1 === 'DE')
+  const theatricalDate = deRelease?.release_dates?.find((d) => d.type === 3)?.release_date
+  const kinostart = theatricalDate
+    ? new Date(theatricalDate).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })
+    : null
 
   return (
     <div>
@@ -102,20 +110,36 @@ function MovieDetail() {
             <p className="text-surface-200 leading-relaxed max-w-3xl">{movie.overview}</p>
           )}
 
-          <div>
-            <h2 className="font-display text-2xl tracking-wide text-white mb-3">Wo streamen?</h2>
-            {providers.isLoading ? (
-              <div className="flex gap-2">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="w-10 h-10 rounded-full bg-surface-800 animate-pulse" />
-                ))}
+          {isInCinema && (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-accent-500/10 border border-accent-500/20">
+              <svg className="w-5 h-5 text-accent-400 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2zM8 17H6v-2h2v2zm0-4H6v-2h2v2zm0-4H6V7h2v2zm10 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z" />
+              </svg>
+              <div>
+                <p className="text-accent-400 font-semibold text-sm">Aktuell im Kino</p>
+                {kinostart && (
+                  <p className="text-surface-400 text-xs mt-0.5">Kinostart in Deutschland: {kinostart}</p>
+                )}
               </div>
-            ) : providers.error ? (
-              <p className="text-surface-500 text-sm">Streaming-Infos konnten nicht geladen werden.</p>
-            ) : (
-              <ProviderList providers={providers.data} />
-            )}
-          </div>
+            </div>
+          )}
+
+          {!isInCinema && (
+            <div>
+              <h2 className="font-display text-2xl tracking-wide text-white mb-3">Wo streamen?</h2>
+              {providers.isLoading ? (
+                <div className="flex gap-2">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="w-10 h-10 rounded-full bg-surface-800 animate-pulse" />
+                  ))}
+                </div>
+              ) : providers.error ? (
+                <p className="text-surface-500 text-sm">Streaming-Infos konnten nicht geladen werden.</p>
+              ) : (
+                <ProviderList providers={providers.data} />
+              )}
+            </div>
+          )}
         </div>
       </div>
 
