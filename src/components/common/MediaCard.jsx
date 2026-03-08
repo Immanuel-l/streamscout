@@ -9,7 +9,7 @@ import WatchlistButton from './WatchlistButton'
 
 const typeLabels = { movie: 'Film', tv: 'Serie' }
 
-function MediaCard({ media, index = 0, showType = false }) {
+function MediaCard({ media, index = 0, showType = false, eager = false, animate = true }) {
   const [hovered, setHovered] = useState(false)
 
   const title = media.title || media.name
@@ -42,8 +42,8 @@ function MediaCard({ media, index = 0, showType = false }) {
   return (
     <Link
       to={linkPath}
-      className="group relative w-full animate-fade-in"
-      style={{ animationDelay: `${(index % 20) * 50}ms` }}
+      className={`group relative w-full ${animate ? 'animate-fade-in' : ''}`}
+      style={animate ? { animationDelay: `${(index % 20) * 50}ms` } : undefined}
       onMouseEnter={() => setHovered(true)}
     >
       <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-surface-800">
@@ -51,7 +51,7 @@ function MediaCard({ media, index = 0, showType = false }) {
           <img
             src={poster}
             alt={title}
-            loading="lazy"
+            loading={eager ? "eager" : "lazy"}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (

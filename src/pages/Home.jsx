@@ -36,6 +36,9 @@ function Home() {
 
   return (
     <div className="space-y-10">
+
+      <MoodSection />
+
       <MediaRow
         title="Gerade im Trend"
         items={trending.data}
@@ -49,8 +52,6 @@ function Home() {
         isLoading={movies.isLoading}
         error={movies.error}
       />
-
-      <MoodSection />
 
       <MediaRow
         title="Beliebte Serien"

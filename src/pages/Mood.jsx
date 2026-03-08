@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useMemo, useRef, useCallback } from 'react'
 import { useParams, Navigate, Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
 import { getMoodBySlug } from '../utils/moods'
@@ -26,21 +26,76 @@ function Mood() {
   const { slug } = useParams()
   const mood = getMoodBySlug(slug)
   const [mediaType, setMediaType] = useState('movie')
+  const [startPage, setStartPage] = useState(1)
 
   const params = mood?.[mediaType] || {}
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['mood', slug, mediaType],
-    queryFn: () => {
-      const discoverParams = { ...params, sort_by: 'popularity.desc' }
+  const {
+    data,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['mood', slug, mediaType, startPage],
+    queryFn: ({ pageParam }) => {
+      const discoverParams = { ...params, sort_by: 'popularity.desc', page: pageParam }
       return mediaType === 'tv' ? discoverTv(discoverParams) : discoverMovies(discoverParams)
     },
+    initialPageParam: startPage,
+    getNextPageParam: (lastPage) => {
+      const next = lastPage.page + 1
+      return next <= Math.min(lastPage.total_pages, 500) ? next : undefined
+    },
     enabled: !!mood,
-    select: (data) =>
-      data.results
-        .filter((m) => m.poster_path && m.overview)
-        .map((m) => ({ ...m, media_type: mediaType })),
+    retry: 1,
   })
+
+  const firstPageCount = data?.pages[0]?.results.filter((m) => m.poster_path && m.overview).length || 0
+
+  const allResults = useMemo(
+    () =>
+      data?.pages.flatMap((page) =>
+        page.results
+          .filter((m) => m.poster_path && m.overview)
+          .map((m) => ({ ...m, media_type: mediaType }))
+      ) || [],
+    [data, mediaType]
+  )
+
+  // Stable refs so the observer callback always sees latest values
+  const fetchRef = useRef(fetchNextPage)
+  const hasNextRef = useRef(hasNextPage)
+  const isFetchingRef = useRef(isFetchingNextPage)
+  fetchRef.current = fetchNextPage
+  hasNextRef.current = hasNextPage
+  isFetchingRef.current = isFetchingNextPage
+
+  // Callback ref — sets up/tears down observer when sentinel enters/leaves DOM
+  const observerRef = useRef(null)
+  const sentinelRef = useCallback((node) => {
+    if (observerRef.current) {
+      observerRef.current.disconnect()
+      observerRef.current = null
+    }
+    if (node) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasNextRef.current && !isFetchingRef.current) {
+            fetchRef.current()
+          }
+        },
+        { rootMargin: '600px' }
+      )
+      observer.observe(node)
+      observerRef.current = observer
+    }
+  }, [])
+
+  function shuffle() {
+    setStartPage(Math.floor(Math.random() * 5) + 1)
+  }
 
   if (!mood) return <Navigate to="/" replace />
 
@@ -65,24 +120,36 @@ function Mood() {
         </div>
       </div>
 
-      {/* Media Type Toggle */}
-      <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
-        {[
-          { type: 'movie', label: 'Filme' },
-          { type: 'tv', label: 'Serien' },
-        ].map(({ type, label }) => (
-          <button
-            key={type}
-            onClick={() => setMediaType(type)}
-            className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-              mediaType === type
-                ? 'bg-accent-500 text-black'
-                : 'text-surface-300 hover:text-white'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      {/* Controls: Media Type Toggle + Shuffle */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
+          {[
+            { type: 'movie', label: 'Filme' },
+            { type: 'tv', label: 'Serien' },
+          ].map(({ type, label }) => (
+            <button
+              key={type}
+              onClick={() => setMediaType(type)}
+              className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                mediaType === type
+                  ? 'bg-accent-500 text-black'
+                  : 'text-surface-300 hover:text-white'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={shuffle}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-800 text-surface-300 hover:text-white hover:bg-surface-700 transition-colors text-sm font-medium"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
+          </svg>
+          Mischen
+        </button>
       </div>
 
       {/* Results */}
@@ -92,12 +159,45 @@ function Mood() {
 
       {isLoading ? (
         <ResultSkeleton />
-      ) : data?.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
-          {data.map((media, i) => (
-            <MediaCard key={media.id} media={media} index={i} />
-          ))}
-        </div>
+      ) : allResults.length > 0 ? (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
+            {allResults.map((media, i) => (
+              <MediaCard key={`${media.id}-${i}`} media={media} index={i} eager animate={i < firstPageCount} />
+            ))}
+
+            {/* Inline skeleton placeholders while fetching */}
+            {isFetchingNextPage && Array.from({ length: 12 }).map((_, i) => (
+              <div key={`skel-${i}`}>
+                <div className="aspect-[2/3] rounded-xl bg-surface-800 animate-pulse" />
+                <div className="mt-2 px-1 space-y-1.5">
+                  <div className="h-4 bg-surface-800 rounded animate-pulse w-3/4" />
+                  <div className="h-3 bg-surface-800 rounded animate-pulse w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Sentinel triggers next fetch when scrolled near */}
+          <div ref={sentinelRef} className="h-px" />
+
+          {/* Error on page load — show retry */}
+          {error && allResults.length > 0 && !isFetchingNextPage && (
+            <div className="text-center py-8">
+              <p className="text-red-400 text-sm mb-3">Fehler beim Laden weiterer Ergebnisse.</p>
+              <button
+                onClick={() => fetchNextPage()}
+                className="px-4 py-2 rounded-lg bg-surface-800 text-sm font-medium text-surface-200 hover:bg-surface-700 transition-colors"
+              >
+                Erneut versuchen
+              </button>
+            </div>
+          )}
+
+          {!hasNextPage && allResults.length > 20 && (
+            <p className="text-surface-500 text-sm text-center py-8">Keine weiteren Ergebnisse.</p>
+          )}
+        </>
       ) : (
         <div className="text-center py-20">
           <svg className="w-16 h-16 mx-auto text-surface-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>

@@ -16,8 +16,12 @@
 - [x] Schritt 13: Verbesserung der MediaCards für bessere sichtbarkeit und Provider anzeigen und sind in der Detail ansicht auch klickbar
 - [x] Schritt 14: Ähnliche Filme und Serien sind jetzt besser gefiltert
 - [x] Schritt 15: Serien zeigen jetzt bei einzelnen Staffeln wo es gestreamt werden kann.
+- [x] Schritt 16: Homepage überarbeitet
+- [x] Schritt 17: Mood-Bereich verbessert (Genre-Fix, 5 neue Moods, Mischen-Button, Mehr laden)
+- [x] Schritt 18: Infinity Scroll bei den Moods
 
 ## offen
 
-- [ ] Schritt 14: Kinofilm section
-- Wie kommen die beliebten Filme und Serien auf der Startseite zustande? Also woran wird das ausgemacht, wie kann man das noch anpassen
+- [ ] Kinofilm section / Anime Section (Crunchyroll)
+- Homepage Filme und Serien manchmal immer noch nicht nur Streaming
+- Kurze beschreibung auf dem Mood, wonach gefilert wird

@@ -77,6 +77,8 @@ function Discover() {
     retry: 1,
   })
 
+  const firstPageCount = data?.pages[0]?.results.length || 0
+
   const allResults = useMemo(
     () =>
       data?.pages.flatMap((page) =>
@@ -264,7 +266,7 @@ function Discover() {
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
             {allResults.map((media, i) => (
-              <MediaCard key={`${media.id}-${i}`} media={media} index={i} />
+              <MediaCard key={`${media.id}-${i}`} media={media} index={i} eager animate={i < firstPageCount} />
             ))}
 
             {/* Inline skeleton placeholders while fetching */}
