@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import { discoverMovies, getMovieDetails, getMovieProviders, getMovieSimilar, getMovieRecommendations } from '../api/movies'
+import { discoverMovies, getMovieDetails, getMovieProviders, getMovieSimilar, getMovieRecommendations, getNowPlayingMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
 
 export function useTrendingAll() {
@@ -112,5 +112,24 @@ export function useMovieRecommendations(id) {
     enabled: !!id,
     select: (data) =>
       data.results.map((m) => ({ ...m, media_type: 'movie' })),
+  })
+}
+
+export function useNowPlaying() {
+  return useQuery({
+    queryKey: ['nowPlaying'],
+    queryFn: async () => {
+      // Fetch first 2 pages to get a good coverage (~40 movies)
+      const [p1, p2] = await Promise.all([
+        getNowPlayingMovies(1),
+        getNowPlayingMovies(2),
+      ])
+      const ids = new Set([
+        ...p1.results.map((m) => m.id),
+        ...p2.results.map((m) => m.id),
+      ])
+      return ids
+    },
+    staleTime: 6 * 60 * 60 * 1000, // 6 hours — Kino-Programm ändert sich selten
   })
 }

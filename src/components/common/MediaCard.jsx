@@ -9,7 +9,7 @@ import WatchlistButton from './WatchlistButton'
 
 const typeLabels = { movie: 'Film', tv: 'Serie' }
 
-function MediaCard({ media, index = 0, eager = false, animate = true }) {
+function MediaCard({ media, index = 0, eager = false, animate = true, checkAvailability = false, nowPlayingIds }) {
   const [hovered, setHovered] = useState(false)
 
   const title = media.title || media.name
@@ -26,11 +26,14 @@ function MediaCard({ media, index = 0, eager = false, animate = true }) {
         ? 'bg-amber-500/90 text-white'
         : 'bg-red-500/90 text-white'
 
-  // Fetch providers on hover (cached by TanStack Query)
+  // "Im Kino" — based on TMDB now_playing endpoint (reliable, curated list)
+  const isInCinema = type === 'movie' && nowPlayingIds?.has(media.id)
+
+  // Fetch providers on hover, or eagerly when checkAvailability is set (search results)
   const { data: providerData } = useQuery({
     queryKey: [type, media.id, 'providers'],
     queryFn: () => (type === 'tv' ? getTvProviders(media.id) : getMovieProviders(media.id)),
-    enabled: hovered,
+    enabled: hovered || checkAvailability,
     staleTime: 24 * 60 * 60 * 1000,
   })
 
@@ -71,12 +74,19 @@ function MediaCard({ media, index = 0, eager = false, animate = true }) {
           </span>
         )}
 
-        {/* Type badge */}
-        {typeLabels[type] && (
+        {/* Type badge — shows "Im Kino" for current theatrical releases */}
+        {isInCinema ? (
+          <span className="absolute top-2 left-2 z-10 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-accent-500/90 text-black backdrop-blur-sm flex items-center gap-1">
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2zM8 17H6v-2h2v2zm0-4H6v-2h2v2zm0-4H6V7h2v2zm10 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z" />
+            </svg>
+            Im Kino
+          </span>
+        ) : typeLabels[type] ? (
           <span className="absolute top-2 left-2 z-10 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-surface-900/80 text-accent-400 backdrop-blur-sm">
             {typeLabels[type]}
           </span>
-        )}
+        ) : null}
 
         {/* Hover Overlay — cinematic spotlight */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-between p-3 sm:p-4">

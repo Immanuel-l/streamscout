@@ -19,9 +19,10 @@
 - [x] Schritt 16: Homepage überarbeitet
 - [x] Schritt 17: Mood-Bereich erweitert (Genre-Fix, 5 neue Moods, Mischen-Button)
 - [x] Schritt 18: Infinity Scroll bei Moods + Discover
+- [x] Schritt 19: MediaCard: Film/Serie-Badge oben links (wie bei der Suche) überall anzeigen
 
 ## Offen
 - [ ] Kinofilm-Section / Anime-Section (Crunchyroll)
-- [ ] Homepage: Filme/Serien manchmal nicht nur Streaming
+- [ ] Filme im Kino auch in der MoveDetail auch kennzeichnen
+- [ ] Eine Lösung finden in der Suche für nicht Streambare inhalte
 - [ ] Mood: Kurze Beschreibung anzeigen, wonach gefiltert wird
-- [ ] MediaCard: Film/Serie-Badge oben links (wie bei der Suche) überall anzeigen

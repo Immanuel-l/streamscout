@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { searchMulti } from '../api/common'
 import { useDebounce } from '../hooks/useDebounce'
+import { useNowPlaying } from '../hooks/useMovies'
 import SearchBar from '../components/search/SearchBar'
 import MediaCard from '../components/common/MediaCard'
 
@@ -24,6 +25,7 @@ function SearchGridSkeleton() {
 function Search() {
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebounce(query, 300)
+  const { data: nowPlayingIds } = useNowPlaying()
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['search', debouncedQuery],
@@ -53,7 +55,7 @@ function Search() {
       {hasResults && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
           {data.map((media, i) => (
-            <MediaCard key={`${media.media_type}-${media.id}`} media={media} index={i} />
+            <MediaCard key={`${media.media_type}-${media.id}`} media={media} index={i} checkAvailability nowPlayingIds={nowPlayingIds} />
           ))}
         </div>
       )}
