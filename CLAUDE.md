@@ -33,9 +33,9 @@ Film- und Serien-Suchapp mit React + JavaScript + Vite, angebunden an die TMDB A
 src/
   api/        -> Axios Instance + API Calls (tmdb.js, movies.js, tv.js, common.js)
   components/ -> UI Komponenten (layout/, common/, search/, discover/, detail/, watchlist/)
-  pages/      -> Seitenkomponenten (Home, Search, Discover, MovieDetail, TvDetail, Watchlist, Random)
+  pages/      -> Seitenkomponenten (Home, Search, Discover, Mood, MovieDetail, TvDetail, Watchlist, Random)
   hooks/      -> Custom Hooks (useMovies, useTv, useProviders, useDebounce, useWatchlist)
-  utils/      -> Helpers, Constants, Mood-Mappings
+  utils/      -> Helpers, Constants, Mood-Mappings (moods.js: 10 Stimmungen)
 ```
 
 ## Konventionen
@@ -46,6 +46,7 @@ src/
 - Filme/Serien-Komponenten nutzen generischen "media" Prop mit media_type ("movie"/"tv")
 - Keine hardcoded API Tokens, alles über .env
 - Externe Links immer mit `rel="noopener noreferrer"`
+- Infinity Scroll in Discover + Mood: IntersectionObserver (rootMargin 600px) + useInfiniteQuery, Skeleton-Placeholders inline im Grid, `animate-fade-in` nur für erste Seite (animate={false} für nachgeladene Items)
 
 ## Weitere Dokumentation
 

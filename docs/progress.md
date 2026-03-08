@@ -12,16 +12,16 @@
 - [x] Schritt 9: Zufalls-Generator
 - [x] Schritt 10: Mood-Suche
 - [x] Schritt 11: Feinschliff
-- [x] Schritt 12: Providers eingrenzen auf Amazon Prime Video, Netflix, Disney+, WOW, Apple TV+, Paramount+, HBO MAX, RTL+, unterbrochen durch Limit (vielleicht noch JOYN?). Das ganze auch auf Home seite, suche, entdecken, Zufall usw. ausbreiten. Nur noch diese daten anzeigen
-- [x] Schritt 13: Verbesserung der MediaCards für bessere sichtbarkeit und Provider anzeigen und sind in der Detail ansicht auch klickbar
-- [x] Schritt 14: Ähnliche Filme und Serien sind jetzt besser gefiltert
-- [x] Schritt 15: Serien zeigen jetzt bei einzelnen Staffeln wo es gestreamt werden kann.
+- [x] Schritt 12: Provider-Filterung (Netflix, Prime, Disney+ etc.)
+- [x] Schritt 13: MediaCard-Verbesserung (Sichtbarkeit, Provider-Anzeige, klickbar in Detailansicht)
+- [x] Schritt 14: Ähnliche Filme/Serien besser gefiltert
+- [x] Schritt 15: Staffel-Streaming-Verfügbarkeit
 - [x] Schritt 16: Homepage überarbeitet
-- [x] Schritt 17: Mood-Bereich verbessert (Genre-Fix, 5 neue Moods, Mischen-Button, Mehr laden)
-- [x] Schritt 18: Infinity Scroll bei den Moods
+- [x] Schritt 17: Mood-Bereich erweitert (Genre-Fix, 5 neue Moods, Mischen-Button)
+- [x] Schritt 18: Infinity Scroll bei Moods + Discover
 
-## offen
-
-- [ ] Kinofilm section / Anime Section (Crunchyroll)
-- Homepage Filme und Serien manchmal immer noch nicht nur Streaming
-- Kurze beschreibung auf dem Mood, wonach gefilert wird
+## Offen
+- [ ] Kinofilm-Section / Anime-Section (Crunchyroll)
+- [ ] Homepage: Filme/Serien manchmal nicht nur Streaming
+- [ ] Mood: Kurze Beschreibung anzeigen, wonach gefiltert wird
+- [ ] MediaCard: Film/Serie-Badge oben links (wie bei der Suche) überall anzeigen
