@@ -115,7 +115,19 @@ function Mood() {
           <span className="text-4xl">{mood.icon}</span>
           <div>
             <h1 className="font-display text-5xl tracking-wide text-white">{mood.title}</h1>
-            <p className="text-surface-400 text-sm mt-1">{mood.subtitle}</p>
+            <p className="text-surface-300 text-sm mt-1.5 max-w-2xl">{mood.description}</p>
+            {mood.tags?.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2.5">
+                {mood.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-2.5 py-0.5 rounded-full bg-surface-800 text-surface-300 text-xs font-medium"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
