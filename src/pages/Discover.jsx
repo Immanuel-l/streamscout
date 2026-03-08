@@ -177,9 +177,9 @@ function Discover() {
                 <button
                   key={g.id}
                   onClick={() => toggleGenre(g.id)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
                     selectedGenres.includes(g.id)
-                      ? 'bg-accent-500 text-black'
+                      ? 'bg-accent-500 text-black shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]'
                       : 'bg-surface-800 text-surface-200 hover:bg-surface-700'
                   }`}
                 >
@@ -228,10 +228,10 @@ function Discover() {
                   key={p.provider_id}
                   onClick={() => toggleProvider(p.provider_id)}
                   title={p.provider_name}
-                  className={`rounded-xl overflow-hidden transition-all ${
+                  className={`rounded-xl overflow-hidden transition-all duration-300 ${
                     selectedProviders.includes(p.provider_id)
-                      ? 'ring-2 ring-accent-400 scale-110'
-                      : 'opacity-60 hover:opacity-100'
+                      ? 'ring-2 ring-accent-400 scale-110 shadow-[0_0_16px_-4px_rgba(245,158,11,0.35)]'
+                      : 'opacity-60 hover:opacity-100 hover:scale-105'
                   }`}
                 >
                   <img

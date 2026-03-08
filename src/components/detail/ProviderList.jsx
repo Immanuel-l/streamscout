@@ -47,12 +47,12 @@ function ProviderList({ providers }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 title={`${p.provider_name} – Verfügbarkeit anzeigen`}
-                className="transition-transform hover:scale-110"
+                className="transition-all duration-300 hover:scale-110"
               >
                 <img
                   src={providerLogoUrl(p.logo_path)}
                   alt={p.provider_name}
-                  className="w-10 h-10 rounded-full object-cover"
+                  className="w-10 h-10 rounded-full object-cover ring-1 ring-white/10 hover:ring-accent-500/40 transition-all duration-300 hover:shadow-[0_0_12px_-2px_rgba(245,158,11,0.25)]"
                 />
               </a>
             ))}

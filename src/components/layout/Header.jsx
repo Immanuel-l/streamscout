@@ -13,7 +13,7 @@ function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-50 bg-surface-950/80 backdrop-blur-md border-b border-surface-800/60">
+    <header className="sticky top-0 z-50 bg-surface-950/80 backdrop-blur-md border-b border-accent-500/10" style={{ boxShadow: '0 1px 20px -4px rgba(245, 158, 11, 0.08)' }}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
         <Link
           to="/"

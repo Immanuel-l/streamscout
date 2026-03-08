@@ -230,10 +230,10 @@ function Random() {
                   key={p.provider_id}
                   onClick={() => toggleProvider(p.provider_id)}
                   title={p.provider_name}
-                  className={`rounded-xl overflow-hidden transition-all ${
+                  className={`rounded-xl overflow-hidden transition-all duration-300 ${
                     selectedProviders.includes(p.provider_id)
-                      ? 'ring-2 ring-accent-400 scale-110'
-                      : 'opacity-60 hover:opacity-100'
+                      ? 'ring-2 ring-accent-400 scale-110 shadow-[0_0_16px_-4px_rgba(245,158,11,0.35)]'
+                      : 'opacity-60 hover:opacity-100 hover:scale-105'
                   }`}
                 >
                   <img
@@ -251,7 +251,7 @@ function Random() {
         <button
           onClick={roll}
           disabled={loading}
-          className="px-8 py-3 rounded-xl bg-accent-500 text-black font-bold text-base hover:bg-accent-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          className="px-8 py-3 rounded-xl bg-accent-500 text-black font-bold text-base hover:bg-accent-400 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 hover:shadow-[0_0_24px_-4px_rgba(245,158,11,0.4)] active:scale-95"
         >
           {loading ? (
             <>
@@ -279,7 +279,7 @@ function Random() {
 
       {/* Result */}
       {result && !loading && (
-        <div className="relative rounded-2xl overflow-hidden bg-surface-900 animate-fade-in">
+        <div className="relative rounded-2xl overflow-hidden bg-surface-900 animate-slide-up">
           {/* Backdrop */}
           {result.backdrop_path && (
             <div className="absolute inset-0">
@@ -288,8 +288,9 @@ function Random() {
                 alt=""
                 className="w-full h-full object-cover object-top"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-surface-900 via-surface-900/90 to-surface-900/40" />
-              <div className="absolute inset-0 bg-gradient-to-t from-surface-900 via-transparent to-surface-900/60" />
+              <div className="absolute inset-0 bg-gradient-to-r from-surface-900 via-surface-900/85 to-surface-900/30" />
+              <div className="absolute inset-0 bg-gradient-to-t from-surface-900 via-transparent to-surface-900/50" />
+              <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 30% 50%, transparent 30%, rgba(10,10,10,0.5) 100%)' }} />
             </div>
           )}
 
@@ -299,7 +300,7 @@ function Random() {
               <img
                 src={posterUrl(result.poster_path)}
                 alt={title}
-                className="w-48 sm:w-56 rounded-xl shadow-2xl shadow-black/60"
+                className="w-48 sm:w-56 rounded-xl shadow-2xl shadow-black/60 ring-1 ring-white/5"
               />
             </div>
 

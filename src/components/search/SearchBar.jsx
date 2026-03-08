@@ -54,7 +54,10 @@ function SearchBar({ value, onChange, suggestions = [] }) {
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => suggestions.length > 0 && setOpen(true)}
         placeholder="Film oder Serie suchen..."
-        className="w-full pl-12 pr-4 py-4 rounded-xl bg-surface-800 border border-surface-700 text-white placeholder-surface-400 text-lg focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500 transition-colors"
+        className="w-full pl-12 pr-4 py-4 rounded-xl bg-surface-800/80 border border-surface-700 text-white placeholder-surface-400 text-lg focus:outline-none focus:border-accent-500/60 focus:ring-1 focus:ring-accent-500/30 transition-all duration-300"
+        style={{ boxShadow: 'none' }}
+        onFocusCapture={(e) => { e.target.style.boxShadow = '0 0 30px -6px rgba(245, 158, 11, 0.12)' }}
+        onBlurCapture={(e) => { e.target.style.boxShadow = 'none' }}
       />
       {value && (
         <button
@@ -70,7 +73,7 @@ function SearchBar({ value, onChange, suggestions = [] }) {
 
       {/* Autocomplete Dropdown */}
       {open && suggestions.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-2 rounded-xl bg-surface-800 border border-surface-700 shadow-2xl shadow-black/40 overflow-hidden z-50">
+        <div className="absolute left-0 right-0 top-full mt-2 rounded-xl bg-surface-800/95 backdrop-blur-lg border border-surface-700/60 shadow-2xl shadow-black/60 overflow-hidden z-50">
           {suggestions.map((item) => {
             const title = item.title || item.name
             const date = item.release_date || item.first_air_date

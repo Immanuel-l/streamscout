@@ -18,10 +18,10 @@ function WatchlistButton({ media, size = 'sm' }) {
         toggle(media)
       }}
       title={active ? 'Von Merkliste entfernen' : 'Auf Merkliste setzen'}
-      className={`${sizeClasses} flex items-center justify-center rounded-full transition-all ${
+      className={`${sizeClasses} flex items-center justify-center rounded-full transition-all duration-300 active:scale-90 ${
         active
-          ? 'bg-accent-500 text-black hover:bg-accent-400'
-          : 'bg-black/50 text-white hover:bg-accent-500 hover:text-black'
+          ? 'bg-accent-500 text-black hover:bg-accent-400 shadow-[0_0_12px_-2px_rgba(245,158,11,0.4)]'
+          : 'bg-black/50 text-white hover:bg-accent-500 hover:text-black backdrop-blur-sm'
       }`}
     >
       {active ? (

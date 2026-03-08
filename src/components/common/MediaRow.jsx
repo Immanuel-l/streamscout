@@ -72,7 +72,7 @@ function MediaRow({ title, items, isLoading, error }) {
 
   return (
     <section className="space-y-4">
-      <h2 className="font-display text-3xl sm:text-4xl tracking-wide text-white">{title}</h2>
+      <h2 className="font-display text-3xl sm:text-4xl tracking-wide text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">{title}</h2>
 
       {error && (
         <p className="text-red-400 text-sm">Inhalte konnten nicht geladen werden. Bitte versuch es später nochmal.</p>

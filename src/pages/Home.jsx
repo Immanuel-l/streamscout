@@ -6,18 +6,21 @@ import { moods } from '../utils/moods'
 
 function MoodSection() {
   return (
-    <section className="space-y-4">
-      <h2 className="font-display text-3xl sm:text-4xl tracking-wide text-white">Worauf hast du Lust?</h2>
+    <section className="space-y-6">
+      <div>
+        <h2 className="font-display text-4xl sm:text-5xl tracking-wide text-white">Worauf hast du Lust?</h2>
+        <p className="text-surface-400 text-sm mt-1">Wähle deine Stimmung und lass dich überraschen.</p>
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {moods.map((mood) => (
           <Link
             key={mood.slug}
             to={`/mood/${mood.slug}`}
-            className={`group relative rounded-xl border bg-gradient-to-br ${mood.gradient} ${mood.border} p-4 sm:p-5 transition-all hover:scale-[1.03] hover:shadow-lg`}
+            className={`group relative rounded-xl border bg-gradient-to-br ${mood.gradient} ${mood.border} p-4 sm:p-5 transition-all duration-300 hover:scale-[1.04] hover:shadow-xl hover:shadow-black/30`}
           >
-            <span className="text-3xl block mb-2">{mood.icon}</span>
+            <span className="text-3xl block mb-2 transition-transform duration-300 group-hover:scale-110">{mood.icon}</span>
             <p className="text-white font-medium text-sm sm:text-base leading-tight">{mood.title}</p>
-            <p className="text-surface-400 text-xs mt-1 leading-snug">{mood.subtitle}</p>
+            <p className="text-white/50 text-xs mt-1 leading-snug">{mood.subtitle}</p>
           </Link>
         ))}
       </div>

@@ -186,7 +186,7 @@ function TvDetail() {
 
   return (
     <div>
-      {/* Hero */}
+      {/* Hero — cinematic multi-layer gradient */}
       <section className="relative -mx-4 sm:-mx-6 lg:-mx-8 -mt-8">
         <div className="relative h-[30vh] sm:h-[45vh] md:h-[55vh]">
           {backdrop ? (
@@ -198,8 +198,10 @@ function TvDetail() {
           ) : (
             <div className="absolute inset-0 bg-surface-800" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-surface-950 via-surface-950/60 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-surface-950/80 to-transparent" />
+          {/* Three-layer gradient: bottom fade, left fade, vignette */}
+          <div className="absolute inset-0 bg-gradient-to-t from-surface-950 via-surface-950/70 via-60% to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-surface-950/90 via-surface-950/30 via-50% to-transparent" />
+          <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, transparent 50%, rgba(5,5,5,0.4) 100%)' }} />
         </div>
       </section>
 
@@ -210,7 +212,7 @@ function TvDetail() {
             <img
               src={poster}
               alt={show.name}
-              className="w-56 lg:w-64 rounded-xl shadow-2xl shadow-black/50"
+              className="w-56 lg:w-64 rounded-xl shadow-2xl shadow-black/60 ring-1 ring-white/5"
             />
           </div>
         )}
