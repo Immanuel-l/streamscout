@@ -14,7 +14,7 @@ export const getMovieRecommendations = (id, page = 1) =>
   tmdb.get(`/movie/${id}/recommendations`, { params: { page } }).then((res) => res.data)
 
 export const discoverMovies = (params = {}) =>
-  tmdb.get('/discover/movie', { params: { watch_region: 'DE', with_watch_providers: ALLOWED_PROVIDER_STRING, ...params } }).then((res) => res.data)
+  tmdb.get('/discover/movie', { params: { watch_region: 'DE', with_watch_providers: ALLOWED_PROVIDER_STRING, with_watch_monetization_types: 'flatrate', ...params } }).then((res) => res.data)
 
 export const getTrendingMovies = (timeWindow = 'week') =>
   tmdb.get(`/trending/movie/${timeWindow}`).then((res) => res.data)

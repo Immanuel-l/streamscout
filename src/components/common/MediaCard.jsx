@@ -30,7 +30,7 @@ function MediaCard({ media, index = 0, eager = false, animate = true, checkAvail
   const isInCinema = type === 'movie' && nowPlayingIds?.has(media.id)
 
   // Fetch providers on hover, or eagerly when checkAvailability is set (search results)
-  const { data: providerData } = useQuery({
+  const { data: providerData, isSuccess: providersLoaded } = useQuery({
     queryKey: [type, media.id, 'providers'],
     queryFn: () => (type === 'tv' ? getTvProviders(media.id) : getMovieProviders(media.id)),
     enabled: hovered || checkAvailability,
@@ -41,6 +41,11 @@ function MediaCard({ media, index = 0, eager = false, animate = true, checkAvail
     providerData?.flatrate
       ?.filter((p) => ALLOWED_PROVIDER_SET.has(p.provider_id))
       ?.slice(0, 5) || []
+
+  const hasAnyProvider = providerData && ['flatrate', 'rent', 'buy'].some(
+    (key) => providerData[key]?.some((p) => ALLOWED_PROVIDER_SET.has(p.provider_id))
+  )
+  const notStreamable = checkAvailability && providersLoaded && !hasAnyProvider && !isInCinema
 
   return (
     <Link
@@ -112,7 +117,7 @@ function MediaCard({ media, index = 0, eager = false, animate = true, checkAvail
             </div>
 
             {/* Provider logos */}
-            {providers.length > 0 && (
+            {providers.length > 0 ? (
               <div className="flex gap-1.5 pt-1">
                 {providers.map((p) => (
                   <img
@@ -124,7 +129,9 @@ function MediaCard({ media, index = 0, eager = false, animate = true, checkAvail
                   />
                 ))}
               </div>
-            )}
+            ) : notStreamable ? (
+              <p className="text-surface-400 text-xs pt-1">Nicht streambar</p>
+            ) : null}
           </div>
         </div>
       </div>
@@ -133,6 +140,9 @@ function MediaCard({ media, index = 0, eager = false, animate = true, checkAvail
       <div className="mt-2 px-1 group-hover:opacity-0 transition-opacity duration-300">
         <p className="text-surface-200 text-sm font-medium leading-tight line-clamp-1">{title}</p>
         {year && <p className="text-surface-400 text-xs mt-0.5">{year}</p>}
+        {notStreamable && (
+          <p className="text-surface-500 text-[11px] mt-0.5">Nicht streambar</p>
+        )}
       </div>
     </Link>
   )
