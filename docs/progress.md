@@ -22,7 +22,7 @@
 - [x] Schritt 19: MediaCard: Film/Serie-Badge oben links (wie bei der Suche) überall anzeigen
 - [x] Schritt 20: Filme im Kino auch in der MoveDetail auch kennzeichnen
 - [x] Schritt 21: Mood: Kurze Beschreibung anzeigen, wonach gefiltert wird
+- [x] Schritt 21: Suche überarbeitet
 
 ## Offen
 - [ ] Kinofilm-Section / Anime-Section (Crunchyroll)
-- [ ] Eine Lösung finden in der Suche für nicht Streambare inhalte

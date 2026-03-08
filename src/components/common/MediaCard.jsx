@@ -30,7 +30,7 @@ function MediaCard({ media, index = 0, eager = false, animate = true, checkAvail
   const isInCinema = type === 'movie' && nowPlayingIds?.has(media.id)
 
   // Fetch providers on hover, or eagerly when checkAvailability is set (search results)
-  const { data: providerData, isSuccess: providersLoaded } = useQuery({
+  const { data: providerData, isSuccess: providersLoaded, isError: providersErrored } = useQuery({
     queryKey: [type, media.id, 'providers'],
     queryFn: () => (type === 'tv' ? getTvProviders(media.id) : getMovieProviders(media.id)),
     enabled: hovered || checkAvailability,
@@ -45,7 +45,7 @@ function MediaCard({ media, index = 0, eager = false, animate = true, checkAvail
   const hasAnyProvider = providerData && ['flatrate', 'rent', 'buy'].some(
     (key) => providerData[key]?.some((p) => ALLOWED_PROVIDER_SET.has(p.provider_id))
   )
-  const notStreamable = checkAvailability && providersLoaded && !hasAnyProvider && !isInCinema
+  const notStreamable = checkAvailability && (providersLoaded || providersErrored) && !hasAnyProvider && !isInCinema
 
   return (
     <Link

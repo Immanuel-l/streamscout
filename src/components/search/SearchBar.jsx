@@ -7,6 +7,7 @@ const typeLabels = { movie: 'Film', tv: 'Serie' }
 function SearchBar({ value, onChange, suggestions = [] }) {
   const inputRef = useRef(null)
   const wrapperRef = useRef(null)
+  const focusedRef = useRef(true)
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
 
@@ -25,9 +26,11 @@ function SearchBar({ value, onChange, suggestions = [] }) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  // Open dropdown when suggestions arrive
+  // Open dropdown when suggestions arrive — only if input is focused
   useEffect(() => {
-    setOpen(suggestions.length > 0)
+    if (focusedRef.current) {
+      setOpen(suggestions.length > 0)
+    }
   }, [suggestions])
 
   function goTo(item) {
@@ -52,7 +55,8 @@ function SearchBar({ value, onChange, suggestions = [] }) {
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        onFocus={() => suggestions.length > 0 && setOpen(true)}
+        onFocus={() => { focusedRef.current = true; suggestions.length > 0 && setOpen(true) }}
+        onBlur={() => { focusedRef.current = false }}
         placeholder="Film oder Serie suchen..."
         className="w-full pl-12 pr-4 py-4 rounded-xl bg-surface-800/80 border border-surface-700 text-white placeholder-surface-400 text-lg focus:outline-none focus:border-accent-500/60 focus:ring-1 focus:ring-accent-500/30 transition-all duration-300"
         style={{ boxShadow: 'none' }}

@@ -1,10 +1,20 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { searchMulti } from '../api/common'
+import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { useQuery, useQueries } from '@tanstack/react-query'
+import { searchMulti, searchMovies, searchTv } from '../api/common'
+import { getMovieProviders } from '../api/movies'
+import { getTvProviders } from '../api/tv'
 import { useDebounce } from '../hooks/useDebounce'
 import { useNowPlaying } from '../hooks/useMovies'
+import { ALLOWED_PROVIDER_SET } from '../utils/providers'
 import SearchBar from '../components/search/SearchBar'
 import MediaCard from '../components/common/MediaCard'
+
+const searchFns = {
+  all: searchMulti,
+  movie: searchMovies,
+  tv: searchTv,
+}
 
 function SearchGridSkeleton() {
   return (
@@ -23,38 +33,151 @@ function SearchGridSkeleton() {
 }
 
 function Search() {
-  const [query, setQuery] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [query, setQuery] = useState(() => searchParams.get('q') || '')
+  const [mediaType, setMediaType] = useState(() => searchParams.get('type') || 'all')
+  const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || 'relevance')
+  const [onlyStreamable, setOnlyStreamable] = useState(() => searchParams.get('streamable') === 'true')
   const debouncedQuery = useDebounce(query, 300)
   const { data: nowPlayingIds } = useNowPlaying()
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['search', debouncedQuery],
-    queryFn: () => searchMulti(debouncedQuery),
+  // Sync state to URL params (replace to avoid history spam)
+  useEffect(() => {
+    const params = {}
+    if (debouncedQuery) params.q = debouncedQuery
+    if (mediaType !== 'all') params.type = mediaType
+    if (sortBy !== 'relevance') params.sort = sortBy
+    if (onlyStreamable) params.streamable = 'true'
+    setSearchParams(params, { replace: true })
+  }, [debouncedQuery, mediaType, sortBy, onlyStreamable, setSearchParams])
+
+  const { data: rawResults, isLoading, error } = useQuery({
+    queryKey: ['search', debouncedQuery, mediaType],
+    queryFn: () => searchFns[mediaType](debouncedQuery),
     enabled: debouncedQuery.length >= 2,
-    select: (data) =>
-      data.results.filter((r) => r.media_type === 'movie' || r.media_type === 'tv'),
+    select: (data) => {
+      let results = mediaType === 'all'
+        ? data.results.filter((r) => r.media_type === 'movie' || r.media_type === 'tv')
+        : data.results.map((r) => ({ ...r, media_type: mediaType }))
+      return results.filter((r) => r.poster_path && r.overview)
+    },
   })
 
+  // Fetch providers for all results (deduplicates with MediaCard's checkAvailability)
+  const providerQueries = useQueries({
+    queries: (rawResults || []).map((media) => ({
+      queryKey: [media.media_type, media.id, 'providers'],
+      queryFn: () => media.media_type === 'tv' ? getTvProviders(media.id) : getMovieProviders(media.id),
+      staleTime: 24 * 60 * 60 * 1000,
+    })),
+  })
+
+  const providersLoading = onlyStreamable && providerQueries.some((q) => q.isLoading)
+
+  const results = useMemo(() => {
+    if (!rawResults) return []
+    let filtered = [...rawResults]
+
+    // Streamable filter (flatrate only)
+    if (onlyStreamable) {
+      filtered = filtered.filter((_, i) => {
+        const q = providerQueries[i]
+        if (!q?.isSuccess) return false
+        return q.data?.flatrate?.some((p) => ALLOWED_PROVIDER_SET.has(p.provider_id))
+      })
+    }
+
+    // Sort
+    if (sortBy === 'rating') {
+      filtered.sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0))
+    } else if (sortBy === 'year') {
+      const getDate = (m) => m.release_date || m.first_air_date || ''
+      filtered.sort((a, b) => getDate(b).localeCompare(getDate(a)))
+    }
+
+    return filtered
+  }, [rawResults, sortBy, onlyStreamable, providerQueries])
+
   const hasQuery = debouncedQuery.length >= 2
-  const hasResults = data && data.length > 0
-  const noResults = hasQuery && !isLoading && !error && !hasResults
+  const hasResults = results.length > 0
+  const noResults = hasQuery && !isLoading && !error && rawResults?.length === 0
+  const allFilteredOut = hasQuery && !isLoading && rawResults?.length > 0 && results.length === 0 && !providersLoading
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="font-display text-5xl tracking-wide text-white mb-6">Suche</h1>
-        <SearchBar value={query} onChange={setQuery} suggestions={data?.slice(0, 5) || []} />
+        <SearchBar value={query} onChange={setQuery} suggestions={rawResults?.slice(0, 5) || []} />
       </div>
+
+      {/* Filter controls */}
+      {hasQuery && (
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
+            {[
+              { type: 'all', label: 'Alle' },
+              { type: 'movie', label: 'Filme' },
+              { type: 'tv', label: 'Serien' },
+            ].map(({ type, label }) => (
+              <button
+                key={type}
+                onClick={() => setMediaType(type)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  mediaType === type
+                    ? 'bg-accent-500 text-black'
+                    : 'text-surface-300 hover:text-white'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setOnlyStreamable(!onlyStreamable)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+              onlyStreamable
+                ? 'bg-accent-500/15 text-accent-400 border border-accent-500/30'
+                : 'bg-surface-800 text-surface-300 hover:text-white'
+            }`}
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+            </svg>
+            Nur Streambar
+          </button>
+
+          <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
+            {[
+              { value: 'relevance', label: 'Relevanz' },
+              { value: 'rating', label: 'Bewertung' },
+              { value: 'year', label: 'Jahr' },
+            ].map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setSortBy(value)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  sortBy === value
+                    ? 'bg-accent-500 text-black'
+                    : 'text-surface-300 hover:text-white'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {error && (
         <p className="text-red-400 text-sm">Suche fehlgeschlagen. Bitte versuch es später nochmal.</p>
       )}
 
-      {hasQuery && isLoading && <SearchGridSkeleton />}
+      {(hasQuery && isLoading) || providersLoading ? <SearchGridSkeleton /> : null}
 
-      {hasResults && (
+      {hasResults && !providersLoading && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
-          {data.map((media, i) => (
+          {results.map((media, i) => (
             <MediaCard key={`${media.media_type}-${media.id}`} media={media} index={i} checkAvailability nowPlayingIds={nowPlayingIds} />
           ))}
         </div>
@@ -65,8 +188,18 @@ function Search() {
           <svg className="w-16 h-16 mx-auto text-surface-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
           </svg>
-          <p className="text-surface-400 text-lg">Keine Ergebnisse für „{debouncedQuery}"</p>
+          <p className="text-surface-400 text-lg">Keine Ergebnisse für &bdquo;{debouncedQuery}&ldquo;</p>
           <p className="text-surface-500 text-sm mt-1">Versuch es mit einem anderen Suchbegriff.</p>
+        </div>
+      )}
+
+      {allFilteredOut && (
+        <div className="text-center py-20">
+          <svg className="w-16 h-16 mx-auto text-surface-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+          </svg>
+          <p className="text-surface-400 text-lg">Keine streambare Ergebnisse</p>
+          <p className="text-surface-500 text-sm mt-1">Deaktiviere den Filter oder versuch einen anderen Suchbegriff.</p>
         </div>
       )}
 
