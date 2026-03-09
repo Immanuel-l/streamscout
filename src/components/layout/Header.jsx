@@ -13,7 +13,7 @@ function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-50 bg-surface-950/80 backdrop-blur-md border-b border-accent-500/10" style={{ boxShadow: '0 1px 20px -4px rgba(245, 158, 11, 0.08)' }}>
+    <header className="sticky top-0 z-50 w-full bg-surface-950/80 backdrop-blur-md border-b border-accent-500/10" style={{ boxShadow: '0 1px 20px -4px rgba(245, 158, 11, 0.08)' }}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
         <Link
           to="/"
@@ -59,8 +59,8 @@ function Header() {
       </div>
 
       <nav
-        className={`md:hidden border-t border-surface-800/60 bg-surface-950 backdrop-blur-md overflow-hidden transition-all duration-300 ease-out ${
-          mobileOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0 border-t-transparent'
+        className={`md:hidden absolute top-full left-0 w-full border-b border-surface-800/60 bg-surface-950/95 backdrop-blur-md overflow-hidden transition-all duration-300 ease-out shadow-2xl ${
+          mobileOpen ? 'max-h-80 opacity-100 border-t border-surface-800/60' : 'max-h-0 opacity-0 border-t-transparent'
         }`}
       >
         <div className="px-4 py-3 space-y-1">
