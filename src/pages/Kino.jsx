@@ -21,7 +21,6 @@ function sortKinoMovies(movies, sortBy) {
 
 function Kino() {
   const { data, isLoading, error } = useNowPlaying()
-  const nowPlayingIds = data?.ids
   const [searchParams, setSearchParams] = useSearchParams()
   const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || 'recommended')
 
@@ -80,7 +79,7 @@ function Kino() {
       ) : movies.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
           {movies.map((media, i) => (
-            <MediaCard key={media.id} media={media} index={i} eager nowPlayingIds={nowPlayingIds} />
+            <MediaCard key={media.id} media={media} index={i} eager />
           ))}
         </div>
       ) : (

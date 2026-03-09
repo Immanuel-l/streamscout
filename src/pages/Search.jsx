@@ -5,7 +5,6 @@ import { searchMulti, searchMovies, searchTv } from '../api/common'
 import { getMovieProviders } from '../api/movies'
 import { getTvProviders } from '../api/tv'
 import { useDebounce } from '../hooks/useDebounce'
-import { useNowPlaying } from '../hooks/useMovies'
 import { ALLOWED_PROVIDER_SET } from '../utils/providers'
 import SearchBar from '../components/search/SearchBar'
 import MediaCard from '../components/common/MediaCard'
@@ -25,8 +24,6 @@ function Search() {
   const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || 'relevance')
   const [onlyStreamable, setOnlyStreamable] = useState(() => searchParams.get('streamable') === 'true')
   const debouncedQuery = useDebounce(query, 300)
-  const { data: nowPlayingData } = useNowPlaying()
-  const nowPlayingIds = nowPlayingData?.ids
 
   // Sync state to URL params (replace to avoid history spam)
   useEffect(() => {
@@ -238,7 +235,6 @@ function Search() {
                 index={i}
                 eager
                 animate={i < firstPageCount}
-                nowPlayingIds={nowPlayingIds}
               />
             ))}
 

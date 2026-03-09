@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useWatchlist } from '../hooks/useWatchlist'
 import { useToast } from '../components/common/useToast'
-import { posterUrl } from '../api/tmdb'
+import MediaCard from '../components/common/MediaCard'
 
 const tabs = [
   { key: 'all', label: 'Alle' },
@@ -10,53 +10,29 @@ const tabs = [
   { key: 'tv', label: 'Serien' },
 ]
 
-function WatchlistCard({ item, index = 0, onRemove }) {
-  const title = item.title || item.name
-  const poster = posterUrl(item.poster_path, 'w342')
-  const linkPath = item.media_type === 'tv' ? `/tv/${item.id}` : `/movie/${item.id}`
-
+function WatchlistCard({ item, index, onRemove }) {
   return (
-    <div
-      className="group relative animate-fade-in"
-      style={{ animationDelay: `${(index % 20) * 50}ms` }}
-    >
-      <Link to={linkPath}>
-        <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-surface-800">
-          {poster ? (
-            <img
-              src={poster}
-              alt={title}
-              loading="lazy"
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-surface-500">
-              <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
-              </svg>
-            </div>
-          )}
-
-          <span className="absolute top-2 left-2 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-surface-900/80 text-accent-400 backdrop-blur-sm">
-            {item.media_type === 'tv' ? 'Serie' : 'Film'}
-          </span>
-        </div>
-      </Link>
-
-      {/* Remove button */}
+    <div className="group/wl relative">
+      <MediaCard
+        media={{ ...item, media_type: item.media_type || 'movie' }}
+        index={index}
+        eager={index < 12}
+        hideWatchlistButton={true}
+      />
+      {/* Remove button — always visible, top-right */}
       <button
-        onClick={() => onRemove(item.id, item.media_type)}
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          onRemove(item.id, item.media_type)
+        }}
         title="Von Merkliste entfernen"
-        className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/80"
+        className="absolute top-2 right-2 z-20 w-7 h-7 flex items-center justify-center rounded-full bg-black/60 text-white/70 hover:bg-red-500/90 hover:text-white transition-colors backdrop-blur-sm cursor-pointer"
       >
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
-
-      <div className="mt-2 px-1">
-        <p className="text-surface-200 text-sm font-medium leading-tight line-clamp-1">{title}</p>
-      </div>
     </div>
   )
 }

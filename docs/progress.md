@@ -33,20 +33,13 @@
 - [x] Schritt 28: Tests und CI hinzugefügt
 - [x] Schritt 29: Loading und Error Handling poliert
 - [x] Schritt 30: SEO, PWA und Präsentation nach außen
+- [x] Schritt 31: PWA Icons und Social-Preview-Bilder hinzugefügt
+- [x] Schritt 32: Watchlist Cards verbessert
 
 ## Offen
-
-Merkliste Cards passen nicht zum restlichen Projekt
 
 Watchlist mit Export oder Account-Sync, weil sie aktuell nur lokal im Browser lebt.
 
 Personalisierte Empfehlungen, zum Beispiel „Weil du X auf deiner Merkliste hast“, das passt gut zu deiner Watchlist und den vorhandenen Similar-Hooks.
 
 Provider-Fokus auf der Watchlist, also „Was auf meiner Merkliste läuft gerade bei Netflix, Disney+ oder WOW?“, das würde den praktischen Nutzen stark erhöhen.
-
-Was noch fehlt für eine vollständig installierbare PWA:
-
-- PNG Icons (192x192 + 512x512) — Chrome verlangt PNGs für den Install-Prompt. Du kannst die aus dem SVG generieren (z.B. auf realfavicongenerator.net oder mit sharp in Node)
-- og:image / twitter:image — Ein Screenshot oder Social-Preview-Bild. Ohne das zeigen Social-Media-Plattformen nur Text beim Teilen
-
-Generiere die PNG-Icons (braucht eine zusätzliche npm-Dependency wie sharp) und die README mit Screenshots/Feature-Highlights aufhübschen?

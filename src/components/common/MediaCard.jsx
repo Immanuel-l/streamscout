@@ -5,11 +5,12 @@ import { posterUrl, IMAGE_BASE } from '../../api/tmdb'
 import { getMovieProviders } from '../../api/movies'
 import { getTvProviders } from '../../api/tv'
 import { ALLOWED_PROVIDER_SET } from '../../utils/providers'
+import { useNowPlaying } from '../../hooks/useMovies'
 import WatchlistButton from './WatchlistButton'
 
 const typeLabels = { movie: 'Film', tv: 'Serie' }
 
-function MediaCard({ media, index = 0, eager = false, animate = true, nowPlayingIds }) {
+function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchlistButton = false }) {
   const [hovered, setHovered] = useState(false)
 
   const title = media.title || media.name
@@ -26,8 +27,9 @@ function MediaCard({ media, index = 0, eager = false, animate = true, nowPlaying
         ? 'bg-amber-500/90 text-white'
         : 'bg-red-500/90 text-white'
 
-  // "Im Kino" — based on TMDB now_playing endpoint (reliable, curated list)
-  const isInCinema = type === 'movie' && nowPlayingIds?.has(media.id)
+  // "Im Kino" — based on TMDB now_playing endpoint via cached React Query
+  const { data: nowPlayingData } = useNowPlaying()
+  const isInCinema = type === 'movie' && nowPlayingData?.ids?.has(media.id)
 
   // Fetch providers on hover (lazy to reduce API load)
   const { data: providerData, isSuccess: providersLoaded, isError: providersErrored } = useQuery({
@@ -95,9 +97,11 @@ function MediaCard({ media, index = 0, eager = false, animate = true, nowPlaying
 
         {/* Hover Overlay — cinematic spotlight */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-between p-3 sm:p-4">
-          {/* Top: Watchlist button */}
+          {/* Top: Watchlist button (if not hidden) */}
           <div className="flex justify-end">
-            <WatchlistButton media={{ ...media, media_type: type }} size="lg" />
+            {!hideWatchlistButton && (
+              <WatchlistButton media={{ ...media, media_type: type }} size="lg" />
+            )}
           </div>
 
           {/* Bottom: Title, meta, providers */}
