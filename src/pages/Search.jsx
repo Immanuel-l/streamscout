@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useQuery, useQueries } from '@tanstack/react-query'
+import { useInfiniteQuery, useQueries } from '@tanstack/react-query'
 import { searchMulti, searchMovies, searchTv } from '../api/common'
 import { getMovieProviders } from '../api/movies'
 import { getTvProviders } from '../api/tv'
@@ -38,31 +38,63 @@ function Search() {
     setSearchParams(params, { replace: true })
   }, [debouncedQuery, mediaType, sortBy, onlyStreamable, setSearchParams])
 
-  const { data: rawResults, isLoading, error } = useQuery({
+  const {
+    data,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['search', debouncedQuery, mediaType],
-    queryFn: () => searchFns[mediaType](debouncedQuery),
-    enabled: debouncedQuery.length >= 2,
-    select: (data) => {
-      let results = mediaType === 'all'
-        ? data.results.filter((r) => r.media_type === 'movie' || r.media_type === 'tv')
-        : data.results.map((r) => ({ ...r, media_type: mediaType }))
-      return results.filter((r) => r.poster_path && r.overview)
+    queryFn: ({ pageParam = 1 }) => searchFns[mediaType](debouncedQuery, pageParam),
+    getNextPageParam: (lastPage) => {
+      const next = lastPage.page + 1
+      return next <= Math.min(lastPage.total_pages, 500) ? next : undefined
     },
+    initialPageParam: 1,
+    enabled: debouncedQuery.length >= 2,
+    retry: 1,
   })
 
-  // Fetch providers for all results (deduplicates with MediaCard's checkAvailability)
+  const firstPageCount = data?.pages[0]?.results.length || 0
+  const totalResults = data?.pages[0]?.total_results || 0
+
+  const rawResults = useMemo(() => {
+    if (!data) return []
+    return data.pages.flatMap((page) => {
+      let results = mediaType === 'all'
+        ? page.results.filter((r) => r.media_type === 'movie' || r.media_type === 'tv')
+        : page.results.map((r) => ({ ...r, media_type: mediaType }))
+      return results.filter((r) => r.poster_path && r.overview)
+    })
+  }, [data, mediaType])
+
+  // Suggestions for autocomplete (first 5 from first page)
+  const suggestions = useMemo(() => {
+    if (!data?.pages[0]) return []
+    const page = data.pages[0].results
+    const items = mediaType === 'all'
+      ? page.filter((r) => r.media_type === 'movie' || r.media_type === 'tv')
+      : page.map((r) => ({ ...r, media_type: mediaType }))
+    return items.slice(0, 5)
+  }, [data, mediaType])
+
+  // Fetch providers only when streamable filter is active
   const providerQueries = useQueries({
     queries: (rawResults || []).map((media) => ({
       queryKey: [media.media_type, media.id, 'providers'],
       queryFn: () => media.media_type === 'tv' ? getTvProviders(media.id) : getMovieProviders(media.id),
       staleTime: 24 * 60 * 60 * 1000,
+      enabled: onlyStreamable,
     })),
   })
 
-  const providersLoading = onlyStreamable && providerQueries.some((q) => q.isLoading)
+  const isInitialLoad = !data || data.pages.length <= 1
+  const providersLoading = onlyStreamable && isInitialLoad && rawResults.length > 0 && providerQueries.some((q) => q.isLoading)
 
   const results = useMemo(() => {
-    if (!rawResults) return []
+    if (!rawResults.length) return []
     let filtered = [...rawResults]
 
     // Streamable filter (flatrate only)
@@ -85,16 +117,44 @@ function Search() {
     return filtered
   }, [rawResults, sortBy, onlyStreamable, providerQueries])
 
+  // Infinite scroll — IntersectionObserver (same pattern as Discover)
+  const fetchRef = useRef(fetchNextPage)
+  const hasNextRef = useRef(hasNextPage)
+  const isFetchingRef = useRef(isFetchingNextPage)
+  fetchRef.current = fetchNextPage
+  hasNextRef.current = hasNextPage
+  isFetchingRef.current = isFetchingNextPage
+
+  const observerRef = useRef(null)
+  const sentinelRef = useCallback((node) => {
+    if (observerRef.current) {
+      observerRef.current.disconnect()
+      observerRef.current = null
+    }
+    if (node) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasNextRef.current && !isFetchingRef.current) {
+            fetchRef.current()
+          }
+        },
+        { rootMargin: '600px' }
+      )
+      observer.observe(node)
+      observerRef.current = observer
+    }
+  }, [])
+
   const hasQuery = debouncedQuery.length >= 2
   const hasResults = results.length > 0
-  const noResults = hasQuery && !isLoading && !error && rawResults?.length === 0
-  const allFilteredOut = hasQuery && !isLoading && rawResults?.length > 0 && results.length === 0 && !providersLoading
+  const noResults = hasQuery && !isLoading && !error && data && rawResults.length === 0
+  const allFilteredOut = hasQuery && !isLoading && rawResults.length > 0 && results.length === 0 && !providersLoading
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="font-display text-5xl tracking-wide text-white mb-6">Suche</h1>
-        <SearchBar value={query} onChange={setQuery} suggestions={rawResults?.slice(0, 5) || []} />
+        <SearchBar value={query} onChange={setQuery} suggestions={suggestions} />
       </div>
 
       {/* Filter controls */}
@@ -153,6 +213,12 @@ function Search() {
               </button>
             ))}
           </div>
+
+          {totalResults > 0 && !isLoading && (
+            <span className="text-surface-400 text-sm ml-auto">
+              {totalResults.toLocaleString('de-DE')} Ergebnisse
+            </span>
+          )}
         </div>
       )}
 
@@ -161,11 +227,46 @@ function Search() {
       {(hasQuery && isLoading) || providersLoading ? <GridSkeleton count={12} /> : null}
 
       {hasResults && !providersLoading && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
-          {results.map((media, i) => (
-            <MediaCard key={`${media.media_type}-${media.id}`} media={media} index={i} checkAvailability nowPlayingIds={nowPlayingIds} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
+            {results.map((media, i) => (
+              <MediaCard
+                key={`${media.media_type}-${media.id}`}
+                media={media}
+                index={i}
+                eager
+                animate={i < firstPageCount}
+                checkAvailability
+                nowPlayingIds={nowPlayingIds}
+              />
+            ))}
+
+            {/* Inline skeleton placeholders while fetching next page */}
+            {isFetchingNextPage && Array.from({ length: 12 }).map((_, i) => (
+              <div key={`skel-${i}`}>
+                <div className="aspect-[2/3] rounded-xl bg-surface-800 animate-pulse" />
+                <div className="mt-2 px-1 space-y-1.5">
+                  <div className="h-4 bg-surface-800 rounded animate-pulse w-3/4" />
+                  <div className="h-3 bg-surface-800 rounded animate-pulse w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Sentinel triggers next fetch when scrolled near */}
+          <div ref={sentinelRef} className="h-px" />
+
+          {/* Error on page load — show retry */}
+          {error && rawResults.length > 0 && !isFetchingNextPage && (
+            <div className="py-8 max-w-md mx-auto">
+              <ErrorBox message="Fehler beim Laden weiterer Ergebnisse." onRetry={() => fetchNextPage()} />
+            </div>
+          )}
+
+          {!hasNextPage && results.length > 20 && (
+            <p className="text-surface-500 text-sm text-center py-8">Keine weiteren Ergebnisse.</p>
+          )}
+        </>
       )}
 
       {noResults && (

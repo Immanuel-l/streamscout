@@ -9,6 +9,7 @@ function SearchBar({ value, onChange, suggestions = [] }) {
   const wrapperRef = useRef(null)
   const focusedRef = useRef(true)
   const [open, setOpen] = useState(false)
+  const [highlighted, setHighlighted] = useState(-1)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -31,12 +32,38 @@ function SearchBar({ value, onChange, suggestions = [] }) {
     if (focusedRef.current) {
       setOpen(suggestions.length > 0)
     }
+    setHighlighted(-1)
   }, [suggestions])
 
   function goTo(item) {
     const path = item.media_type === 'tv' ? `/tv/${item.id}` : `/movie/${item.id}`
     setOpen(false)
     navigate(path)
+  }
+
+  function handleKeyDown(e) {
+    if (!open || suggestions.length === 0) return
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        setHighlighted((prev) => (prev + 1) % suggestions.length)
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        setHighlighted((prev) => (prev <= 0 ? suggestions.length - 1 : prev - 1))
+        break
+      case 'Enter':
+        if (highlighted >= 0) {
+          e.preventDefault()
+          goTo(suggestions[highlighted])
+        }
+        break
+      case 'Escape':
+        setOpen(false)
+        setHighlighted(-1)
+        break
+    }
   }
 
   return (
@@ -57,7 +84,11 @@ function SearchBar({ value, onChange, suggestions = [] }) {
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => { focusedRef.current = true; suggestions.length > 0 && setOpen(true) }}
         onBlur={() => { focusedRef.current = false }}
+        onKeyDown={handleKeyDown}
         placeholder="Film oder Serie suchen..."
+        role="combobox"
+        aria-expanded={open && suggestions.length > 0}
+        aria-autocomplete="list"
         className="w-full pl-12 pr-4 py-4 rounded-xl bg-surface-800/80 border border-surface-700 text-white placeholder-surface-400 text-lg focus:outline-none focus:border-accent-500/60 focus:ring-1 focus:ring-accent-500/30 shadow-none focus:shadow-[0_0_30px_-6px_rgba(245,158,11,0.12)] transition-all duration-300"
       />
       {value && (
@@ -74,8 +105,11 @@ function SearchBar({ value, onChange, suggestions = [] }) {
 
       {/* Autocomplete Dropdown */}
       {open && suggestions.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-2 rounded-xl bg-surface-800/95 backdrop-blur-lg border border-surface-700/60 shadow-2xl shadow-black/60 overflow-hidden z-50">
-          {suggestions.map((item) => {
+        <div
+          className="absolute left-0 right-0 top-full mt-2 rounded-xl bg-surface-800/95 backdrop-blur-lg border border-surface-700/60 shadow-2xl shadow-black/60 overflow-hidden z-50"
+          role="listbox"
+        >
+          {suggestions.map((item, index) => {
             const title = item.title || item.name
             const date = item.release_date || item.first_air_date
             const year = date ? new Date(date).getFullYear() : null
@@ -85,7 +119,12 @@ function SearchBar({ value, onChange, suggestions = [] }) {
               <button
                 key={`${item.media_type}-${item.id}`}
                 onClick={() => goTo(item)}
-                className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-surface-700/60 transition-colors"
+                onMouseEnter={() => setHighlighted(index)}
+                role="option"
+                aria-selected={index === highlighted}
+                className={`flex items-center gap-3 w-full px-4 py-3 text-left transition-colors ${
+                  index === highlighted ? 'bg-surface-700/60' : ''
+                }`}
               >
                 {poster ? (
                   <img
