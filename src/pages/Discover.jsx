@@ -1,6 +1,5 @@
-import { useMemo, useRef, useCallback } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { usePersistedState } from '../hooks/usePersistedState'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
@@ -30,13 +29,31 @@ const sortOptions = [
 ]
 
 function Discover() {
-  const [searchParams] = useSearchParams()
-  const [mediaType, setMediaType] = usePersistedState('discover.mediaType', () => searchParams.get('type') || 'movie')
-  const [sortBy, setSortBy] = usePersistedState('discover.sortBy', () => searchParams.get('sort') || 'popularity')
-  const [selectedGenres, setSelectedGenres] = usePersistedState('discover.genres', [])
-  const [year, setYear] = usePersistedState('discover.year', '')
-  const [rating, setRating] = usePersistedState('discover.rating', () => searchParams.get('rating') || '')
-  const [selectedProviders, setSelectedProviders] = usePersistedState('discover.providers', [])
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [mediaType, setMediaType] = useState(() => searchParams.get('type') || 'movie')
+  const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || 'popularity')
+  const [selectedGenres, setSelectedGenres] = useState(() => {
+    const g = searchParams.get('genres')
+    return g ? g.split(',').map(Number).filter(Boolean) : []
+  })
+  const [year, setYear] = useState(() => searchParams.get('year') || '')
+  const [rating, setRating] = useState(() => searchParams.get('rating') || '')
+  const [selectedProviders, setSelectedProviders] = useState(() => {
+    const p = searchParams.get('providers')
+    return p ? p.split(',').map(Number).filter(Boolean) : []
+  })
+
+  // Sync state to URL params
+  useEffect(() => {
+    const params = {}
+    if (mediaType !== 'movie') params.type = mediaType
+    if (sortBy !== 'popularity') params.sort = sortBy
+    if (selectedGenres.length > 0) params.genres = selectedGenres.join(',')
+    if (year) params.year = year
+    if (rating) params.rating = rating
+    if (selectedProviders.length > 0) params.providers = selectedProviders.join(',')
+    setSearchParams(params, { replace: true })
+  }, [mediaType, sortBy, selectedGenres, year, rating, selectedProviders, setSearchParams])
 
   const genres = useGenres(mediaType)
   const providers = useWatchProviders(mediaType)

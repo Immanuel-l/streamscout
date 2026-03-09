@@ -1,6 +1,5 @@
-import { useState, useCallback } from 'react'
-import { usePersistedState } from '../hooks/usePersistedState'
-import { Link } from 'react-router-dom'
+import { useState, useEffect, useCallback } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
 import { posterUrl, backdropUrl, IMAGE_BASE } from '../api/tmdb'
@@ -35,12 +34,28 @@ const eraOptions = [
 const MAX_RETRIES = 3
 
 function Random() {
-  const [mediaType, setMediaType] = usePersistedState('random.mediaType', 'movie')
-  const [genre, setGenre] = usePersistedState('random.genre', '')
-  const [rating, setRating] = usePersistedState('random.rating', '')
-  const [language, setLanguage] = usePersistedState('random.language', 'de|en')
-  const [era, setEra] = usePersistedState('random.era', '')
-  const [selectedProviders, setSelectedProviders] = usePersistedState('random.providers', [])
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [mediaType, setMediaType] = useState(() => searchParams.get('type') || 'movie')
+  const [genre, setGenre] = useState(() => searchParams.get('genre') || '')
+  const [rating, setRating] = useState(() => searchParams.get('rating') || '')
+  const [language, setLanguage] = useState(() => searchParams.get('lang') || 'de|en')
+  const [era, setEra] = useState(() => searchParams.get('era') || '')
+  const [selectedProviders, setSelectedProviders] = useState(() => {
+    const p = searchParams.get('providers')
+    return p ? p.split(',').map(Number).filter(Boolean) : []
+  })
+
+  // Sync state to URL params
+  useEffect(() => {
+    const params = {}
+    if (mediaType !== 'movie') params.type = mediaType
+    if (genre) params.genre = genre
+    if (rating) params.rating = rating
+    if (language !== 'de|en') params.lang = language
+    if (era) params.era = era
+    if (selectedProviders.length > 0) params.providers = selectedProviders.join(',')
+    setSearchParams(params, { replace: true })
+  }, [mediaType, genre, rating, language, era, selectedProviders, setSearchParams])
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)

@@ -1,6 +1,5 @@
-import { useState, useMemo, useRef, useCallback } from 'react'
-import { usePersistedState } from '../hooks/usePersistedState'
-import { useParams, Navigate, Link } from 'react-router-dom'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { useParams, useSearchParams, Navigate, Link } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
@@ -18,9 +17,18 @@ const sortOptions = [
 function Mood() {
   const { slug } = useParams()
   const mood = getMoodBySlug(slug)
-  const [mediaType, setMediaType] = usePersistedState(`mood.${slug}.mediaType`, 'movie')
-  const [sortValue, setSortValue] = usePersistedState(`mood.${slug}.sortBy`, 'popularity')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [mediaType, setMediaType] = useState(() => searchParams.get('type') || 'movie')
+  const [sortValue, setSortValue] = useState(() => searchParams.get('sort') || 'popularity')
   const [startPage, setStartPage] = useState(1)
+
+  // Sync state to URL params
+  useEffect(() => {
+    const params = {}
+    if (mediaType !== 'movie') params.type = mediaType
+    if (sortValue !== 'popularity') params.sort = sortValue
+    setSearchParams(params, { replace: true })
+  }, [mediaType, sortValue, setSearchParams])
 
   const params = mood?.[mediaType] || {}
   const sortOption = sortOptions.find((o) => o.value === sortValue) || sortOptions[0]

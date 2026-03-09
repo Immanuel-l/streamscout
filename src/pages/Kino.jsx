@@ -1,7 +1,6 @@
-import { useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useMemo, useEffect } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useNowPlaying } from '../hooks/useMovies'
-import { usePersistedState } from '../hooks/usePersistedState'
 import MediaCard from '../components/common/MediaCard'
 import GridSkeleton from '../components/common/GridSkeleton'
 import ErrorBox from '../components/common/ErrorBox'
@@ -24,7 +23,15 @@ function Kino() {
   const { data, isLoading, error } = useNowPlaying()
   const rawMovies = data?.movies || []
   const nowPlayingIds = data?.ids
-  const [sortBy, setSortBy] = usePersistedState('kino.sortBy', 'recommended')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || 'recommended')
+
+  // Sync state to URL params
+  useEffect(() => {
+    const params = {}
+    if (sortBy !== 'recommended') params.sort = sortBy
+    setSearchParams(params, { replace: true })
+  }, [sortBy, setSearchParams])
 
   const movies = useMemo(() => sortKinoMovies(rawMovies, sortBy), [rawMovies, sortBy])
 
