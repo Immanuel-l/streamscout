@@ -137,8 +137,6 @@ function MovieDetail() {
                     <div key={i} className="w-10 h-10 rounded-full bg-surface-800 animate-pulse" />
                   ))}
                 </div>
-              ) : providers.error ? (
-                <p className="text-surface-500 text-sm">Streaming-Infos konnten nicht geladen werden.</p>
               ) : (
                 <ProviderList providers={providers.data} />
               )}

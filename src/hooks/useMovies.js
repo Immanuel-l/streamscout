@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import { discoverMovies, getMovieDetails, getMovieProviders, getMovieSimilar, getMovieRecommendations, getNowPlayingMovies, getMovieReleaseDates } from '../api/movies'
+import { discoverMovies, getMovieDetails, getMovieProviders, getMovieSimilar, getMovieRecommendations, getNowPlayingMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
 
 export function useTrendingAll() {
@@ -136,25 +136,11 @@ export function useNowPlaying() {
         return true
       })
 
-      // Deutsche Kinostart-Daten parallel holen
-      const releaseDates = await Promise.all(
-        unique.map((m) =>
-          getMovieReleaseDates(m.id)
-            .then((results) => {
-              const de = results?.find((r) => r.iso_3166_1 === 'DE')
-              const theatrical = de?.release_dates?.find((d) => d.type === 3)
-              return { id: m.id, deDate: theatrical?.release_date || m.release_date }
-            })
-            .catch(() => ({ id: m.id, deDate: m.release_date }))
-        )
-      )
-      const dateMap = Object.fromEntries(releaseDates.map((r) => [r.id, r.deDate]))
-
       return {
         ids: new Set(unique.map((m) => m.id)),
         movies: unique
           .filter((m) => m.poster_path && m.overview)
-          .sort((a, b) => (dateMap[b.id] || '').localeCompare(dateMap[a.id] || ''))
+          .sort((a, b) => (b.release_date || '').localeCompare(a.release_date || ''))
           .map((m) => ({ ...m, media_type: 'movie' })),
       }
     },

@@ -236,7 +236,6 @@ function Search() {
                 index={i}
                 eager
                 animate={i < firstPageCount}
-                checkAvailability
                 nowPlayingIds={nowPlayingIds}
               />
             ))}

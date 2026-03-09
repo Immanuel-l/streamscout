@@ -12,13 +12,13 @@ const sectionLabels = {
 const sectionOrder = ['flatrate', 'rent', 'buy']
 
 function ProviderList({ providers }) {
-  if (!providers) return null
-
   // Filter each section to only allowed providers
   const filtered = {}
-  for (const key of sectionOrder) {
-    if (providers[key]) {
-      filtered[key] = providers[key].filter((p) => ALLOWED_PROVIDER_SET.has(p.provider_id))
+  if (providers) {
+    for (const key of sectionOrder) {
+      if (providers[key]) {
+        filtered[key] = providers[key].filter((p) => ALLOWED_PROVIDER_SET.has(p.provider_id))
+      }
     }
   }
 
@@ -26,9 +26,15 @@ function ProviderList({ providers }) {
 
   if (sections.length === 0) {
     return (
-      <p className="text-surface-400 text-sm">
-        Keine Streaming-Infos für Deutschland verfügbar.
-      </p>
+      <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-surface-800/60 border border-surface-700/40 max-w-md">
+        <svg className="w-5 h-5 text-surface-400 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+        </svg>
+        <div>
+          <p className="text-surface-300 text-sm font-medium">Bei unseren Anbietern nicht verfügbar</p>
+          <p className="text-surface-500 text-xs mt-0.5">Aktuell bei keinem unserer Streaming-Dienste im Abo enthalten.</p>
+        </div>
+      </div>
     )
   }
 

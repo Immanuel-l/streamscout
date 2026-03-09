@@ -9,7 +9,7 @@ import WatchlistButton from './WatchlistButton'
 
 const typeLabels = { movie: 'Film', tv: 'Serie' }
 
-function MediaCard({ media, index = 0, eager = false, animate = true, checkAvailability = false, nowPlayingIds }) {
+function MediaCard({ media, index = 0, eager = false, animate = true, nowPlayingIds }) {
   const [hovered, setHovered] = useState(false)
 
   const title = media.title || media.name
@@ -29,11 +29,11 @@ function MediaCard({ media, index = 0, eager = false, animate = true, checkAvail
   // "Im Kino" — based on TMDB now_playing endpoint (reliable, curated list)
   const isInCinema = type === 'movie' && nowPlayingIds?.has(media.id)
 
-  // Fetch providers on hover, or eagerly when checkAvailability is set (search results)
+  // Fetch providers on hover (lazy to reduce API load)
   const { data: providerData, isSuccess: providersLoaded, isError: providersErrored } = useQuery({
     queryKey: [type, media.id, 'providers'],
     queryFn: () => (type === 'tv' ? getTvProviders(media.id) : getMovieProviders(media.id)),
-    enabled: hovered || checkAvailability,
+    enabled: hovered,
     staleTime: 24 * 60 * 60 * 1000,
   })
 
@@ -45,7 +45,7 @@ function MediaCard({ media, index = 0, eager = false, animate = true, checkAvail
   const hasAnyProvider = providerData && ['flatrate', 'rent', 'buy'].some(
     (key) => providerData[key]?.some((p) => ALLOWED_PROVIDER_SET.has(p.provider_id))
   )
-  const notStreamable = checkAvailability && (providersLoaded || providersErrored) && !hasAnyProvider && !isInCinema
+  const notStreamable = hovered && (providersLoaded || providersErrored) && !hasAnyProvider && !isInCinema
 
   return (
     <Link
