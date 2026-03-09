@@ -14,6 +14,7 @@ const Random = lazy(() => import('./pages/Random'))
 const Mood = lazy(() => import('./pages/Mood'))
 const Anime = lazy(() => import('./pages/Anime'))
 const Kino = lazy(() => import('./pages/Kino'))
+const PersonDetail = lazy(() => import('./pages/PersonDetail'))
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <Route path="discover" element={<Suspense fallback={<GridSkeleton />}><Discover /></Suspense>} />
         <Route path="movie/:id" element={<Suspense fallback={null}><MovieDetail /></Suspense>} />
         <Route path="tv/:id" element={<Suspense fallback={null}><TvDetail /></Suspense>} />
+        <Route path="person/:id" element={<Suspense fallback={null}><PersonDetail /></Suspense>} />
         <Route path="watchlist" element={<Suspense fallback={null}><Watchlist /></Suspense>} />
         <Route path="random" element={<Suspense fallback={null}><Random /></Suspense>} />
         <Route path="mood/:slug" element={<Suspense fallback={<GridSkeleton />}><Mood /></Suspense>} />

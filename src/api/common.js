@@ -23,3 +23,9 @@ export const getMovieWatchProviders = () =>
 
 export const getTvWatchProviders = () =>
   tmdb.get('/watch/providers/tv', { params: { watch_region: 'DE' } }).then((res) => res.data.results)
+
+export const getPersonDetails = (id) =>
+  tmdb.get(`/person/${id}`).then((res) => res.data)
+
+export const getPersonCombinedCredits = (id) =>
+  tmdb.get(`/person/${id}/combined_credits`).then((res) => res.data)

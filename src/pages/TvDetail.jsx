@@ -7,6 +7,8 @@ import RatingRing from '../components/detail/RatingRing'
 import ProviderList from '../components/detail/ProviderList'
 import MediaRow from '../components/common/MediaRow'
 import WatchlistButton from '../components/common/WatchlistButton'
+import CastList from '../components/detail/CastList'
+import TrailerSection from '../components/detail/TrailerSection'
 import ErrorBox from '../components/common/ErrorBox'
 
 const statusMap = {
@@ -310,6 +312,20 @@ function TvDetail() {
           </div>
         </div>
       </div>
+
+      {/* Cast */}
+      {show.credits?.cast?.length > 0 && (
+        <div className="mt-14">
+          <CastList cast={show.credits.cast} />
+        </div>
+      )}
+
+      {/* Trailer */}
+      {show.videos?.results?.length > 0 && (
+        <div className="mt-14">
+          <TrailerSection videos={show.videos.results} />
+        </div>
+      )}
 
       {/* Seasons */}
       <div className="mt-14">

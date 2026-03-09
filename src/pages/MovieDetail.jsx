@@ -6,6 +6,8 @@ import RatingRing from '../components/detail/RatingRing'
 import ProviderList from '../components/detail/ProviderList'
 import MediaRow from '../components/common/MediaRow'
 import WatchlistButton from '../components/common/WatchlistButton'
+import CastList from '../components/detail/CastList'
+import TrailerSection from '../components/detail/TrailerSection'
 import ErrorBox from '../components/common/ErrorBox'
 
 function MovieDetail() {
@@ -144,6 +146,20 @@ function MovieDetail() {
           )}
         </div>
       </div>
+
+      {/* Cast */}
+      {movie.credits?.cast?.length > 0 && (
+        <div className="mt-14">
+          <CastList cast={movie.credits.cast} />
+        </div>
+      )}
+
+      {/* Trailer */}
+      {movie.videos?.results?.length > 0 && (
+        <div className="mt-14">
+          <TrailerSection videos={movie.videos.results} />
+        </div>
+      )}
 
       {(similar.isLoading || similar.data?.length > 0) && (
         <div className="mt-14">
