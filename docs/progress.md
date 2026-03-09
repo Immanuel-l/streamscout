@@ -39,8 +39,8 @@
 - [x] Schritt 34: Watchlist mit Provider Filterung
 - [x] Schritt 35: Crunchyroll zu den Providern hinzugefügt
 - [x] Schritt 36: Personalisierte Watchlist-Empfehlungen auf der Startseite und Watchlist-Seite (nur streambare Inhalte)
+- [x] Schritt 37: Streaming-Provider auf mobilen Geräten
 
 ## Offen
 
 - Weitere Features nach Bedarf.
-- Da hover ja nicht auf mobilen funktioniert, wie machen wir das mit den Streaming-Providern und der Watchlist hinzufügen?

@@ -12,6 +12,7 @@ const typeLabels = { movie: 'Film', tv: 'Serie' }
 
 function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchlistButton = false }) {
   const [hovered, setHovered] = useState(false)
+  const isTouch = typeof window !== 'undefined' && window.matchMedia('(hover: none) and (pointer: coarse)').matches
 
   const title = media.title || media.name
   const date = media.release_date || media.first_air_date
@@ -35,7 +36,7 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
   const { data: providerData, isSuccess: providersLoaded, isError: providersErrored } = useQuery({
     queryKey: [type, media.id, 'providers'],
     queryFn: () => (type === 'tv' ? getTvProviders(media.id) : getMovieProviders(media.id)),
-    enabled: hovered,
+    enabled: hovered || isTouch,
     staleTime: 24 * 60 * 60 * 1000,
   })
 
@@ -94,6 +95,20 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
             {typeLabels[type]}
           </span>
         ) : null}
+
+        {/* Mobile Provider Logos (Permanent, Bottom Right, Only on touch devices) */}
+        {isTouch && providers.length > 0 && (
+          <div className="absolute bottom-2 right-2 z-10 flex gap-1 bg-surface-900/80 p-1 rounded backdrop-blur-sm transition-opacity duration-300 group-hover:opacity-0">
+            {providers.slice(0, 2).map((p) => (
+              <img
+                key={p.provider_id}
+                src={`${IMAGE_BASE}/w45${p.logo_path}`}
+                alt={p.provider_name}
+                className="w-5 h-5 rounded-sm object-cover"
+              />
+            ))}
+          </div>
+        )}
 
         {/* Hover Overlay — cinematic spotlight */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-between p-3 sm:p-4">
