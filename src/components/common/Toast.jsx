@@ -1,11 +1,6 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-
-const ToastContext = createContext(null)
-
-export function useToast() {
-  return useContext(ToastContext)
-}
+import { ToastContext } from './useToast'
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([])

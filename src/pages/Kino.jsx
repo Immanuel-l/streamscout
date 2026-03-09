@@ -21,7 +21,6 @@ function sortKinoMovies(movies, sortBy) {
 
 function Kino() {
   const { data, isLoading, error } = useNowPlaying()
-  const rawMovies = data?.movies || []
   const nowPlayingIds = data?.ids
   const [searchParams, setSearchParams] = useSearchParams()
   const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || 'recommended')
@@ -33,7 +32,10 @@ function Kino() {
     setSearchParams(params, { replace: true })
   }, [sortBy, setSearchParams])
 
-  const movies = useMemo(() => sortKinoMovies(rawMovies, sortBy), [rawMovies, sortBy])
+  const movies = useMemo(() => {
+    const rawMovies = data?.movies || []
+    return sortKinoMovies(rawMovies, sortBy)
+  }, [data?.movies, sortBy])
 
   return (
     <div className="space-y-8">

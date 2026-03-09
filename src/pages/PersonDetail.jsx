@@ -22,6 +22,11 @@ const departmentMap = {
   'Editing': 'Schnitt',
 }
 
+function calcAge(birthday, deathday) {
+  const end = deathday ? new Date(deathday) : new Date()
+  return Math.floor((end - new Date(birthday)) / 31557600000)
+}
+
 function PersonDetail() {
   const { id } = useParams()
   const { data: person, isLoading, error } = usePersonDetails(id)
@@ -32,8 +37,9 @@ function PersonDetail() {
   if (!person) return null
 
   const age = person.birthday
-    ? Math.floor((new Date(person.deathday || Date.now()) - new Date(person.birthday)) / 31557600000)
+    ? calcAge(person.birthday, person.deathday)
     : null
+
   const birthday = person.birthday
     ? new Date(person.birthday).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })
     : null

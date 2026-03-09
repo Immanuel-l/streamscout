@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import { discoverMovies, getMovieDetails, getMovieProviders, getMovieSimilar, getMovieRecommendations, getNowPlayingMovies } from '../api/movies'
+import { discoverMovies, getMovieDetails, getMovieProviders, getMovieRecommendations, getNowPlayingMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
 
 export function useTrendingAll() {

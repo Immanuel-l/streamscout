@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useWatchlist } from '../hooks/useWatchlist'
-import { useToast } from '../components/common/Toast'
+import { useToast } from '../components/common/useToast'
 import { posterUrl } from '../api/tmdb'
 
 const tabs = [

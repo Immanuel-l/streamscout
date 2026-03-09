@@ -121,9 +121,11 @@ function Search() {
   const fetchRef = useRef(fetchNextPage)
   const hasNextRef = useRef(hasNextPage)
   const isFetchingRef = useRef(isFetchingNextPage)
-  fetchRef.current = fetchNextPage
-  hasNextRef.current = hasNextPage
-  isFetchingRef.current = isFetchingNextPage
+  useEffect(() => {
+    fetchRef.current = fetchNextPage
+    hasNextRef.current = hasNextPage
+    isFetchingRef.current = isFetchingNextPage
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
 
   const observerRef = useRef(null)
   const sentinelRef = useCallback((node) => {

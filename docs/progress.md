@@ -35,7 +35,15 @@
 
 ## Offen
 
+CI failed auf github
+
 Merkliste Cards passen nicht zum restlichen Projekt
+
+Watchlist mit Export oder Account-Sync, weil sie aktuell nur lokal im Browser lebt.
+
+Personalisierte Empfehlungen, zum Beispiel „Weil du X auf deiner Merkliste hast“, das passt gut zu deiner Watchlist und den vorhandenen Similar-Hooks. 
+
+Provider-Fokus auf der Watchlist, also „Was auf meiner Merkliste läuft gerade bei Netflix, Disney+ oder WOW?“, das würde den praktischen Nutzen stark erhöhen.
 
  Was noch fehlt für eine vollständig installierbare PWA:
   - PNG Icons (192x192 + 512x512) — Chrome verlangt PNGs für den Install-Prompt. Du kannst die aus dem SVG generieren (z.B. auf realfavicongenerator.net oder mit sharp in Node)

@@ -1,5 +1,5 @@
 import { useWatchlist } from '../../hooks/useWatchlist'
-import { useToast } from './Toast'
+import { useToast } from './useToast'
 
 function WatchlistButton({ media, size = 'sm' }) {
   const { toggle, isInWatchlist } = useWatchlist()

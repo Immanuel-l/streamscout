@@ -28,10 +28,7 @@ function CastList({ cast }) {
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
 
-  if (!cast || cast.length === 0) return null
-
-  const visible = cast.filter((c) => c.profile_path).slice(0, 20)
-  if (visible.length === 0) return null
+  const visible = (cast || []).filter((c) => c.profile_path).slice(0, 20)
 
   const checkScroll = useCallback(() => {
     const el = scrollRef.current
@@ -52,6 +49,8 @@ function CastList({ cast }) {
       ro.disconnect()
     }
   }, [checkScroll])
+
+  if (visible.length === 0) return null
 
   function scroll(direction) {
     const el = scrollRef.current

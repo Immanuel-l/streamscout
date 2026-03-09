@@ -5,14 +5,14 @@ export function usePersistedState(key, defaultValue) {
     try {
       const stored = sessionStorage.getItem(key)
       if (stored !== null) return JSON.parse(stored)
-    } catch {}
+    } catch { /* ignore */ }
     return typeof defaultValue === 'function' ? defaultValue() : defaultValue
   })
 
   useEffect(() => {
     try {
       sessionStorage.setItem(key, JSON.stringify(value))
-    } catch {}
+    } catch { /* ignore */ }
   }, [key, value])
 
   return [value, setValue]

@@ -28,11 +28,13 @@ function SearchBar({ value, onChange, suggestions = [] }) {
   }, [])
 
   // Open dropdown when suggestions arrive — only if input is focused
+  const suggestionsLenRef = useRef(suggestions.length)
   useEffect(() => {
+    suggestionsLenRef.current = suggestions.length
     if (focusedRef.current) {
-      setOpen(suggestions.length > 0)
+      queueMicrotask(() => setOpen(suggestionsLenRef.current > 0))
     }
-    setHighlighted(-1)
+    queueMicrotask(() => setHighlighted(-1))
   }, [suggestions])
 
   function goTo(item) {

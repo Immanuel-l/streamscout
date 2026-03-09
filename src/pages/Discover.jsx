@@ -114,9 +114,11 @@ function Discover() {
   const fetchRef = useRef(fetchNextPage)
   const hasNextRef = useRef(hasNextPage)
   const isFetchingRef = useRef(isFetchingNextPage)
-  fetchRef.current = fetchNextPage
-  hasNextRef.current = hasNextPage
-  isFetchingRef.current = isFetchingNextPage
+  useEffect(() => {
+    fetchRef.current = fetchNextPage
+    hasNextRef.current = hasNextPage
+    isFetchingRef.current = isFetchingNextPage
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
 
   // Callback ref — sets up/tears down observer when sentinel enters/leaves DOM
   const observerRef = useRef(null)

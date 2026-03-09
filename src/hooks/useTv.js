@@ -1,5 +1,5 @@
 import { useQuery, useQueries } from '@tanstack/react-query'
-import { discoverTv, getTvDetails, getTvProviders, getTvSimilar, getTvRecommendations, getTvSeason, getTvSeasonProviders } from '../api/tv'
+import { discoverTv, getTvDetails, getTvProviders, getTvRecommendations, getTvSeason, getTvSeasonProviders } from '../api/tv'
 
 export function usePopularTv() {
   return useQuery({
