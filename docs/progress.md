@@ -38,7 +38,8 @@
 - [x] Schritt 33: Watchlist jetzt durch link teilbar und importierbar
 - [x] Schritt 34: Watchlist mit Provider Filterung
 - [x] Schritt 35: Crunchyroll zu den Providern hinzugefügt
+- [x] Schritt 36: Personalisierte Watchlist-Empfehlungen auf der Startseite und Watchlist-Seite (nur streambare Inhalte)
 
 ## Offen
 
-Personalisierte Empfehlungen, zum Beispiel „Weil du X auf deiner Merkliste hast“, das passt gut zu deiner Watchlist und den vorhandenen Similar-Hooks.
+- Weitere Features nach Bedarf.

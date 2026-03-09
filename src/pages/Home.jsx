@@ -5,6 +5,7 @@ import { useNowPlaying, usePopularMovies, useTopRatedMovies, useNewMovies, usePo
 import { usePopularTv, useTopRatedTv, useNewTv } from '../hooks/useTv'
 import { usePersistedState } from '../hooks/usePersistedState'
 import { moods } from '../utils/moods'
+import WatchlistRecommendations from '../components/home/WatchlistRecommendations'
 
 function MoodSection() {
   return (
@@ -79,6 +80,8 @@ function Home() {
         sortBy={kinoSort}
         onSortChange={setKinoSort}
       />
+
+      <WatchlistRecommendations />
 
       <MediaRow
         title="Beliebte Filme"

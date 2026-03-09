@@ -5,6 +5,7 @@ import { useWatchlistProviders } from '../hooks/useWatchlistProviders'
 import { useToast } from '../components/common/useToast'
 import MediaCard from '../components/common/MediaCard'
 import { IMAGE_BASE } from '../api/tmdb'
+import WatchlistRecommendations from '../components/home/WatchlistRecommendations'
 
 const tabs = [
   { key: 'all', label: 'Alle' },
@@ -370,6 +371,13 @@ function Watchlist() {
               </Link>
             </>
           )}
+        </div>
+      )}
+
+      {/* Recommendations */}
+      {!isSharedView && displayedItems.length > 0 && (
+        <div className="mt-16 pt-16 border-t border-surface-800/50">
+          <WatchlistRecommendations count={3} />
         </div>
       )}
     </div>
