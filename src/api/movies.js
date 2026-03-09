@@ -21,3 +21,6 @@ export const getTrendingMovies = (timeWindow = 'week') =>
 
 export const getNowPlayingMovies = (page = 1) =>
   tmdb.get('/movie/now_playing', { params: { page } }).then((res) => res.data)
+
+export const getMovieReleaseDates = (id) =>
+  tmdb.get(`/movie/${id}/release_dates`).then((res) => res.data.results)

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import MediaRow from '../components/common/MediaRow'
-import { useTrendingAll, usePopularMovies, useTopRatedMovies, useNewMovies } from '../hooks/useMovies'
+import { useNowPlaying, usePopularMovies, useTopRatedMovies, useNewMovies, usePopularAnime } from '../hooks/useMovies'
 import { usePopularTv, useTopRatedTv, useNewTv } from '../hooks/useTv'
 import { moods } from '../utils/moods'
 
@@ -29,13 +29,14 @@ function MoodSection() {
 }
 
 function Home() {
-  const trending = useTrendingAll()
+  const nowPlaying = useNowPlaying()
   const movies = usePopularMovies()
   const tv = usePopularTv()
   const topMovies = useTopRatedMovies()
   const topTv = useTopRatedTv()
   const newMovies = useNewMovies()
   const newTv = useNewTv()
+  const anime = usePopularAnime()
 
   return (
     <div className="space-y-10">
@@ -43,10 +44,10 @@ function Home() {
       <MoodSection />
 
       <MediaRow
-        title="Gerade im Trend"
-        items={trending.data}
-        isLoading={trending.isLoading}
-        error={trending.error}
+        title="Aktuell im Kino"
+        items={nowPlaying.data?.movies}
+        isLoading={nowPlaying.isLoading}
+        error={nowPlaying.error}
       />
 
       <MediaRow
@@ -61,6 +62,14 @@ function Home() {
         items={tv.data}
         isLoading={tv.isLoading}
         error={tv.error}
+      />
+
+      <MediaRow
+        title="Beliebte Anime"
+        items={anime.data}
+        isLoading={anime.isLoading}
+        error={anime.error}
+        linkTo="/anime"
       />
 
       <MediaRow

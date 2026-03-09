@@ -26,3 +26,7 @@
 
 ## Offen
 - [ ] Kinofilm-Section / Anime-Section (Crunchyroll)
+- Macht gerade im Trend auf der Homepage sinn, wenn wir darunter Beliebte Filme und Beliebte Serien haben?
+- In den Moods Filtern nach Release Datum 
+- Alle anzeigen auch bei den anderen sachen auf Home
+- oder macht Beliebt und zuletzt bei Kino mehr sinn?

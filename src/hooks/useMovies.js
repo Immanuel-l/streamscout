@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import { discoverMovies, getMovieDetails, getMovieProviders, getMovieSimilar, getMovieRecommendations, getNowPlayingMovies } from '../api/movies'
+import { discoverMovies, getMovieDetails, getMovieProviders, getMovieSimilar, getMovieRecommendations, getNowPlayingMovies, getMovieReleaseDates } from '../api/movies'
 import { discoverTv } from '../api/tv'
 
 export function useTrendingAll() {
@@ -124,12 +124,64 @@ export function useNowPlaying() {
         getNowPlayingMovies(1),
         getNowPlayingMovies(2),
       ])
-      const ids = new Set([
-        ...p1.results.map((m) => m.id),
-        ...p2.results.map((m) => m.id),
-      ])
-      return ids
+      const movies = [...p1.results, ...p2.results]
+      // Deduplizieren (Seite 1 & 2 können Überschneidungen haben)
+      const seen = new Set()
+      const unique = movies.filter((m) => {
+        if (seen.has(m.id)) return false
+        seen.add(m.id)
+        return true
+      })
+
+      // Deutsche Kinostart-Daten parallel holen
+      const releaseDates = await Promise.all(
+        unique.map((m) =>
+          getMovieReleaseDates(m.id)
+            .then((results) => {
+              const de = results?.find((r) => r.iso_3166_1 === 'DE')
+              const theatrical = de?.release_dates?.find((d) => d.type === 3)
+              return { id: m.id, deDate: theatrical?.release_date || m.release_date }
+            })
+            .catch(() => ({ id: m.id, deDate: m.release_date }))
+        )
+      )
+      const dateMap = Object.fromEntries(releaseDates.map((r) => [r.id, r.deDate]))
+
+      return {
+        ids: new Set(unique.map((m) => m.id)),
+        movies: unique
+          .filter((m) => m.poster_path && m.overview)
+          .sort((a, b) => (dateMap[b.id] || '').localeCompare(dateMap[a.id] || ''))
+          .map((m) => ({ ...m, media_type: 'movie' })),
+      }
     },
     staleTime: 6 * 60 * 60 * 1000, // 6 hours — Kino-Programm ändert sich selten
   })
+}
+
+export function usePopularAnime() {
+  const animeMovies = useQuery({
+    queryKey: ['anime', 'movies'],
+    queryFn: () => discoverMovies({ with_genres: '16', with_origin_country: 'JP', sort_by: 'popularity.desc' }),
+    select: (data) => data.results.slice(0, 6).map((m) => ({ ...m, media_type: 'movie' })),
+  })
+
+  const animeTv = useQuery({
+    queryKey: ['anime', 'tv'],
+    queryFn: () => discoverTv({ with_genres: '16', with_origin_country: 'JP', sort_by: 'popularity.desc' }),
+    select: (data) => data.results.slice(0, 6).map((s) => ({ ...s, media_type: 'tv' })),
+  })
+
+  const data = useMemo(() => {
+    if (!animeMovies.data || !animeTv.data) return undefined
+    return [...animeMovies.data, ...animeTv.data]
+      .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+      .slice(0, 12)
+  }, [animeMovies.data, animeTv.data])
+
+  return {
+    data,
+    isLoading: animeMovies.isLoading || animeTv.isLoading,
+    error: animeMovies.error || animeTv.error,
+  }
 }

@@ -11,7 +11,8 @@ function MovieDetail() {
   const { id } = useParams()
   const { data: movie, isLoading, error } = useMovieDetails(id)
   const providers = useMovieProviders(id)
-  const { data: nowPlayingIds } = useNowPlaying()
+  const { data: nowPlayingData } = useNowPlaying()
+  const nowPlayingIds = nowPlayingData?.ids
   const genreIds = movie?.genres?.map((g) => g.id)
   const keywordIds = movie?.keywords?.keywords?.map((k) => k.id)
   const similar = useMovieSimilar(id, genreIds, keywordIds)

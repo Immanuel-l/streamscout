@@ -39,7 +39,8 @@ function Search() {
   const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || 'relevance')
   const [onlyStreamable, setOnlyStreamable] = useState(() => searchParams.get('streamable') === 'true')
   const debouncedQuery = useDebounce(query, 300)
-  const { data: nowPlayingIds } = useNowPlaying()
+  const { data: nowPlayingData } = useNowPlaying()
+  const nowPlayingIds = nowPlayingData?.ids
 
   // Sync state to URL params (replace to avoid history spam)
   useEffect(() => {

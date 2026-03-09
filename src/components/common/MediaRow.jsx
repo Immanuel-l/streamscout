@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import MediaCard from './MediaCard'
 
 function MediaRowSkeleton() {
@@ -38,7 +39,7 @@ function ArrowButton({ direction, onClick }) {
   )
 }
 
-function MediaRow({ title, items, isLoading, error }) {
+function MediaRow({ title, items, isLoading, error, linkTo }) {
   const scrollRef = useRef(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
@@ -72,7 +73,14 @@ function MediaRow({ title, items, isLoading, error }) {
 
   return (
     <section className="space-y-4">
-      <h2 className="font-display text-3xl sm:text-4xl tracking-wide text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">{title}</h2>
+      <div className="flex items-baseline gap-4">
+        <h2 className="font-display text-3xl sm:text-4xl tracking-wide text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">{title}</h2>
+        {linkTo && (
+          <Link to={linkTo} className="text-sm text-surface-400 hover:text-accent-400 transition-colors whitespace-nowrap">
+            Alle anzeigen
+          </Link>
+        )}
+      </div>
 
       {error && (
         <p className="text-red-400 text-sm">Inhalte konnten nicht geladen werden. Bitte versuch es später nochmal.</p>
