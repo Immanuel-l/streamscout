@@ -21,8 +21,8 @@ Eine Film- und Serien-Suchapp mit cineastischem Dark-Mode-Design, angebunden an 
 - [Vite](https://vite.dev/) als Build Tool
 - [React Router](https://reactrouter.com/) fuer Navigation
 - [TanStack Query](https://tanstack.com/query) fuer API Calls und Caching
-- [Axios](https://axios-http.com/) fuer HTTP Requests
-- [Tailwind CSS](https://tailwindcss.com/) fuer Styling
+- [Axios](https://axios-http.com/) für HTTP Requests
+- [Tailwind CSS](https://tailwindcss.com/) für Styling
 
 ## Installation
 
@@ -35,7 +35,7 @@ Eine Film- und Serien-Suchapp mit cineastischem Dark-Mode-Design, angebunden an 
 ### 1. Repository klonen
 
 ```bash
-git clone https://github.com/dein-username/StreamScout.git
+git clone https://github.com/Immanuel-l/StreamScout.git
 cd StreamScout
 ```
 
