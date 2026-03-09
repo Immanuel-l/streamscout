@@ -43,3 +43,4 @@
 ## Offen
 
 - Weitere Features nach Bedarf.
+- Da hover ja nicht auf mobilen funktioniert, wie machen wir das mit den Streaming-Providern und der Watchlist hinzufügen?

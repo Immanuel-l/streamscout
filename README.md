@@ -24,7 +24,8 @@
 | 🎭 **Mood-Suche** | 10 Stimmungen (z.B. „Spannung pur", „Feel-Good", „Gehirnfutter") für passende Vorschläge |
 | 🧭 **Discover** | Entdecke Filme und Serien nach Genre, Jahr, Bewertung und Streaming-Anbieter |
 | 🎲 **Zufalls-Generator** | Genre wählen, Button drücken, überraschen lassen |
-| 📋 **Watchlist** | Filme und Serien merken (lokal im Browser gespeichert) |
+| 📋 **Watchlist** | Filme und Serien merken (inkl. Filterung nach deinen Streaming-Anbietern) |
+| 💡 **Watchlist-Empfehlungen** | Personalisierte Film- & Serien-Tipps basierend auf deiner Watchlist |
 | 📺 **Streaming-Provider** | Sieh auf einen Blick, wo Filme/Serien in Deutschland streambar sind |
 | 🎬 **Detail-Seiten** | Backdrop-Hero, Cast, Trailer, Staffelübersichten und mehr |
 | 🎞️ **Kino** | Aktuell im Kino laufende Filme |
@@ -51,8 +52,8 @@
 ### 1. Repository klonen
 
 ```bash
-git clone https://github.com/Immanuel-l/StreamScout.git
-cd StreamScout
+git clone https://github.com/Immanuel-l/streamscout.git
+cd streamscout
 ```
 
 ### 2. Abhängigkeiten installieren
