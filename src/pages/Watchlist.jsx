@@ -1,8 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { useWatchlist } from '../hooks/useWatchlist'
+import { useWatchlistProviders } from '../hooks/useWatchlistProviders'
 import { useToast } from '../components/common/useToast'
 import MediaCard from '../components/common/MediaCard'
+import { IMAGE_BASE } from '../api/tmdb'
 
 const tabs = [
   { key: 'all', label: 'Alle' },
@@ -75,6 +77,12 @@ function Watchlist() {
   const initializedShare = useRef('')
 
   const [selectedItems, setSelectedItems] = useState(new Set())
+  const [selectedProvider, setSelectedProvider] = useState(null)
+
+  // Determine what to render based on the view mode
+  const displayedItems = isSharedView ? sharedItems : items
+
+  const { isLoading: providersLoading, providerMap, availableProviders } = useWatchlistProviders(displayedItems)
 
   // Handle URL share link (fetching the preview)
   useEffect(() => {
@@ -150,15 +158,27 @@ function Watchlist() {
   }
 
 
-  // Determine what to render based on the view mode
-  const displayedItems = isSharedView ? sharedItems : items
-  
-  const filtered = activeTab === 'all'
+  const filtered = (activeTab === 'all'
     ? displayedItems
     : displayedItems.filter((m) => m.media_type === activeTab)
+  ).filter((m) => {
+    if (!selectedProvider) return true
+    const key = `${m.media_type}-${m.id}`
+    return providerMap[key]?.has(selectedProvider)
+  })
 
-  const movieCount = displayedItems.filter((m) => m.media_type === 'movie').length
-  const tvCount = displayedItems.filter((m) => m.media_type === 'tv').length
+  // Count matches the filtered results now, instead of all tab items
+  const movieCount = displayedItems.filter((m) => {
+    if (m.media_type !== 'movie') return false
+    if (!selectedProvider) return true
+    return providerMap[`movie-${m.id}`]?.has(selectedProvider)
+  }).length
+  
+  const tvCount = displayedItems.filter((m) => {
+    if (m.media_type !== 'tv') return false
+    if (!selectedProvider) return true
+    return providerMap[`tv-${m.id}`]?.has(selectedProvider)
+  }).length
 
   return (
     <div className="space-y-8">
@@ -234,27 +254,69 @@ function Watchlist() {
       )}
 
 
-      {/* Tabs */}
-      {displayedItems.length > 0 && !isFetchingShared && (
-        <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
-          {tabs.map(({ key, label }) => {
-            const count = key === 'all' ? displayedItems.length : key === 'movie' ? movieCount : tvCount
-            return (
-              <button
-                key={key}
-                onClick={() => setActiveTab(key)}
-                className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === key
-                    ? 'bg-accent-500 text-black'
-                    : 'text-surface-300 hover:text-white'
-                }`}
-              >
-                {label} ({count})
-              </button>
-            )
-          })}
-        </div>
-      )}
+      {/* Controls: Tabs & Provider Filter */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-surface-800/20 p-2 sm:p-0 rounded-xl sm:bg-transparent">
+        {/* Tabs */}
+        {displayedItems.length > 0 && !isFetchingShared && (
+          <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
+            {tabs.map(({ key, label }) => {
+              const count = key === 'all' ? filtered.length : key === 'movie' ? movieCount : tvCount
+              return (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key)}
+                  className={`px-4 sm:px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    activeTab === key
+                      ? 'bg-accent-500 text-black'
+                      : 'text-surface-300 hover:text-white'
+                  }`}
+                >
+                  {label} ({count})
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Provider Filter */}
+        {availableProviders.length > 0 && !isFetchingShared && (
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-surface-400 text-xs uppercase tracking-wider font-medium max-sm:hidden">
+              Anbieter
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {availableProviders.map(p => (
+                <button
+                  key={p.provider_id}
+                  onClick={() => setSelectedProvider(prev => prev === p.provider_id ? null : p.provider_id)}
+                  title={p.provider_name}
+                  className={`relative rounded-lg overflow-hidden transition-all duration-300 cursor-pointer ${
+                    selectedProvider === p.provider_id
+                      ? 'ring-2 ring-accent-400 scale-110 shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]'
+                      : selectedProvider 
+                        ? 'opacity-40 hover:opacity-100 hover:scale-105' 
+                        : 'opacity-80 hover:opacity-100 hover:scale-105'
+                  }`}
+                >
+                  <img
+                    src={`${IMAGE_BASE}/w92${p.logo_path}`}
+                    alt={p.provider_name}
+                    className="w-8 h-8 sm:w-9 sm:h-9 object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+            {providersLoading && (
+              <div className="text-surface-500">
+                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Grid */}
       {isFetchingShared ? (

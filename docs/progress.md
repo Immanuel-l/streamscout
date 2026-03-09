@@ -35,11 +35,9 @@
 - [x] Schritt 30: SEO, PWA und Präsentation nach außen
 - [x] Schritt 31: PWA Icons und Social-Preview-Bilder hinzugefügt
 - [x] Schritt 32: Watchlist Cards verbessert
+- [x] Schritt 33: Watchlist jetzt durch link teilbar und importierbar
+- [x] Schritt 34: Watchlist mit Provider Filterung
 
 ## Offen
 
-Watchlist mit Export oder Account-Sync, weil sie aktuell nur lokal im Browser lebt.
-
 Personalisierte Empfehlungen, zum Beispiel „Weil du X auf deiner Merkliste hast“, das passt gut zu deiner Watchlist und den vorhandenen Similar-Hooks.
-
-Provider-Fokus auf der Watchlist, also „Was auf meiner Merkliste läuft gerade bei Netflix, Disney+ oder WOW?“, das würde den praktischen Nutzen stark erhöhen.
