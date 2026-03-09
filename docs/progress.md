@@ -31,7 +31,15 @@
 - [x] Schritt 27: API-Last reduziert
 - [x] Schritt 28: Tests und CI hinzugefügt
 - [x] Schritt 29: Loading und Error Handling poliert
+- [x] Schritt 30: SEO, PWA und Präsentation nach außen
 
 ## Offen
 
 Merkliste Cards passen nicht zum restlichen Projekt
+
+ Was noch fehlt für eine vollständig installierbare PWA:
+  - PNG Icons (192x192 + 512x512) — Chrome verlangt PNGs für den Install-Prompt. Du kannst die aus dem SVG generieren (z.B. auf realfavicongenerator.net oder mit sharp in Node)
+  - og:image / twitter:image — Ein Screenshot oder Social-Preview-Bild. Ohne das zeigen Social-Media-Plattformen nur Text beim Teilen
+  - Service Worker — Für Offline-Caching (vite-plugin-pwa), wobei das bei einer 100% API-abhängigen App wenig Mehrwert bringt
+
+  Soll ich die PNG-Icons generieren (braucht eine zusätzliche npm-Dependency wie sharp) oder lieber die README mit Screenshots/Feature-Highlights aufhübschen?

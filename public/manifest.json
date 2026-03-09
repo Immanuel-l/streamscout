@@ -1,0 +1,16 @@
+{
+  "name": "StreamScout",
+  "short_name": "StreamScout",
+  "description": "Finde Filme und Serien, entdecke nach Stimmung, filtere nach Streaming-Anbieter.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#f59e0b",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
