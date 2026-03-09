@@ -40,6 +40,7 @@ export function usePopularMovies() {
     queryFn: () => discoverMovies({ sort_by: 'popularity.desc', 'vote_average.gte': 5.5, 'vote_count.gte': 50 }),
     select: (data) =>
       data.results.slice(0, 12).map((m) => ({ ...m, media_type: 'movie' })),
+    staleTime: 60 * 60 * 1000, // 1h
   })
 }
 
@@ -49,6 +50,7 @@ export function useTopRatedMovies() {
     queryFn: () => discoverMovies({ sort_by: 'vote_average.desc', 'vote_count.gte': 200 }),
     select: (data) =>
       data.results.slice(0, 12).map((m) => ({ ...m, media_type: 'movie' })),
+    staleTime: 60 * 60 * 1000, // 1h
   })
 }
 
@@ -59,6 +61,7 @@ export function useNewMovies() {
     queryFn: () => discoverMovies({ sort_by: 'primary_release_date.desc', 'release_date.lte': today, 'vote_count.gte': 5 }),
     select: (data) =>
       data.results.slice(0, 12).map((m) => ({ ...m, media_type: 'movie' })),
+    staleTime: 60 * 60 * 1000, // 1h
   })
 }
 
@@ -164,12 +167,14 @@ export function usePopularAnime() {
     queryKey: ['anime', 'movies'],
     queryFn: () => discoverMovies({ with_genres: '16', with_origin_country: 'JP', sort_by: 'popularity.desc' }),
     select: (data) => data.results.slice(0, 6).map((m) => ({ ...m, media_type: 'movie' })),
+    staleTime: 6 * 60 * 60 * 1000, // 6h
   })
 
   const animeTv = useQuery({
     queryKey: ['anime', 'tv'],
     queryFn: () => discoverTv({ with_genres: '16', with_origin_country: 'JP', sort_by: 'popularity.desc' }),
     select: (data) => data.results.slice(0, 6).map((s) => ({ ...s, media_type: 'tv' })),
+    staleTime: 6 * 60 * 60 * 1000, // 6h
   })
 
   const data = useMemo(() => {

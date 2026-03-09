@@ -7,6 +7,7 @@ export function usePopularTv() {
     queryFn: () => discoverTv({ sort_by: 'popularity.desc', 'vote_average.gte': 5.5, 'vote_count.gte': 50 }),
     select: (data) =>
       data.results.slice(0, 12).map((s) => ({ ...s, media_type: 'tv' })),
+    staleTime: 60 * 60 * 1000, // 1h
   })
 }
 
@@ -16,6 +17,7 @@ export function useTopRatedTv() {
     queryFn: () => discoverTv({ sort_by: 'vote_average.desc', 'vote_count.gte': 200 }),
     select: (data) =>
       data.results.slice(0, 12).map((s) => ({ ...s, media_type: 'tv' })),
+    staleTime: 60 * 60 * 1000, // 1h
   })
 }
 
@@ -26,6 +28,7 @@ export function useNewTv() {
     queryFn: () => discoverTv({ sort_by: 'first_air_date.desc', 'first_air_date.lte': today, 'vote_count.gte': 5 }),
     select: (data) =>
       data.results.slice(0, 12).map((s) => ({ ...s, media_type: 'tv' })),
+    staleTime: 60 * 60 * 1000, // 1h
   })
 }
 

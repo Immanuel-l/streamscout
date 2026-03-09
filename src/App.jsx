@@ -1,30 +1,34 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Layout from './components/layout/Layout'
-import Home from './pages/Home'
-import Search from './pages/Search'
-import Discover from './pages/Discover'
-import MovieDetail from './pages/MovieDetail'
-import TvDetail from './pages/TvDetail'
-import Watchlist from './pages/Watchlist'
-import Random from './pages/Random'
-import Mood from './pages/Mood'
-import Anime from './pages/Anime'
-import Kino from './pages/Kino'
+import GridSkeleton from './components/common/GridSkeleton'
+
+// Lazy-loaded pages — each becomes a separate chunk
+const Home = lazy(() => import('./pages/Home'))
+const Search = lazy(() => import('./pages/Search'))
+const Discover = lazy(() => import('./pages/Discover'))
+const MovieDetail = lazy(() => import('./pages/MovieDetail'))
+const TvDetail = lazy(() => import('./pages/TvDetail'))
+const Watchlist = lazy(() => import('./pages/Watchlist'))
+const Random = lazy(() => import('./pages/Random'))
+const Mood = lazy(() => import('./pages/Mood'))
+const Anime = lazy(() => import('./pages/Anime'))
+const Kino = lazy(() => import('./pages/Kino'))
 
 function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<Home />} />
-        <Route path="search" element={<Search />} />
-        <Route path="discover" element={<Discover />} />
-        <Route path="movie/:id" element={<MovieDetail />} />
-        <Route path="tv/:id" element={<TvDetail />} />
-        <Route path="watchlist" element={<Watchlist />} />
-        <Route path="random" element={<Random />} />
-        <Route path="mood/:slug" element={<Mood />} />
-        <Route path="anime" element={<Anime />} />
-        <Route path="kino" element={<Kino />} />
+        <Route index element={<Suspense fallback={<GridSkeleton />}><Home /></Suspense>} />
+        <Route path="search" element={<Suspense fallback={<GridSkeleton count={12} />}><Search /></Suspense>} />
+        <Route path="discover" element={<Suspense fallback={<GridSkeleton />}><Discover /></Suspense>} />
+        <Route path="movie/:id" element={<Suspense fallback={null}><MovieDetail /></Suspense>} />
+        <Route path="tv/:id" element={<Suspense fallback={null}><TvDetail /></Suspense>} />
+        <Route path="watchlist" element={<Suspense fallback={null}><Watchlist /></Suspense>} />
+        <Route path="random" element={<Suspense fallback={null}><Random /></Suspense>} />
+        <Route path="mood/:slug" element={<Suspense fallback={<GridSkeleton />}><Mood /></Suspense>} />
+        <Route path="anime" element={<Suspense fallback={<GridSkeleton />}><Anime /></Suspense>} />
+        <Route path="kino" element={<Suspense fallback={<GridSkeleton />}><Kino /></Suspense>} />
       </Route>
     </Routes>
   )

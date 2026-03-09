@@ -7,8 +7,8 @@ function MediaRowSkeleton() {
   return (
     <div className="flex gap-4 overflow-hidden">
       {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="flex-shrink-0 w-40 sm:w-48 md:w-52">
-          <div className="aspect-[2/3] rounded-xl bg-surface-800 animate-pulse" />
+        <div key={i} className="shrink-0 w-40 sm:w-48 md:w-52">
+          <div className="aspect-2/3 rounded-xl bg-surface-800 animate-pulse" />
           <div className="mt-2 px-1 space-y-1.5">
             <div className="h-4 bg-surface-800 rounded animate-pulse w-3/4" />
             <div className="h-3 bg-surface-800 rounded animate-pulse w-1/2" />
@@ -110,10 +110,10 @@ function MediaRow({ title, items, isLoading, error, linkTo, sortOptions, sortBy,
         <div className="group/row relative">
           {/* Fade edges */}
           {canScrollLeft && (
-            <div className="absolute left-0 top-0 bottom-0 w-12 sm:w-16 bg-gradient-to-r from-surface-950 to-transparent z-[5] pointer-events-none" />
+            <div className="absolute left-0 top-0 bottom-0 w-12 sm:w-16 bg-linear-to-r from-surface-950 to-transparent z-5 pointer-events-none" />
           )}
           {canScrollRight && (
-            <div className="absolute right-0 top-0 bottom-0 w-12 sm:w-16 bg-gradient-to-l from-surface-950 to-transparent z-[5] pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-12 sm:w-16 bg-linear-to-l from-surface-950 to-transparent z-5 pointer-events-none" />
           )}
 
           {/* Arrow buttons — desktop only */}
@@ -134,7 +134,7 @@ function MediaRow({ title, items, isLoading, error, linkTo, sortOptions, sortBy,
             className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth"
           >
             {items?.map((media, i) => (
-              <div key={media.id} className="flex-shrink-0 w-40 sm:w-48 md:w-52">
+              <div key={media.id} className="shrink-0 w-40 sm:w-48 md:w-52">
                 <MediaCard media={media} index={i} />
               </div>
             ))}

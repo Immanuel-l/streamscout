@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { posterUrl, IMAGE_BASE } from '../../api/tmdb'
@@ -148,4 +148,4 @@ function MediaCard({ media, index = 0, eager = false, animate = true, checkAvail
   )
 }
 
-export default MediaCard
+export default memo(MediaCard)
