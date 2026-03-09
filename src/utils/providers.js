@@ -10,6 +10,7 @@ export const ALLOWED_PROVIDER_IDS = [
   298,  // RTL+
   304,  // Joyn
   421,  // Joyn Plus
+  283,  // Crunchyroll
 ]
 
 export const ALLOWED_PROVIDER_SET = new Set(ALLOWED_PROVIDER_IDS)

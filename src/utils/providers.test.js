@@ -3,10 +3,11 @@ import { ALLOWED_PROVIDER_IDS, ALLOWED_PROVIDER_SET, ALLOWED_PROVIDER_STRING } f
 
 describe('providers', () => {
   it('enthält die bekannten Streaming-Dienste', () => {
-    // Netflix=8, Prime=9, Disney+=337
+    // Netflix=8, Prime=9, Disney+=337, Crunchyroll=283
     expect(ALLOWED_PROVIDER_IDS).toContain(8)
     expect(ALLOWED_PROVIDER_IDS).toContain(9)
     expect(ALLOWED_PROVIDER_IDS).toContain(337)
+    expect(ALLOWED_PROVIDER_IDS).toContain(283)
   })
 
   it('Set hat gleiche Einträge wie Array', () => {

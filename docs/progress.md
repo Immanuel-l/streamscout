@@ -37,6 +37,7 @@
 - [x] Schritt 32: Watchlist Cards verbessert
 - [x] Schritt 33: Watchlist jetzt durch link teilbar und importierbar
 - [x] Schritt 34: Watchlist mit Provider Filterung
+- [x] Schritt 35: Crunchyroll zu den Providern hinzugefügt
 
 ## Offen
 
