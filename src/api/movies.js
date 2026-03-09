@@ -2,7 +2,7 @@ import tmdb from './tmdb'
 import { ALLOWED_PROVIDER_STRING } from '../utils/providers'
 
 export const getMovieDetails = (id) =>
-  tmdb.get(`/movie/${id}`, { params: { append_to_response: 'keywords,release_dates,credits,videos' } }).then((res) => res.data)
+  tmdb.get(`/movie/${id}`, { params: { append_to_response: 'keywords,release_dates,credits,videos', include_video_language: 'de,en,null' } }).then((res) => res.data)
 
 export const getMovieProviders = (id) =>
   tmdb.get(`/movie/${id}/watch/providers`).then((res) => res.data.results?.DE)
