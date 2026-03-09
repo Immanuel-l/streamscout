@@ -1,7 +1,9 @@
 import { useWatchlist } from '../../hooks/useWatchlist'
+import { useToast } from './Toast'
 
 function WatchlistButton({ media, size = 'sm' }) {
   const { toggle, isInWatchlist } = useWatchlist()
+  const toast = useToast()
   const active = isInWatchlist(media.id, media.media_type)
 
   const sizeClasses = size === 'lg'
@@ -10,12 +12,20 @@ function WatchlistButton({ media, size = 'sm' }) {
 
   const iconSize = size === 'lg' ? 'w-5 h-5' : 'w-4 h-4'
 
+  const title = media.title || media.name
+
   return (
     <button
       onClick={(e) => {
         e.preventDefault()
         e.stopPropagation()
+        const wasActive = active
         toggle(media)
+        if (wasActive) {
+          toast(`${title} von Merkliste entfernt`, 'removed')
+        } else {
+          toast(`${title} zur Merkliste hinzugefügt`, 'added')
+        }
       }}
       title={active ? 'Von Merkliste entfernen' : 'Auf Merkliste setzen'}
       className={`${sizeClasses} flex items-center justify-center rounded-full transition-all duration-300 active:scale-90 ${

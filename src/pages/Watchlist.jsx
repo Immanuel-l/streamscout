@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useWatchlist } from '../hooks/useWatchlist'
+import { useToast } from '../components/common/Toast'
 import { posterUrl } from '../api/tmdb'
 
 const tabs = [
@@ -63,6 +64,13 @@ function WatchlistCard({ item, index = 0, onRemove }) {
 function Watchlist() {
   const [activeTab, setActiveTab] = useState('all')
   const { items, remove } = useWatchlist()
+  const toast = useToast()
+
+  const handleRemove = useCallback((id, mediaType) => {
+    const item = items.find((m) => m.id === id && m.media_type === mediaType)
+    remove(id, mediaType)
+    toast(`${item?.title || item?.name || 'Eintrag'} von Merkliste entfernt`, 'removed')
+  }, [items, remove, toast])
 
   const filtered = activeTab === 'all'
     ? items
@@ -112,7 +120,7 @@ function Watchlist() {
               key={`${item.media_type}-${item.id}`}
               item={item}
               index={i}
-              onRemove={remove}
+              onRemove={handleRemove}
             />
           ))}
         </div>
