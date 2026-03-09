@@ -23,13 +23,22 @@ function ResultSkeleton({ count = 18 }) {
   )
 }
 
+const sortOptions = [
+  { value: 'popularity', label: 'Beliebtheit', sortBy: 'popularity.desc' },
+  { value: 'date', label: 'Neueste zuerst', sortByMovie: 'primary_release_date.desc', sortByTv: 'first_air_date.desc' },
+  { value: 'rating', label: 'Bewertung', sortBy: 'vote_average.desc' },
+]
+
 function Mood() {
   const { slug } = useParams()
   const mood = getMoodBySlug(slug)
   const [mediaType, setMediaType] = usePersistedState(`mood.${slug}.mediaType`, 'movie')
+  const [sortValue, setSortValue] = usePersistedState(`mood.${slug}.sortBy`, 'popularity')
   const [startPage, setStartPage] = useState(1)
 
   const params = mood?.[mediaType] || {}
+  const sortOption = sortOptions.find((o) => o.value === sortValue) || sortOptions[0]
+  const apiSortBy = sortOption.sortBy || (mediaType === 'tv' ? sortOption.sortByTv : sortOption.sortByMovie)
 
   const {
     data,
@@ -39,9 +48,9 @@ function Mood() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['mood', slug, mediaType, startPage],
+    queryKey: ['mood', slug, mediaType, sortValue, startPage],
     queryFn: ({ pageParam }) => {
-      const discoverParams = { ...params, sort_by: 'popularity.desc', page: pageParam }
+      const discoverParams = { ...params, sort_by: apiSortBy, page: pageParam }
       return mediaType === 'tv' ? discoverTv(discoverParams) : discoverMovies(discoverParams)
     },
     initialPageParam: startPage,
@@ -133,7 +142,7 @@ function Mood() {
         </div>
       </div>
 
-      {/* Controls: Media Type Toggle + Shuffle */}
+      {/* Controls: Media Type Toggle + Sort + Shuffle */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
           {[
@@ -145,6 +154,22 @@ function Mood() {
               onClick={() => setMediaType(type)}
               className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
                 mediaType === type
+                  ? 'bg-accent-500 text-black'
+                  : 'text-surface-300 hover:text-white'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
+          {sortOptions.map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => setSortValue(value)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                sortValue === value
                   ? 'bg-accent-500 text-black'
                   : 'text-surface-300 hover:text-white'
               }`}

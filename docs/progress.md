@@ -25,7 +25,6 @@
 - [x] Schritt 21: Suche überarbeitet
 - [x] Schritt 22: Kinofilm-Section / Anime-Section (Crunchyroll)
 - [x] Schritt 23: Filter einstellungen auch nach einen klick gespeichert
+- [x] Schritt 24: Moods: jetzt mit Filtern
 
 ## Offen
-- In den Moods Filter hinzufügen nach Release Datum
-- Auf der Homepage auch nach Release + Beliebtheit gleichzeitig sortieren
