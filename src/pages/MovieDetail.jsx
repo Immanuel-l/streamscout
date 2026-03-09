@@ -6,6 +6,7 @@ import RatingRing from '../components/detail/RatingRing'
 import ProviderList from '../components/detail/ProviderList'
 import MediaRow from '../components/common/MediaRow'
 import WatchlistButton from '../components/common/WatchlistButton'
+import ErrorBox from '../components/common/ErrorBox'
 
 function MovieDetail() {
   const { id } = useParams()
@@ -18,7 +19,7 @@ function MovieDetail() {
   const similar = useMovieSimilar(id, genreIds, keywordIds)
 
   if (isLoading) return <DetailSkeleton />
-  if (error) return <p className="text-red-400">Film konnte nicht geladen werden. Bitte versuch es später nochmal.</p>
+  if (error) return <ErrorBox message="Film konnte nicht geladen werden. Bitte versuch es später nochmal." />
   if (!movie) return null
 
   const year = movie.release_date ? new Date(movie.release_date).getFullYear() : null
@@ -57,13 +58,13 @@ function MovieDetail() {
       </section>
 
       {/* Content */}
-      <div className="relative -mt-32 sm:-mt-40 md:-mt-52 z-10 flex flex-col md:flex-row gap-6 md:gap-10">
+      <div className="relative -mt-32 sm:-mt-40 md:-mt-52 z-10 flex gap-4 sm:gap-6 md:gap-10">
         {poster && (
-          <div className="hidden md:block flex-shrink-0">
+          <div className="flex-shrink-0">
             <img
               src={poster}
               alt={movie.title}
-              className="w-56 lg:w-64 rounded-xl shadow-2xl shadow-black/60 ring-1 ring-white/5"
+              className="w-32 sm:w-44 md:w-56 lg:w-64 rounded-xl shadow-2xl shadow-black/60 ring-1 ring-white/5"
             />
           </div>
         )}

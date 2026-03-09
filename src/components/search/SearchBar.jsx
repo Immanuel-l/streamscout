@@ -58,10 +58,7 @@ function SearchBar({ value, onChange, suggestions = [] }) {
         onFocus={() => { focusedRef.current = true; suggestions.length > 0 && setOpen(true) }}
         onBlur={() => { focusedRef.current = false }}
         placeholder="Film oder Serie suchen..."
-        className="w-full pl-12 pr-4 py-4 rounded-xl bg-surface-800/80 border border-surface-700 text-white placeholder-surface-400 text-lg focus:outline-none focus:border-accent-500/60 focus:ring-1 focus:ring-accent-500/30 transition-all duration-300"
-        style={{ boxShadow: 'none' }}
-        onFocusCapture={(e) => { e.target.style.boxShadow = '0 0 30px -6px rgba(245, 158, 11, 0.12)' }}
-        onBlurCapture={(e) => { e.target.style.boxShadow = 'none' }}
+        className="w-full pl-12 pr-4 py-4 rounded-xl bg-surface-800/80 border border-surface-700 text-white placeholder-surface-400 text-lg focus:outline-none focus:border-accent-500/60 focus:ring-1 focus:ring-accent-500/30 shadow-none focus:shadow-[0_0_30px_-6px_rgba(245,158,11,0.12)] transition-all duration-300"
       />
       {value && (
         <button

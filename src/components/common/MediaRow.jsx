@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import MediaCard from './MediaCard'
+import ErrorBox from './ErrorBox'
 
 function MediaRowSkeleton() {
   return (
@@ -99,9 +100,7 @@ function MediaRow({ title, items, isLoading, error, linkTo, sortOptions, sortBy,
         )}
       </div>
 
-      {error && (
-        <p className="text-red-400 text-sm">Inhalte konnten nicht geladen werden. Bitte versuch es später nochmal.</p>
-      )}
+      {error && <ErrorBox message="Inhalte konnten nicht geladen werden. Bitte versuch es später nochmal." />}
 
       {isLoading ? (
         <MediaRowSkeleton />

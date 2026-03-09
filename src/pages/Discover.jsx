@@ -7,6 +7,9 @@ import { discoverTv } from '../api/tv'
 import { IMAGE_BASE } from '../api/tmdb'
 import { useGenres, useWatchProviders } from '../hooks/useProviders'
 import MediaCard from '../components/common/MediaCard'
+import GridSkeleton from '../components/common/GridSkeleton'
+import ErrorBox from '../components/common/ErrorBox'
+import Select from '../components/common/Select'
 
 const currentYear = new Date().getFullYear()
 const years = Array.from({ length: 50 }, (_, i) => currentYear - i)
@@ -19,22 +22,6 @@ const ratingOptions = [
   { value: '6', label: '6+' },
   { value: '5', label: '5+' },
 ]
-
-function ResultSkeleton({ count = 18 }) {
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
-      {Array.from({ length: count }).map((_, i) => (
-        <div key={i}>
-          <div className="aspect-[2/3] rounded-xl bg-surface-800 animate-pulse" />
-          <div className="mt-2 px-1 space-y-1.5">
-            <div className="h-4 bg-surface-800 rounded animate-pulse w-3/4" />
-            <div className="h-3 bg-surface-800 rounded animate-pulse w-1/2" />
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
 
 const sortOptions = [
   { value: 'popularity', label: 'Beliebtheit', sortBy: 'popularity.desc' },
@@ -231,29 +218,22 @@ function Discover() {
         <div className="flex flex-wrap gap-4">
           <div>
             <p className="text-xs font-medium text-surface-400 uppercase tracking-wider mb-2">Jahr</p>
-            <select
+            <Select
               value={year}
-              onChange={(e) => setYear(e.target.value)}
-              className="bg-surface-800 border border-surface-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent-500"
-            >
-              <option value="">Alle Jahre</option>
-              {years.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
+              onChange={setYear}
+              options={[{ value: '', label: 'Alle Jahre' }, ...years.map((y) => ({ value: String(y), label: String(y) }))]}
+              placeholder="Alle Jahre"
+            />
           </div>
 
           <div>
             <p className="text-xs font-medium text-surface-400 uppercase tracking-wider mb-2">Mindestbewertung</p>
-            <select
+            <Select
               value={rating}
-              onChange={(e) => setRating(e.target.value)}
-              className="bg-surface-800 border border-surface-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent-500"
-            >
-              {ratingOptions.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
+              onChange={setRating}
+              options={ratingOptions}
+              placeholder="Alle"
+            />
           </div>
         </div>
 
@@ -294,12 +274,10 @@ function Discover() {
       </div>
 
       {/* Results */}
-      {error && (
-        <p className="text-red-400 text-sm">Ergebnisse konnten nicht geladen werden. Bitte versuch es später nochmal.</p>
-      )}
+      {error && <ErrorBox message="Ergebnisse konnten nicht geladen werden. Bitte versuch es später nochmal." />}
 
       {isLoading ? (
-        <ResultSkeleton />
+        <GridSkeleton />
       ) : allResults.length > 0 ? (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
@@ -324,14 +302,8 @@ function Discover() {
 
           {/* Error on page load — show retry */}
           {error && allResults.length > 0 && !isFetchingNextPage && (
-            <div className="text-center py-8">
-              <p className="text-red-400 text-sm mb-3">Fehler beim Laden weiterer Ergebnisse.</p>
-              <button
-                onClick={() => fetchNextPage()}
-                className="px-4 py-2 rounded-lg bg-surface-800 text-sm font-medium text-surface-200 hover:bg-surface-700 transition-colors"
-              >
-                Erneut versuchen
-              </button>
+            <div className="py-8 max-w-md mx-auto">
+              <ErrorBox message="Fehler beim Laden weiterer Ergebnisse." onRetry={() => fetchNextPage()} />
             </div>
           )}
 

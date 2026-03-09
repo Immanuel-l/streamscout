@@ -6,6 +6,8 @@ import { discoverTv } from '../api/tv'
 import { posterUrl, backdropUrl, IMAGE_BASE } from '../api/tmdb'
 import { useGenres, useWatchProviders } from '../hooks/useProviders'
 import WatchlistButton from '../components/common/WatchlistButton'
+import ErrorBox from '../components/common/ErrorBox'
+import Select from '../components/common/Select'
 
 const ratingOptions = [
   { value: '', label: 'Egal' },
@@ -163,61 +165,44 @@ function Random() {
         </div>
 
         <div className="flex flex-wrap gap-4">
-          {/* Genre Dropdown */}
           <div>
             <p className="text-xs font-medium text-surface-400 uppercase tracking-wider mb-2">Genre</p>
-            <select
+            <Select
               value={genre}
-              onChange={(e) => setGenre(e.target.value)}
-              className="bg-surface-800 border border-surface-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent-500"
-            >
-              <option value="">Alle Genres</option>
-              {genres.data?.map((g) => (
-                <option key={g.id} value={g.id}>{g.name}</option>
-              ))}
-            </select>
+              onChange={setGenre}
+              options={[{ value: '', label: 'Alle Genres' }, ...(genres.data?.map((g) => ({ value: String(g.id), label: g.name })) || [])]}
+              placeholder="Alle Genres"
+            />
           </div>
 
-          {/* Rating Dropdown */}
           <div>
             <p className="text-xs font-medium text-surface-400 uppercase tracking-wider mb-2">Mindestbewertung</p>
-            <select
+            <Select
               value={rating}
-              onChange={(e) => setRating(e.target.value)}
-              className="bg-surface-800 border border-surface-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent-500"
-            >
-              {ratingOptions.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
+              onChange={setRating}
+              options={ratingOptions}
+              placeholder="Egal"
+            />
           </div>
 
-          {/* Language Dropdown */}
           <div>
             <p className="text-xs font-medium text-surface-400 uppercase tracking-wider mb-2">Sprache</p>
-            <select
+            <Select
               value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="bg-surface-800 border border-surface-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent-500"
-            >
-              {languageOptions.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
+              onChange={setLanguage}
+              options={languageOptions}
+              placeholder="Alle Sprachen"
+            />
           </div>
 
-          {/* Era Dropdown */}
           <div>
             <p className="text-xs font-medium text-surface-400 uppercase tracking-wider mb-2">Zeitraum</p>
-            <select
+            <Select
               value={era}
-              onChange={(e) => setEra(e.target.value)}
-              className="bg-surface-800 border border-surface-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent-500"
-            >
-              {eraOptions.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
+              onChange={setEra}
+              options={eraOptions}
+              placeholder="Egal"
+            />
           </div>
         </div>
 
@@ -274,9 +259,7 @@ function Random() {
       </div>
 
       {/* Error */}
-      {error && (
-        <p className="text-red-400 text-sm">{error}</p>
-      )}
+      {error && <ErrorBox message={error} />}
 
       {/* Result */}
       {result && !loading && (

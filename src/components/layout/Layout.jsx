@@ -13,7 +13,7 @@ function Layout() {
   return (
     <div className="flex flex-col min-h-screen bg-surface-950">
       <Header />
-      <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+      <main key={pathname} className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
         <Outlet />
       </main>
       <Footer />

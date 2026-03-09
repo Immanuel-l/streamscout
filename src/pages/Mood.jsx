@@ -6,22 +6,8 @@ import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
 import { getMoodBySlug } from '../utils/moods'
 import MediaCard from '../components/common/MediaCard'
-
-function ResultSkeleton({ count = 18 }) {
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
-      {Array.from({ length: count }).map((_, i) => (
-        <div key={i}>
-          <div className="aspect-[2/3] rounded-xl bg-surface-800 animate-pulse" />
-          <div className="mt-2 px-1 space-y-1.5">
-            <div className="h-4 bg-surface-800 rounded animate-pulse w-3/4" />
-            <div className="h-3 bg-surface-800 rounded animate-pulse w-1/2" />
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
+import GridSkeleton from '../components/common/GridSkeleton'
+import ErrorBox from '../components/common/ErrorBox'
 
 const sortOptions = [
   { value: 'popularity', label: 'Beliebtheit', sortBy: 'popularity.desc' },
@@ -191,12 +177,10 @@ function Mood() {
       </div>
 
       {/* Results */}
-      {error && (
-        <p className="text-red-400 text-sm">Ergebnisse konnten nicht geladen werden. Bitte versuch es später nochmal.</p>
-      )}
+      {error && <ErrorBox message="Ergebnisse konnten nicht geladen werden. Bitte versuch es später nochmal." />}
 
       {isLoading ? (
-        <ResultSkeleton />
+        <GridSkeleton />
       ) : allResults.length > 0 ? (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
@@ -221,14 +205,8 @@ function Mood() {
 
           {/* Error on page load — show retry */}
           {error && allResults.length > 0 && !isFetchingNextPage && (
-            <div className="text-center py-8">
-              <p className="text-red-400 text-sm mb-3">Fehler beim Laden weiterer Ergebnisse.</p>
-              <button
-                onClick={() => fetchNextPage()}
-                className="px-4 py-2 rounded-lg bg-surface-800 text-sm font-medium text-surface-200 hover:bg-surface-700 transition-colors"
-              >
-                Erneut versuchen
-              </button>
+            <div className="py-8 max-w-md mx-auto">
+              <ErrorBox message="Fehler beim Laden weiterer Ergebnisse." onRetry={() => fetchNextPage()} />
             </div>
           )}
 

@@ -58,29 +58,31 @@ function Header() {
         </button>
       </div>
 
-      {mobileOpen && (
-        <nav className="md:hidden border-t border-surface-800/60 bg-surface-950/95 backdrop-blur-md">
-          <div className="px-4 py-3 space-y-1">
-            {navLinks.map(({ to, label }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={to === '/'}
-                onClick={() => setMobileOpen(false)}
-                className={({ isActive }) =>
-                  `block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'text-accent-400 bg-accent-400/10'
-                      : 'text-surface-300 hover:text-white hover:bg-surface-800/60'
-                  }`
-                }
-              >
-                {label}
-              </NavLink>
-            ))}
-          </div>
-        </nav>
-      )}
+      <nav
+        className={`md:hidden border-t border-surface-800/60 bg-surface-950 backdrop-blur-md overflow-hidden transition-all duration-300 ease-out ${
+          mobileOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0 border-t-transparent'
+        }`}
+      >
+        <div className="px-4 py-3 space-y-1">
+          {navLinks.map(({ to, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === '/'}
+              onClick={() => setMobileOpen(false)}
+              className={({ isActive }) =>
+                `block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'text-accent-400 bg-accent-400/10'
+                    : 'text-surface-300 hover:text-white hover:bg-surface-800/60'
+                }`
+              }
+            >
+              {label}
+            </NavLink>
+          ))}
+        </div>
+      </nav>
     </header>
   )
 }
