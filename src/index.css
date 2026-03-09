@@ -37,6 +37,11 @@
   --color-accent-900: #78350f;
 }
 
+html {
+  background-color: var(--color-surface-950);
+  color-scheme: dark;
+}
+
 body {
   font-family: var(--font-body);
   background-color: var(--color-surface-950);
@@ -45,6 +50,21 @@ body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Schwarzer Balken hinter Dynamic Island / Notch */
+@supports (padding: env(safe-area-inset-top)) {
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top);
+    background-color: var(--color-surface-950);
+    z-index: 9998;
+    pointer-events: none;
+  }
 }
 
 /* Film grain overlay — subtle noise texture for cinematic feel */
