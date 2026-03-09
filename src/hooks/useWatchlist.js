@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
+import { getMovieDetails } from '../api/movies'
+import { getTvDetails } from '../api/tv'
 
 const STORAGE_KEY = 'streamscout_watchlist'
 const SYNC_EVENT = 'watchlist-sync'
@@ -68,5 +70,98 @@ export function useWatchlist() {
     [items]
   )
 
-  return { items, add, remove, toggle, isInWatchlist }
+  const mergeItems = useCallback((newItemsArray) => {
+    if (!Array.isArray(newItemsArray) || newItemsArray.length === 0) return { success: true, count: 0 }
+    
+    const current = readWatchlist()
+    const currentMap = new Set(current.map(m => `${m.media_type}-${m.id}`))
+    
+    const added = []
+    for (const item of newItemsArray) {
+      if (!item.id || !item.media_type) continue
+      const key = `${item.media_type}-${item.id}`
+      if (!currentMap.has(key)) {
+        added.push({
+          id: item.id,
+          media_type: item.media_type,
+          title: item.title || item.name,
+          poster_path: item.poster_path
+        })
+        currentMap.add(key)
+      }
+    }
+    
+    if (added.length > 0) {
+      writeWatchlist([...added, ...current])
+    }
+    return { success: true, count: added.length }
+  }, [])
+
+  const generateShareLink = useCallback(() => {
+    // Format: "m1234,t5678"
+    const current = readWatchlist()
+    const hash = current.map(m => `${m.media_type === 'tv' ? 't' : 'm'}${m.id}`).join(',')
+    return `${window.location.origin}/watchlist?share=${hash}`
+  }, [])
+
+  const fetchSharedList = useCallback(async (shareString) => {
+    try {
+      if (!shareString) return { success: false, items: [] }
+      
+      const tokens = shareString.split(',').filter(Boolean)
+      const newEntries = []
+      
+      for (const token of tokens) {
+        const typeChar = token.charAt(0)
+        const id = parseInt(token.substring(1), 10)
+        if (isNaN(id) || !['m', 't'].includes(typeChar)) continue
+        
+        const media_type = typeChar === 't' ? 'tv' : 'movie'
+        newEntries.push({ id, media_type })
+      }
+
+      if (newEntries.length === 0) return { success: true, items: [] }
+
+      // Fetch metadata in chunks of 10 to avoid TMDB rate limits
+      const hydrated = []
+      const chunkSize = 10
+      for (let i = 0; i < newEntries.length; i += chunkSize) {
+        const chunk = newEntries.slice(i, i + chunkSize)
+        const promises = chunk.map(async (entry) => {
+          try {
+            const data = entry.media_type === 'tv' 
+              ? await getTvDetails(entry.id) 
+              : await getMovieDetails(entry.id)
+            return {
+              id: entry.id,
+              media_type: entry.media_type,
+              title: data.title || data.name,
+              poster_path: data.poster_path
+            }
+          } catch {
+            console.warn(`Failed to fetch details for ${entry.media_type} ${entry.id}`)
+            return null
+          }
+        })
+        const results = await Promise.all(promises)
+        hydrated.push(...results.filter(Boolean))
+      }
+
+      return { success: true, items: hydrated }
+    } catch (e) {
+      console.error('Share fetch error:', e)
+      return { success: false, error: 'Abruf fehlgeschlagen' }
+    }
+  }, [])
+
+  return { 
+    items, 
+    add, 
+    remove, 
+    toggle, 
+    isInWatchlist, 
+    mergeItems, 
+    generateShareLink, 
+    fetchSharedList 
+  }
 }
