@@ -2,6 +2,8 @@ import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Layout from './components/layout/Layout'
 import GridSkeleton from './components/common/GridSkeleton'
+import DetailSkeleton from './components/detail/DetailSkeleton'
+import PageLoader from './components/common/PageLoader'
 
 // Lazy-loaded pages — each becomes a separate chunk
 const Home = lazy(() => import('./pages/Home'))
@@ -23,11 +25,11 @@ function App() {
         <Route index element={<Suspense fallback={<GridSkeleton />}><Home /></Suspense>} />
         <Route path="search" element={<Suspense fallback={<GridSkeleton count={12} />}><Search /></Suspense>} />
         <Route path="discover" element={<Suspense fallback={<GridSkeleton />}><Discover /></Suspense>} />
-        <Route path="movie/:id" element={<Suspense fallback={null}><MovieDetail /></Suspense>} />
-        <Route path="tv/:id" element={<Suspense fallback={null}><TvDetail /></Suspense>} />
-        <Route path="person/:id" element={<Suspense fallback={null}><PersonDetail /></Suspense>} />
-        <Route path="watchlist" element={<Suspense fallback={null}><Watchlist /></Suspense>} />
-        <Route path="random" element={<Suspense fallback={null}><Random /></Suspense>} />
+        <Route path="movie/:id" element={<Suspense fallback={<DetailSkeleton />}><MovieDetail /></Suspense>} />
+        <Route path="tv/:id" element={<Suspense fallback={<DetailSkeleton />}><TvDetail /></Suspense>} />
+        <Route path="person/:id" element={<Suspense fallback={<DetailSkeleton />}><PersonDetail /></Suspense>} />
+        <Route path="watchlist" element={<Suspense fallback={<PageLoader />}><Watchlist /></Suspense>} />
+        <Route path="random" element={<Suspense fallback={<PageLoader />}><Random /></Suspense>} />
         <Route path="mood/:slug" element={<Suspense fallback={<GridSkeleton />}><Mood /></Suspense>} />
         <Route path="anime" element={<Suspense fallback={<GridSkeleton />}><Anime /></Suspense>} />
         <Route path="kino" element={<Suspense fallback={<GridSkeleton />}><Kino /></Suspense>} />

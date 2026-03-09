@@ -27,5 +27,11 @@
 - [x] Schritt 23: Filter einstellungen auch nach einen klick gespeichert
 - [x] Schritt 24: Moods: jetzt mit Filtern
 - [x] Schritt 25: Suche Verbessert
+- [x] Schritt 26: Filter und States Verbessert
+- [x] Schritt 27: API-Last reduziert
+- [x] Schritt 28: Tests und CI hinzugefügt
+- [x] Schritt 29: Loading und Error Handling poliert
 
 ## Offen
+
+Merkliste Cards passen nicht zum restlichen Projekt
