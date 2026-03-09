@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
@@ -34,18 +35,27 @@ function ResultSkeleton({ count = 18 }) {
   )
 }
 
+const sortOptions = [
+  { value: 'popularity', label: 'Beliebtheit', sortBy: 'popularity.desc' },
+  { value: 'rating', label: 'Bewertung', sortBy: 'vote_average.desc' },
+  { value: 'date', label: 'Erscheinungsdatum', sortBy: 'primary_release_date.desc' },
+]
+
 function Discover() {
-  const [mediaType, setMediaType] = useState('movie')
+  const [searchParams] = useSearchParams()
+  const [mediaType, setMediaType] = useState(() => searchParams.get('type') || 'movie')
+  const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || 'popularity')
   const [selectedGenres, setSelectedGenres] = useState([])
   const [year, setYear] = useState('')
-  const [rating, setRating] = useState('')
+  const [rating, setRating] = useState(() => searchParams.get('rating') || '')
   const [selectedProviders, setSelectedProviders] = useState([])
 
   const genres = useGenres(mediaType)
   const providers = useWatchProviders(mediaType)
 
   const filterParams = useMemo(() => {
-    const params = { sort_by: 'popularity.desc' }
+    const sort = sortOptions.find((s) => s.value === sortBy) || sortOptions[0]
+    const params = { sort_by: sort.sortBy }
     if (selectedGenres.length > 0) params.with_genres = selectedGenres.join(',')
     if (year) {
       if (mediaType === 'movie') params.primary_release_year = year
@@ -53,8 +63,16 @@ function Discover() {
     }
     if (rating) params['vote_average.gte'] = rating
     if (selectedProviders.length > 0) params.with_watch_providers = selectedProviders.join('|')
+    // Bei Sortierung nach Bewertung: Mindestanzahl Votes um obskure Titel zu vermeiden
+    if (sortBy === 'rating') params['vote_count.gte'] = 200
+    // Bei Sortierung nach Datum: nur bereits erschienene Titel
+    if (sortBy === 'date') {
+      const today = new Date().toISOString().split('T')[0]
+      if (mediaType === 'movie') params['release_date.lte'] = today
+      else params['first_air_date.lte'] = today
+    }
     return params
-  }, [mediaType, selectedGenres, year, rating, selectedProviders])
+  }, [mediaType, selectedGenres, year, rating, selectedProviders, sortBy])
 
   const {
     data,
@@ -117,6 +135,7 @@ function Discover() {
   }, [])
 
   function resetFilters() {
+    setSortBy('popularity')
     setSelectedGenres([])
     setYear('')
     setRating('')
@@ -141,30 +160,48 @@ function Discover() {
     )
   }
 
-  const hasFilters = selectedGenres.length > 0 || year || rating || selectedProviders.length > 0
+  const hasFilters = selectedGenres.length > 0 || year || rating || selectedProviders.length > 0 || sortBy !== 'popularity'
 
   return (
     <div className="space-y-8">
       <h1 className="font-display text-5xl tracking-wide text-white">Entdecken</h1>
 
-      {/* Media Type Toggle */}
-      <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
-        {[
-          { type: 'movie', label: 'Filme' },
-          { type: 'tv', label: 'Serien' },
-        ].map(({ type, label }) => (
-          <button
-            key={type}
-            onClick={() => switchMediaType(type)}
-            className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-              mediaType === type
-                ? 'bg-accent-500 text-black'
-                : 'text-surface-300 hover:text-white'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      {/* Media Type Toggle + Sort */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
+          {[
+            { type: 'movie', label: 'Filme' },
+            { type: 'tv', label: 'Serien' },
+          ].map(({ type, label }) => (
+            <button
+              key={type}
+              onClick={() => switchMediaType(type)}
+              className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                mediaType === type
+                  ? 'bg-accent-500 text-black'
+                  : 'text-surface-300 hover:text-white'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
+          {sortOptions.map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => setSortBy(value)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                sortBy === value
+                  ? 'bg-accent-500 text-black'
+                  : 'text-surface-300 hover:text-white'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Filters */}

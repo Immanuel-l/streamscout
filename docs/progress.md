@@ -23,10 +23,9 @@
 - [x] Schritt 20: Filme im Kino auch in der MoveDetail auch kennzeichnen
 - [x] Schritt 21: Mood: Kurze Beschreibung anzeigen, wonach gefiltert wird
 - [x] Schritt 21: Suche überarbeitet
+- [x] Schritt 22: Kinofilm-Section / Anime-Section (Crunchyroll)
 
 ## Offen
-- [ ] Kinofilm-Section / Anime-Section (Crunchyroll)
-- Macht gerade im Trend auf der Homepage sinn, wenn wir darunter Beliebte Filme und Beliebte Serien haben?
-- In den Moods Filtern nach Release Datum 
+- In den Moods Filter hinzufügen nach Release Datum
 - Alle anzeigen auch bei den anderen sachen auf Home
 - oder macht Beliebt und zuletzt bei Kino mehr sinn?

@@ -48,6 +48,7 @@ function Home() {
         items={nowPlaying.data?.movies}
         isLoading={nowPlaying.isLoading}
         error={nowPlaying.error}
+        linkTo="/kino"
       />
 
       <MediaRow
@@ -55,6 +56,7 @@ function Home() {
         items={movies.data}
         isLoading={movies.isLoading}
         error={movies.error}
+        linkTo="/discover?type=movie"
       />
 
       <MediaRow
@@ -62,6 +64,7 @@ function Home() {
         items={tv.data}
         isLoading={tv.isLoading}
         error={tv.error}
+        linkTo="/discover?type=tv"
       />
 
       <MediaRow
@@ -77,6 +80,7 @@ function Home() {
         items={topMovies.data}
         isLoading={topMovies.isLoading}
         error={topMovies.error}
+        linkTo="/discover?type=movie&sort=rating"
       />
 
       <MediaRow
@@ -84,6 +88,7 @@ function Home() {
         items={topTv.data}
         isLoading={topTv.isLoading}
         error={topTv.error}
+        linkTo="/discover?type=tv&sort=rating"
       />
 
       <MediaRow
@@ -91,6 +96,7 @@ function Home() {
         items={newMovies.data}
         isLoading={newMovies.isLoading}
         error={newMovies.error}
+        linkTo="/discover?type=movie&sort=date"
       />
 
       <MediaRow
@@ -98,6 +104,7 @@ function Home() {
         items={newTv.data}
         isLoading={newTv.isLoading}
         error={newTv.error}
+        linkTo="/discover?type=tv&sort=date"
       />
     </div>
   )
