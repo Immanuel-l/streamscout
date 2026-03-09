@@ -28,3 +28,5 @@
 - [x] Schritt 24: Moods: jetzt mit Filtern
 
 ## Offen
+
+Serien keine Trailer
