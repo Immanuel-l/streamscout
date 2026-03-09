@@ -28,7 +28,6 @@ const createWrapper = () => {
       },
     },
   })
-  // eslint-disable-next-line react/prop-types
   return ({ children }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   )

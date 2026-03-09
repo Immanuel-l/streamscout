@@ -12,6 +12,7 @@ export function useWatchlistRecommendations(count = 2) {
   // Pick random items when the hook mounts or when the watchlist changes significantly
   useEffect(() => {
     if (items.length === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedItems([])
       return
     }
