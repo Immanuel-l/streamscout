@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from 'react'
+import { usePersistedState } from '../hooks/usePersistedState'
 import { Link } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { discoverMovies } from '../api/movies'
@@ -28,7 +29,7 @@ function ResultSkeleton({ count = 18 }) {
 }
 
 function Anime() {
-  const [mediaType, setMediaType] = useState('tv')
+  const [mediaType, setMediaType] = usePersistedState('anime.mediaType', 'tv')
   const [startPage, setStartPage] = useState(1)
 
   const {

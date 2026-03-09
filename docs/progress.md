@@ -24,8 +24,8 @@
 - [x] Schritt 21: Mood: Kurze Beschreibung anzeigen, wonach gefiltert wird
 - [x] Schritt 21: Suche überarbeitet
 - [x] Schritt 22: Kinofilm-Section / Anime-Section (Crunchyroll)
+- [x] Schritt 23: Filter einstellungen auch nach einen klick gespeichert
 
 ## Offen
 - In den Moods Filter hinzufügen nach Release Datum
-- Alle anzeigen auch bei den anderen sachen auf Home
-- oder macht Beliebt und zuletzt bei Kino mehr sinn?
+- Auf der Homepage auch nach Release + Beliebtheit gleichzeitig sortieren

@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from 'react'
+import { usePersistedState } from '../hooks/usePersistedState'
 import { useParams, Navigate, Link } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { discoverMovies } from '../api/movies'
@@ -25,7 +26,7 @@ function ResultSkeleton({ count = 18 }) {
 function Mood() {
   const { slug } = useParams()
   const mood = getMoodBySlug(slug)
-  const [mediaType, setMediaType] = useState('movie')
+  const [mediaType, setMediaType] = usePersistedState(`mood.${slug}.mediaType`, 'movie')
   const [startPage, setStartPage] = useState(1)
 
   const params = mood?.[mediaType] || {}

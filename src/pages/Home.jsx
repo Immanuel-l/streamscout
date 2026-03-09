@@ -1,7 +1,9 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import MediaRow from '../components/common/MediaRow'
 import { useNowPlaying, usePopularMovies, useTopRatedMovies, useNewMovies, usePopularAnime } from '../hooks/useMovies'
 import { usePopularTv, useTopRatedTv, useNewTv } from '../hooks/useTv'
+import { usePersistedState } from '../hooks/usePersistedState'
 import { moods } from '../utils/moods'
 
 function MoodSection() {
@@ -28,8 +30,32 @@ function MoodSection() {
   )
 }
 
+const kinoSortOptions = [
+  { value: 'recommended', label: 'Empfohlen' },
+  { value: 'date', label: 'Kinostart' },
+  { value: 'popularity', label: 'Beliebtheit' },
+]
+
+function sortKinoMovies(movies, sortBy) {
+  if (sortBy === 'popularity') {
+    return [...movies].sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+  }
+  if (sortBy === 'date') return movies
+  // 'recommended' — Rang-basierter Mix aus Kinostart + Beliebtheit
+  const dateRank = new Map(movies.map((m, i) => [m.id, i]))
+  const popSorted = [...movies].sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+  const popRank = new Map(popSorted.map((m, i) => [m.id, i]))
+  return [...movies].sort((a, b) =>
+    (dateRank.get(a.id) + popRank.get(a.id)) - (dateRank.get(b.id) + popRank.get(b.id))
+  )
+}
+
 function Home() {
   const nowPlaying = useNowPlaying()
+  const [kinoSort, setKinoSort] = usePersistedState('kino.sortBy', 'recommended')
+  const kinoMovies = useMemo(() =>
+    sortKinoMovies(nowPlaying.data?.movies || [], kinoSort)
+  , [nowPlaying.data?.movies, kinoSort])
   const movies = usePopularMovies()
   const tv = usePopularTv()
   const topMovies = useTopRatedMovies()
@@ -45,10 +71,13 @@ function Home() {
 
       <MediaRow
         title="Aktuell im Kino"
-        items={nowPlaying.data?.movies}
+        items={kinoMovies}
         isLoading={nowPlaying.isLoading}
         error={nowPlaying.error}
         linkTo="/kino"
+        sortOptions={kinoSortOptions}
+        sortBy={kinoSort}
+        onSortChange={setKinoSort}
       />
 
       <MediaRow

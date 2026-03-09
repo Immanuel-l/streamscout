@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { usePersistedState } from '../hooks/usePersistedState'
 import { Link } from 'react-router-dom'
 import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
@@ -32,12 +33,12 @@ const eraOptions = [
 const MAX_RETRIES = 3
 
 function Random() {
-  const [mediaType, setMediaType] = useState('movie')
-  const [genre, setGenre] = useState('')
-  const [rating, setRating] = useState('')
-  const [language, setLanguage] = useState('de|en')
-  const [era, setEra] = useState('')
-  const [selectedProviders, setSelectedProviders] = useState([])
+  const [mediaType, setMediaType] = usePersistedState('random.mediaType', 'movie')
+  const [genre, setGenre] = usePersistedState('random.genre', '')
+  const [rating, setRating] = usePersistedState('random.rating', '')
+  const [language, setLanguage] = usePersistedState('random.language', 'de|en')
+  const [era, setEra] = usePersistedState('random.era', '')
+  const [selectedProviders, setSelectedProviders] = usePersistedState('random.providers', [])
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)

@@ -1,5 +1,6 @@
-import { useState, useMemo, useRef, useCallback } from 'react'
+import { useMemo, useRef, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { usePersistedState } from '../hooks/usePersistedState'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
@@ -43,12 +44,12 @@ const sortOptions = [
 
 function Discover() {
   const [searchParams] = useSearchParams()
-  const [mediaType, setMediaType] = useState(() => searchParams.get('type') || 'movie')
-  const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || 'popularity')
-  const [selectedGenres, setSelectedGenres] = useState([])
-  const [year, setYear] = useState('')
-  const [rating, setRating] = useState(() => searchParams.get('rating') || '')
-  const [selectedProviders, setSelectedProviders] = useState([])
+  const [mediaType, setMediaType] = usePersistedState('discover.mediaType', () => searchParams.get('type') || 'movie')
+  const [sortBy, setSortBy] = usePersistedState('discover.sortBy', () => searchParams.get('sort') || 'popularity')
+  const [selectedGenres, setSelectedGenres] = usePersistedState('discover.genres', [])
+  const [year, setYear] = usePersistedState('discover.year', '')
+  const [rating, setRating] = usePersistedState('discover.rating', () => searchParams.get('rating') || '')
+  const [selectedProviders, setSelectedProviders] = usePersistedState('discover.providers', [])
 
   const genres = useGenres(mediaType)
   const providers = useWatchProviders(mediaType)

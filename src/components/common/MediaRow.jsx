@@ -39,7 +39,7 @@ function ArrowButton({ direction, onClick }) {
   )
 }
 
-function MediaRow({ title, items, isLoading, error, linkTo }) {
+function MediaRow({ title, items, isLoading, error, linkTo, sortOptions, sortBy, onSortChange }) {
   const scrollRef = useRef(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
@@ -73,10 +73,27 @@ function MediaRow({ title, items, isLoading, error, linkTo }) {
 
   return (
     <section className="space-y-4">
-      <div className="flex items-baseline gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <h2 className="font-display text-3xl sm:text-4xl tracking-wide text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">{title}</h2>
+        {sortOptions && (
+          <div className="flex gap-1 bg-surface-800 rounded-lg p-0.5">
+            {sortOptions.map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => onSortChange(value)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                  sortBy === value
+                    ? 'bg-accent-500 text-black'
+                    : 'text-surface-300 hover:text-white'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
         {linkTo && (
-          <Link to={linkTo} className="text-sm text-surface-400 hover:text-accent-400 transition-colors whitespace-nowrap">
+          <Link to={linkTo} className="text-sm text-surface-400 hover:text-accent-400 transition-colors whitespace-nowrap ml-auto">
             Alle anzeigen
           </Link>
         )}
