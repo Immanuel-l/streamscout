@@ -42,13 +42,14 @@ function Search() {
 
   const isPersonSearch = mediaType === 'person'
 
-  // Reset irrelevant filters when switching to person search
-  useEffect(() => {
-    if (isPersonSearch) {
+  // Switch media type and reset irrelevant filters for person search
+  function handleMediaType(type) {
+    setMediaType(type)
+    if (type === 'person') {
       setSortBy('relevance')
       setOnlyStreamable(false)
     }
-  }, [isPersonSearch])
+  }
 
   // Sync state to URL params (replace to avoid history spam)
   useEffect(() => {
@@ -59,18 +60,6 @@ function Search() {
     if (onlyStreamable) params.streamable = 'true'
     setSearchParams(params, { replace: true })
   }, [debouncedQuery, mediaType, sortBy, onlyStreamable, setSearchParams])
-
-  // Save to search history when results arrive
-  useEffect(() => {
-    if (debouncedQuery.length >= 2 && data?.pages[0]?.results.length > 0) {
-      const trimmed = debouncedQuery.trim()
-      setSearchHistory((prev) => {
-        const next = [trimmed, ...prev.filter((h) => h !== trimmed)].slice(0, MAX_HISTORY)
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(next))
-        return next
-      })
-    }
-  }, [debouncedQuery]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const {
     data,
@@ -90,6 +79,19 @@ function Search() {
     enabled: debouncedQuery.length >= 2,
     retry: 1,
   })
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  // Save to search history when results arrive
+  useEffect(() => {
+    if (debouncedQuery.length >= 2 && data?.pages[0]?.results.length > 0) {
+      const trimmed = debouncedQuery.trim()
+      const prev = getSearchHistory()
+      const next = [trimmed, ...prev.filter((h) => h !== trimmed)].slice(0, MAX_HISTORY)
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(next))
+      setSearchHistory(next)
+    }
+  }, [debouncedQuery, data])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const firstPageCount = data?.pages[0]?.results.length || 0
 
@@ -243,7 +245,7 @@ function Search() {
             ].map(({ type, label }) => (
               <button
                 key={type}
-                onClick={() => setMediaType(type)}
+                onClick={() => handleMediaType(type)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   mediaType === type
                     ? 'bg-accent-500 text-black'
