@@ -4,7 +4,10 @@
       "Bash(mkdir:*)",
       "Bash(npm run:*)",
       "Bash(gh run:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(npm test:*)",
+      "Bash(cd \"C:/Users/leine/Desktop/StreamScout\" && npm install --save-dev husky 2>&1)",
+      "Bash(cd \"C:/Users/leine/Desktop/StreamScout\" && npx husky init 2>&1)"
     ]
   }
 }

@@ -43,16 +43,16 @@ function SearchBar({ value, onChange, suggestions = [], history = [], onHistoryS
     queueMicrotask(() => setHighlighted(-1))
   }, [suggestions])
 
-  // Show history when input becomes empty while focused, hide when typing
-  useEffect(() => {
-    if (!value && focusedRef.current && history.length > 0) {
+  function handleValueChange(newValue) {
+    onChange(newValue)
+    if (!newValue && focusedRef.current && history.length > 0) {
       setHistoryOpen(true)
       setOpen(false)
       setHighlighted(-1)
-    } else if (value) {
+    } else if (newValue) {
       setHistoryOpen(false)
     }
-  }, [value, history.length])
+  }
 
   function goTo(item) {
     const path = item.media_type === 'person'
@@ -140,7 +140,7 @@ function SearchBar({ value, onChange, suggestions = [], history = [], onHistoryS
         ref={inputRef}
         type="text"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => handleValueChange(e.target.value)}
         onFocus={() => {
           focusedRef.current = true
           if (!value && history.length > 0) {
@@ -160,7 +160,7 @@ function SearchBar({ value, onChange, suggestions = [], history = [], onHistoryS
       {value && (
         <button
           onClick={() => {
-            onChange('')
+            handleValueChange('')
             focusedRef.current = true
             inputRef.current?.focus()
           }}

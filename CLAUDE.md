@@ -16,6 +16,8 @@ Film- und Serien-Suchapp mit React + JavaScript + Vite, angebunden an die TMDB A
 - `npm run dev` (Dev Server)
 - `npm run build` (Production Build)
 - `npm run preview` (Build lokal testen)
+- `npm test` (Tests ausführen)
+- `npm run check` (Lint + Tests + Build — vollständiger CI-Check lokal)
 - `npm audit` (Dependency Security Check)
 
 ## API
@@ -65,4 +67,5 @@ src/
 
 - Feature Branches: `feature/name` (z.B. feature/search, feature/discover)
 - Commits auf Deutsch, kurz und beschreibend
-- Vor jedem Push: `npm run build` sicherstellen dass der Build läuft
+- Husky Git Hooks: pre-commit (Lint), pre-push (Lint + Tests + Build)
+- `npm run check` für manuellen vollständigen CI-Check
