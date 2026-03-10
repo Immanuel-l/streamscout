@@ -40,8 +40,9 @@
 - [x] Schritt 35: Crunchyroll zu den Providern hinzugefügt
 - [x] Schritt 36: Personalisierte Watchlist-Empfehlungen auf der Startseite und Watchlist-Seite (nur streambare Inhalte)
 - [x] Schritt 37: Streaming-Provider auf mobilen Geräten
+- [x] Schritt 38: Design Überarbeitung
 
 ## Offen
 
 - Weitere Features nach Bedarf.
-- ChatGPT chat
+- ChatGPT Chat 

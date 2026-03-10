@@ -17,11 +17,10 @@ function Select({ value, onChange, options, placeholder = 'Auswählen' }) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  useEffect(() => {
-    if (open) {
-      setHighlighted(selectedIndex >= 0 ? selectedIndex : 0)
-    }
-  }, [open, selectedIndex])
+  function openDropdown() {
+    setOpen(true)
+    setHighlighted(selectedIndex >= 0 ? selectedIndex : 0)
+  }
 
   // Scroll highlighted option into view
   useEffect(() => {
@@ -36,7 +35,7 @@ function Select({ value, onChange, options, placeholder = 'Auswählen' }) {
       case 'ArrowDown':
         e.preventDefault()
         if (!open) {
-          setOpen(true)
+          openDropdown()
         } else {
           setHighlighted((prev) => (prev + 1) % options.length)
         }
@@ -44,7 +43,7 @@ function Select({ value, onChange, options, placeholder = 'Auswählen' }) {
       case 'ArrowUp':
         e.preventDefault()
         if (!open) {
-          setOpen(true)
+          openDropdown()
         } else {
           setHighlighted((prev) => (prev <= 0 ? options.length - 1 : prev - 1))
         }
@@ -56,7 +55,7 @@ function Select({ value, onChange, options, placeholder = 'Auswählen' }) {
           onChange(String(options[highlighted].value))
           setOpen(false)
         } else {
-          setOpen(true)
+          openDropdown()
         }
         break
       case 'Escape':
@@ -82,7 +81,7 @@ function Select({ value, onChange, options, placeholder = 'Auswählen' }) {
     <div className="relative" ref={ref}>
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={() => open ? setOpen(false) : openDropdown()}
         onKeyDown={handleKeyDown}
         role="combobox"
         aria-expanded={open}
