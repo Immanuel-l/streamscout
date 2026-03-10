@@ -19,7 +19,7 @@
 
 ---
 
-![StreamScout Home](docs/screenshot-home.png)
+![StreamScout Home](docs/screenshot-home-new.png)
 
 > Cineastisches Design statt Dashboard-Optik: Dunkle Backdrops, Gradient-Overlays und Film-Atmosphäre — inspiriert von Netflix, MUBI und Apple TV+. Installierbar als Progressive Web App.
 
