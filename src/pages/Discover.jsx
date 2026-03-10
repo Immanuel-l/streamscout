@@ -9,6 +9,7 @@ import MediaCard from '../components/common/MediaCard'
 import GridSkeleton from '../components/common/GridSkeleton'
 import ErrorBox from '../components/common/ErrorBox'
 import Select from '../components/common/Select'
+import ScrollToTop from '../components/common/ScrollToTop'
 
 const currentYear = new Date().getFullYear()
 const years = Array.from({ length: 50 }, (_, i) => currentYear - i)
@@ -343,6 +344,8 @@ function Discover() {
           </div>
         )
       )}
+
+      <ScrollToTop />
     </div>
   )
 }

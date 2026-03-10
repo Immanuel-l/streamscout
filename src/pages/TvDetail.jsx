@@ -209,13 +209,13 @@ function TvDetail() {
       </section>
 
       {/* Content */}
-      <div className="relative -mt-32 sm:-mt-40 md:-mt-52 z-10 flex gap-4 sm:gap-6 md:gap-10">
+      <div className="relative -mt-20 sm:-mt-40 md:-mt-52 z-10 flex flex-col sm:flex-row gap-4 sm:gap-6 md:gap-10">
         {poster && (
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 self-center sm:self-start">
             <img
               src={poster}
               alt={show.name}
-              className="w-32 sm:w-44 md:w-56 lg:w-64 rounded-xl shadow-2xl shadow-black/60 ring-1 ring-white/5"
+              className="w-36 sm:w-44 md:w-56 lg:w-64 rounded-xl shadow-2xl shadow-black/60 ring-1 ring-white/5"
             />
           </div>
         )}
@@ -223,11 +223,11 @@ function TvDetail() {
         <div className="flex-1 min-w-0 space-y-5">
           <div>
             <div className="flex items-start gap-4">
-              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl tracking-wide text-white leading-tight">
+              <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl tracking-wide text-white leading-tight">
                 {show.name}
               </h1>
               <WatchlistButton
-                media={{ id: show.id, media_type: 'tv', name: show.name, poster_path: show.poster_path }}
+                media={{ id: show.id, media_type: 'tv', name: show.name, poster_path: show.poster_path, vote_average: show.vote_average, first_air_date: show.first_air_date }}
                 size="lg"
               />
             </div>

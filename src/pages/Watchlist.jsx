@@ -79,6 +79,7 @@ function Watchlist() {
 
   const [selectedItems, setSelectedItems] = useState(new Set())
   const [selectedProvider, setSelectedProvider] = useState(null)
+  const [sortBy, setSortBy] = useState('added')
 
   // Determine what to render based on the view mode
   const displayedItems = isSharedView ? sharedItems : items
@@ -166,6 +167,10 @@ function Watchlist() {
     if (!selectedProvider) return true
     const key = `${m.media_type}-${m.id}`
     return providerMap[key]?.has(selectedProvider)
+  }).sort((a, b) => {
+    if (sortBy === 'rating') return (b.vote_average || 0) - (a.vote_average || 0)
+    if (sortBy === 'alpha') return (a.title || a.name || '').localeCompare(b.title || b.name || '', 'de')
+    return 0 // 'added' — keep original order (localStorage order)
   })
 
   // Count matches the filtered results now, instead of all tab items
@@ -255,27 +260,49 @@ function Watchlist() {
       )}
 
 
-      {/* Controls: Tabs & Provider Filter */}
+      {/* Controls: Tabs, Sort & Provider Filter */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-surface-800/20 p-2 sm:p-0 rounded-xl sm:bg-transparent">
-        {/* Tabs */}
+        {/* Tabs + Sort */}
         {displayedItems.length > 0 && !isFetchingShared && (
-          <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
-            {tabs.map(({ key, label }) => {
-              const count = key === 'all' ? filtered.length : key === 'movie' ? movieCount : tvCount
-              return (
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
+              {tabs.map(({ key, label }) => {
+                const count = key === 'all' ? filtered.length : key === 'movie' ? movieCount : tvCount
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setActiveTab(key)}
+                    className={`px-4 sm:px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      activeTab === key
+                        ? 'bg-accent-500 text-black'
+                        : 'text-surface-300 hover:text-white'
+                    }`}
+                  >
+                    {label} ({count})
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
+              {[
+                { value: 'added', label: 'Zuletzt hinzugefügt' },
+                { value: 'rating', label: 'Bewertung' },
+                { value: 'alpha', label: 'A–Z' },
+              ].map(({ value, label }) => (
                 <button
-                  key={key}
-                  onClick={() => setActiveTab(key)}
-                  className={`px-4 sm:px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    activeTab === key
+                  key={value}
+                  onClick={() => setSortBy(value)}
+                  className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
+                    sortBy === value
                       ? 'bg-accent-500 text-black'
                       : 'text-surface-300 hover:text-white'
                   }`}
                 >
-                  {label} ({count})
+                  {label}
                 </button>
-              )
-            })}
+              ))}
+            </div>
           </div>
         )}
 
@@ -302,7 +329,7 @@ function Watchlist() {
                   <img
                     src={`${IMAGE_BASE}/w92${p.logo_path}`}
                     alt={p.provider_name}
-                    className="w-8 h-8 sm:w-9 sm:h-9 object-cover"
+                    className="w-10 h-10 sm:w-11 sm:h-11 object-cover"
                   />
                 </button>
               ))}

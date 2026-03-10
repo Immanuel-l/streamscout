@@ -1,11 +1,165 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import MediaRow from '../components/common/MediaRow'
-import { useNowPlaying, usePopularMovies, useTopRatedMovies, useNewMovies, usePopularAnime } from '../hooks/useMovies'
+import WatchlistButton from '../components/common/WatchlistButton'
+import { useNowPlaying, usePopularMovies, useTopRatedMovies, useNewMovies, usePopularAnime, useTrendingAll } from '../hooks/useMovies'
 import { usePopularTv, useTopRatedTv, useNewTv } from '../hooks/useTv'
 import { usePersistedState } from '../hooks/usePersistedState'
+import { backdropUrl } from '../api/tmdb'
 import { moods } from '../utils/moods'
 import WatchlistRecommendations from '../components/home/WatchlistRecommendations'
+
+function HeroSection({ items }) {
+  const heroItems = useMemo(
+    () => (items || []).filter((m) => m.backdrop_path && m.overview),
+    [items]
+  )
+  const [index, setIndex] = useState(0)
+  const [fade, setFade] = useState(true)
+  const touchRef = useRef(null)
+
+  const goTo = useCallback((newIndex) => {
+    setFade(false)
+    setTimeout(() => {
+      setIndex(newIndex)
+      setFade(true)
+    }, 300)
+  }, [])
+
+  const next = useCallback(() => {
+    if (heroItems.length <= 1) return
+    goTo((index + 1) % heroItems.length)
+  }, [heroItems.length, index, goTo])
+
+  const prev = useCallback(() => {
+    if (heroItems.length <= 1) return
+    goTo((index - 1 + heroItems.length) % heroItems.length)
+  }, [heroItems.length, index, goTo])
+
+  useEffect(() => {
+    if (heroItems.length <= 1) return
+    const timer = setInterval(next, 8000)
+    return () => clearInterval(timer)
+  }, [next, heroItems.length])
+
+  // Swipe gestures
+  function handleTouchStart(e) {
+    touchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+  }
+
+  function handleTouchEnd(e) {
+    if (!touchRef.current) return
+    const dx = e.changedTouches[0].clientX - touchRef.current.x
+    const dy = e.changedTouches[0].clientY - touchRef.current.y
+    touchRef.current = null
+    // Only trigger if horizontal swipe is dominant and > 50px
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      if (dx < 0) next()
+      else prev()
+    }
+  }
+
+  if (heroItems.length === 0) return null
+
+  const item = heroItems[index]
+  const title = item.title || item.name
+  const date = item.release_date || item.first_air_date
+  const year = date ? new Date(date).getFullYear() : null
+  const type = item.media_type === 'tv' ? 'tv' : 'movie'
+  const linkPath = type === 'tv' ? `/tv/${item.id}` : `/movie/${item.id}`
+  const score = item.vote_average > 0 ? Math.round(item.vote_average * 10) : null
+
+  return (
+    <section className="group/hero relative -mx-4 sm:-mx-6 lg:-mx-8 -mt-8 mb-4">
+      <div
+        className="relative h-[50vh] sm:h-[55vh] md:h-[60vh] overflow-hidden touch-pan-y"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        <img
+          src={backdropUrl(item.backdrop_path, 'original')}
+          alt=""
+          className={`absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-500 ${fade ? 'opacity-100' : 'opacity-0'}`}
+        />
+        {/* Gradients */}
+        <div className="absolute inset-0 bg-gradient-to-t from-surface-950 via-surface-950/60 via-55% to-surface-950/20" />
+        <div className="absolute inset-0 bg-gradient-to-r from-surface-950/80 via-transparent to-transparent" />
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(5,5,5,0.5) 100%)' }} />
+
+        {/* Arrow Buttons */}
+        {heroItems.length > 1 && (
+          <>
+            <button
+              onClick={prev}
+              aria-label="Vorheriger Slide"
+              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-surface-950/60 backdrop-blur-sm border border-surface-700/40 flex items-center justify-center text-white/70 hover:text-white hover:bg-surface-800/80 transition-all duration-300 opacity-0 group-hover/hero:opacity-100"
+            >
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
+              onClick={next}
+              aria-label="Nächster Slide"
+              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-surface-950/60 backdrop-blur-sm border border-surface-700/40 flex items-center justify-center text-white/70 hover:text-white hover:bg-surface-800/80 transition-all duration-300 opacity-0 group-hover/hero:opacity-100"
+            >
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </>
+        )}
+
+        {/* Content */}
+        <div className={`absolute bottom-0 left-0 right-0 px-4 sm:px-6 lg:px-8 pb-8 sm:pb-12 max-w-7xl mx-auto transition-opacity duration-500 ${fade ? 'opacity-100' : 'opacity-0'}`}>
+          <div className="max-w-2xl space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="px-2.5 py-0.5 rounded-md bg-accent-500/90 text-black text-xs font-bold uppercase tracking-wider">
+                Trending
+              </span>
+              {score && (
+                <span className="text-accent-400 text-sm font-bold">{score}%</span>
+              )}
+              {year && <span className="text-surface-300 text-sm">{year}</span>}
+            </div>
+
+            <h2 className="font-display text-4xl sm:text-5xl md:text-6xl tracking-wide text-white leading-tight">
+              {title}
+            </h2>
+
+            <p className="text-surface-200 text-sm sm:text-base leading-relaxed line-clamp-2 sm:line-clamp-3">
+              {item.overview}
+            </p>
+
+            <div className="flex items-center gap-3 pt-1">
+              <Link
+                to={linkPath}
+                className="px-6 py-2.5 rounded-lg bg-accent-500 text-black text-sm font-bold hover:bg-accent-400 transition-colors"
+              >
+                Details ansehen
+              </Link>
+              <WatchlistButton media={{ ...item, media_type: type }} size="lg" />
+            </div>
+          </div>
+
+          {/* Dots indicator */}
+          {heroItems.length > 1 && (
+            <div className="flex gap-1.5 mt-6">
+              {heroItems.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => goTo(i)}
+                  className={`h-1 rounded-full transition-all duration-300 ${i === index ? 'w-6 bg-accent-500' : 'w-1.5 bg-surface-500/50 hover:bg-surface-400/50'}`}
+                  aria-label={`Slide ${i + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
 
 function MoodSection() {
   return (
@@ -57,6 +211,7 @@ function Home() {
   const kinoMovies = useMemo(() =>
     sortKinoMovies(nowPlaying.data?.movies || [], kinoSort)
   , [nowPlaying.data?.movies, kinoSort])
+  const trending = useTrendingAll()
   const movies = usePopularMovies()
   const tv = usePopularTv()
   const topMovies = useTopRatedMovies()
@@ -66,7 +221,9 @@ function Home() {
   const anime = usePopularAnime()
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-12">
+
+      <HeroSection items={trending.data} />
 
       <MoodSection />
 

@@ -85,6 +85,19 @@ body::after {
   scrollbar-color: var(--color-surface-600) transparent;
 }
 
+/* Global focus-visible styles for keyboard navigation */
+:focus-visible {
+  outline: 2px solid rgba(251, 191, 36, 0.5);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Remove focus-visible for elements that already handle their own focus */
+input:focus-visible,
+[role="combobox"]:focus-visible {
+  outline: none;
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

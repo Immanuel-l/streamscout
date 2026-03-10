@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useWatchlist } from './useWatchlist'
 import { getMovieRecommendations, getMovieProviders } from '../api/movies'
 import { getTvRecommendations, getTvProviders } from '../api/tv'
@@ -8,18 +8,21 @@ import { ALLOWED_PROVIDER_SET } from '../utils/providers'
 export function useWatchlistRecommendations(count = 2) {
   const { items } = useWatchlist()
   const [selectedItems, setSelectedItems] = useState([])
+  const initializedRef = useRef(false)
 
-  // Pick random items when the hook mounts or when the watchlist changes significantly
+  // Pick random items only once on mount (or when watchlist goes from empty → filled)
+  // Don't re-pick on every add/remove to avoid jarring UI reloads
   useEffect(() => {
     if (items.length === 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedItems([])
+      initializedRef.current = false
       return
     }
 
-    // Mix up the items array
+    if (initializedRef.current) return
+    initializedRef.current = true
+
     const shuffled = [...items].sort(() => 0.5 - Math.random())
-    // Make sure we have enough items, taking up to `count` items
     const selected = shuffled.slice(0, Math.min(count, items.length))
     setSelectedItems(selected)
   }, [items, count])

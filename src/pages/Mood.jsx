@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
-import { useParams, useSearchParams, Navigate, Link } from 'react-router-dom'
+import { useParams, useSearchParams, Navigate, Link, useNavigate } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
@@ -7,6 +7,7 @@ import { getMoodBySlug } from '../utils/moods'
 import MediaCard from '../components/common/MediaCard'
 import GridSkeleton from '../components/common/GridSkeleton'
 import ErrorBox from '../components/common/ErrorBox'
+import ScrollToTop from '../components/common/ScrollToTop'
 
 const sortOptions = [
   { value: 'popularity', label: 'Beliebtheit', sortBy: 'popularity.desc' },
@@ -103,20 +104,22 @@ function Mood() {
     setStartPage(Math.floor(Math.random() * 5) + 1)
   }
 
+  const navigate = useNavigate()
+
   if (!mood) return <Navigate to="/" replace />
 
   return (
     <div className="space-y-8">
       <div>
-        <Link
-          to="/"
+        <button
+          onClick={() => navigate(-1)}
           className="text-sm text-surface-400 hover:text-white transition-colors inline-flex items-center gap-1 mb-4"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
           Zurück
-        </Link>
+        </button>
         <div className="flex items-center gap-3">
           <span className="text-4xl">{mood.icon}</span>
           <div>
@@ -235,6 +238,8 @@ function Mood() {
           <p className="text-surface-500 text-sm mt-1">Versuch es mit {mediaType === 'movie' ? 'Serien' : 'Filmen'} statt {mediaType === 'movie' ? 'Filmen' : 'Serien'}.</p>
         </div>
       )}
+
+      <ScrollToTop />
     </div>
   )
 }

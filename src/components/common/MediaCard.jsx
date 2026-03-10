@@ -73,10 +73,10 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
           </div>
         )}
 
-        {/* Rating badge — visible by default, hides on hover */}
+        {/* Rating badge — visible by default, hides on hover. Shifts down when an overlay button occupies top-right */}
         {score && (
           <span
-            className={`absolute top-2 right-2 z-10 text-xs font-bold px-2 py-0.5 rounded-md backdrop-blur-sm transition-opacity duration-300 group-hover:opacity-0 ${scoreColor}`}
+            className={`absolute ${hideWatchlistButton || (isTouch && !hideWatchlistButton) ? 'top-12' : 'top-2'} right-2 z-10 text-xs font-bold px-2 py-0.5 rounded-md backdrop-blur-sm transition-opacity duration-300 group-hover:opacity-0 ${scoreColor}`}
           >
             {score}%
           </span>
@@ -110,11 +110,18 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
           </div>
         )}
 
-        {/* Hover Overlay — cinematic spotlight */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-between p-3 sm:p-4">
-          {/* Top: Watchlist button (if not hidden) */}
+        {/* Mobile Watchlist Button (Permanent, Top Right, Only on touch devices) */}
+        {isTouch && !hideWatchlistButton && (
+          <div className="absolute top-2 right-2 z-20">
+            <WatchlistButton media={{ ...media, media_type: type }} size="sm" />
+          </div>
+        )}
+
+        {/* Hover Overlay — cinematic spotlight (desktop only) */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-between p-3 sm:p-4 pointer-events-none group-hover:pointer-events-auto">
+          {/* Top: Watchlist button (if not hidden, desktop only) */}
           <div className="flex justify-end">
-            {!hideWatchlistButton && (
+            {!hideWatchlistButton && !isTouch && (
               <WatchlistButton media={{ ...media, media_type: type }} size="lg" />
             )}
           </div>

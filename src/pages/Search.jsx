@@ -10,6 +10,7 @@ import SearchBar from '../components/search/SearchBar'
 import MediaCard from '../components/common/MediaCard'
 import GridSkeleton from '../components/common/GridSkeleton'
 import ErrorBox from '../components/common/ErrorBox'
+import ScrollToTop from '../components/common/ScrollToTop'
 
 const searchFns = {
   all: searchMulti,
@@ -297,6 +298,8 @@ function Search() {
           <p className="text-surface-500 text-sm mt-1">Gib mindestens 2 Zeichen ein, um zu suchen.</p>
         </div>
       )}
+
+      <ScrollToTop />
     </div>
   )
 }

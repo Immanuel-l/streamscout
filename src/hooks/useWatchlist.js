@@ -37,6 +37,8 @@ export function useWatchlist() {
       media_type: media.media_type,
       title: media.title || media.name,
       poster_path: media.poster_path,
+      vote_average: media.vote_average || 0,
+      release_date: media.release_date || media.first_air_date || '',
     }
     const current = readWatchlist()
     if (current.some((m) => m.id === entry.id && m.media_type === entry.media_type)) return
@@ -60,6 +62,8 @@ export function useWatchlist() {
         media_type: mediaType,
         title: media.title || media.name,
         poster_path: media.poster_path,
+        vote_average: media.vote_average || 0,
+        release_date: media.release_date || media.first_air_date || '',
       }
       writeWatchlist([entry, ...current])
     }
@@ -85,7 +89,9 @@ export function useWatchlist() {
           id: item.id,
           media_type: item.media_type,
           title: item.title || item.name,
-          poster_path: item.poster_path
+          poster_path: item.poster_path,
+          vote_average: item.vote_average || 0,
+          release_date: item.release_date || item.first_air_date || '',
         })
         currentMap.add(key)
       }
@@ -136,7 +142,9 @@ export function useWatchlist() {
               id: entry.id,
               media_type: entry.media_type,
               title: data.title || data.name,
-              poster_path: data.poster_path
+              poster_path: data.poster_path,
+              vote_average: data.vote_average || 0,
+              release_date: data.release_date || data.first_air_date || '',
             }
           } catch {
             console.warn(`Failed to fetch details for ${entry.media_type} ${entry.id}`)
