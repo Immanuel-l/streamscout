@@ -43,8 +43,16 @@ function SearchBar({ value, onChange, suggestions = [], history = [], onHistoryS
     queueMicrotask(() => setHighlighted(-1))
   }, [suggestions])
 
-  // When value clears while focused, show history; when value is entered, hide it
-  // (Handled inline in onFocus and clear-button onClick — no effect needed)
+  // Show history when input becomes empty while focused, hide when typing
+  useEffect(() => {
+    if (!value && focusedRef.current && history.length > 0) {
+      setHistoryOpen(true)
+      setOpen(false)
+      setHighlighted(-1)
+    } else if (value) {
+      setHistoryOpen(false)
+    }
+  }, [value, history.length])
 
   function goTo(item) {
     const path = item.media_type === 'person'
