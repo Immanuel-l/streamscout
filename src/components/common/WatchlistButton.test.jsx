@@ -43,13 +43,13 @@ describe('WatchlistButton', () => {
 
   it('zeigt "Auf Merkliste setzen" wenn nicht in Watchlist', () => {
     renderWithToast(<WatchlistButton media={movie} />)
-    expect(screen.getByTitle('Auf Merkliste setzen')).toBeInTheDocument()
+    expect(screen.getByLabelText('Testfilm auf Merkliste setzen')).toBeInTheDocument()
   })
 
   it('zeigt "Von Merkliste entfernen" wenn in Watchlist', () => {
     isInWatchlist.mockReturnValue(true)
     renderWithToast(<WatchlistButton media={movie} />)
-    expect(screen.getByTitle('Von Merkliste entfernen')).toBeInTheDocument()
+    expect(screen.getByLabelText('Testfilm von Merkliste entfernen')).toBeInTheDocument()
   })
 
   it('ruft toggle beim Klick auf', () => {

@@ -1,8 +1,9 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll'
 import MediaCard from '../components/common/MediaCard'
 import GridSkeleton from '../components/common/GridSkeleton'
 import ErrorBox from '../components/common/ErrorBox'
@@ -58,34 +59,7 @@ function Anime() {
     [data, mediaType]
   )
 
-  const fetchRef = useRef(fetchNextPage)
-  const hasNextRef = useRef(hasNextPage)
-  const isFetchingRef = useRef(isFetchingNextPage)
-  useEffect(() => {
-    fetchRef.current = fetchNextPage
-    hasNextRef.current = hasNextPage
-    isFetchingRef.current = isFetchingNextPage
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
-
-  const observerRef = useRef(null)
-  const sentinelRef = useCallback((node) => {
-    if (observerRef.current) {
-      observerRef.current.disconnect()
-      observerRef.current = null
-    }
-    if (node) {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting && hasNextRef.current && !isFetchingRef.current) {
-            fetchRef.current()
-          }
-        },
-        { rootMargin: '600px' }
-      )
-      observer.observe(node)
-      observerRef.current = observer
-    }
-  }, [])
+  const sentinelRef = useInfiniteScroll({ fetchNextPage, hasNextPage, isFetchingNextPage })
 
   function shuffle() {
     setStartPage(Math.floor(Math.random() * 5) + 1)
@@ -129,6 +103,7 @@ function Anime() {
             <button
               key={type}
               onClick={() => setMediaType(type)}
+              aria-pressed={mediaType === type}
               className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
                 mediaType === type
                   ? 'bg-accent-500 text-black'

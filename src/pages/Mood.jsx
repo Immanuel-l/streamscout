@@ -1,9 +1,10 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useParams, useSearchParams, Navigate, Link, useNavigate } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
 import { getMoodBySlug } from '../utils/moods'
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll'
 import MediaCard from '../components/common/MediaCard'
 import GridSkeleton from '../components/common/GridSkeleton'
 import ErrorBox from '../components/common/ErrorBox'
@@ -69,36 +70,7 @@ function Mood() {
     [data, mediaType]
   )
 
-  // Stable refs so the observer callback always sees latest values
-  const fetchRef = useRef(fetchNextPage)
-  const hasNextRef = useRef(hasNextPage)
-  const isFetchingRef = useRef(isFetchingNextPage)
-  useEffect(() => {
-    fetchRef.current = fetchNextPage
-    hasNextRef.current = hasNextPage
-    isFetchingRef.current = isFetchingNextPage
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
-
-  // Callback ref — sets up/tears down observer when sentinel enters/leaves DOM
-  const observerRef = useRef(null)
-  const sentinelRef = useCallback((node) => {
-    if (observerRef.current) {
-      observerRef.current.disconnect()
-      observerRef.current = null
-    }
-    if (node) {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting && hasNextRef.current && !isFetchingRef.current) {
-            fetchRef.current()
-          }
-        },
-        { rootMargin: '600px' }
-      )
-      observer.observe(node)
-      observerRef.current = observer
-    }
-  }, [])
+  const sentinelRef = useInfiniteScroll({ fetchNextPage, hasNextPage, isFetchingNextPage })
 
   function shuffle() {
     setStartPage(Math.floor(Math.random() * 5) + 1)
@@ -151,6 +123,7 @@ function Mood() {
             <button
               key={type}
               onClick={() => setMediaType(type)}
+              aria-pressed={mediaType === type}
               className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
                 mediaType === type
                   ? 'bg-accent-500 text-black'
@@ -167,6 +140,7 @@ function Mood() {
             <button
               key={value}
               onClick={() => setSortValue(value)}
+              aria-pressed={sortValue === value}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 sortValue === value
                   ? 'bg-accent-500 text-black'

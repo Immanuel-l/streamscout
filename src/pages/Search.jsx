@@ -1,10 +1,11 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useInfiniteQuery, useQueries } from '@tanstack/react-query'
 import { searchMulti, searchMovies, searchTv, searchPerson } from '../api/common'
 import { getMovieProviders } from '../api/movies'
 import { getTvProviders } from '../api/tv'
 import { useDebounce } from '../hooks/useDebounce'
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll'
 import { ALLOWED_PROVIDER_SET } from '../utils/providers'
 import SearchBar from '../components/search/SearchBar'
 import MediaCard from '../components/common/MediaCard'
@@ -166,35 +167,7 @@ function Search() {
     return filtered
   }, [rawResults, sortBy, onlyStreamable, providerQueries, isPersonSearch])
 
-  // Infinite scroll — IntersectionObserver (same pattern as Discover)
-  const fetchRef = useRef(fetchNextPage)
-  const hasNextRef = useRef(hasNextPage)
-  const isFetchingRef = useRef(isFetchingNextPage)
-  useEffect(() => {
-    fetchRef.current = fetchNextPage
-    hasNextRef.current = hasNextPage
-    isFetchingRef.current = isFetchingNextPage
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
-
-  const observerRef = useRef(null)
-  const sentinelRef = useCallback((node) => {
-    if (observerRef.current) {
-      observerRef.current.disconnect()
-      observerRef.current = null
-    }
-    if (node) {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting && hasNextRef.current && !isFetchingRef.current) {
-            fetchRef.current()
-          }
-        },
-        { rootMargin: '600px' }
-      )
-      observer.observe(node)
-      observerRef.current = observer
-    }
-  }, [])
+  const sentinelRef = useInfiniteScroll({ fetchNextPage, hasNextPage, isFetchingNextPage })
 
   // Search history handlers
   function handleHistorySelect(q) {
@@ -247,6 +220,7 @@ function Search() {
               <button
                 key={type}
                 onClick={() => handleMediaType(type)}
+                aria-pressed={mediaType === type}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   mediaType === type
                     ? 'bg-accent-500 text-black'
@@ -262,6 +236,7 @@ function Search() {
             <>
               <button
                 onClick={() => setOnlyStreamable(!onlyStreamable)}
+                aria-pressed={onlyStreamable}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                   onlyStreamable
                     ? 'bg-accent-500/15 text-accent-400 border border-accent-500/30'
@@ -283,6 +258,7 @@ function Search() {
                   <button
                     key={value}
                     onClick={() => setSortBy(value)}
+                    aria-pressed={sortBy === value}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                       sortBy === value
                         ? 'bg-accent-500 text-black'

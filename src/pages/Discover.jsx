@@ -1,14 +1,15 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
-import { IMAGE_BASE } from '../api/tmdb'
 import { useGenres, useWatchProviders } from '../hooks/useProviders'
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll'
 import MediaCard from '../components/common/MediaCard'
 import GridSkeleton from '../components/common/GridSkeleton'
 import ErrorBox from '../components/common/ErrorBox'
 import Select from '../components/common/Select'
+import ProviderFilter from '../components/common/ProviderFilter'
 import ScrollToTop from '../components/common/ScrollToTop'
 
 const currentYear = new Date().getFullYear()
@@ -111,36 +112,7 @@ function Discover() {
     [data, mediaType]
   )
 
-  // Stable refs so the observer callback always sees latest values
-  const fetchRef = useRef(fetchNextPage)
-  const hasNextRef = useRef(hasNextPage)
-  const isFetchingRef = useRef(isFetchingNextPage)
-  useEffect(() => {
-    fetchRef.current = fetchNextPage
-    hasNextRef.current = hasNextPage
-    isFetchingRef.current = isFetchingNextPage
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
-
-  // Callback ref — sets up/tears down observer when sentinel enters/leaves DOM
-  const observerRef = useRef(null)
-  const sentinelRef = useCallback((node) => {
-    if (observerRef.current) {
-      observerRef.current.disconnect()
-      observerRef.current = null
-    }
-    if (node) {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting && hasNextRef.current && !isFetchingRef.current) {
-            fetchRef.current()
-          }
-        },
-        { rootMargin: '600px' }
-      )
-      observer.observe(node)
-      observerRef.current = observer
-    }
-  }, [])
+  const sentinelRef = useInfiniteScroll({ fetchNextPage, hasNextPage, isFetchingNextPage })
 
   function resetFilters() {
     setSortBy('popularity')
@@ -184,6 +156,7 @@ function Discover() {
             <button
               key={type}
               onClick={() => switchMediaType(type)}
+              aria-pressed={mediaType === type}
               className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
                 mediaType === type
                   ? 'bg-accent-500 text-black'
@@ -200,6 +173,7 @@ function Discover() {
             <button
               key={value}
               onClick={() => setSortBy(value)}
+              aria-pressed={sortBy === value}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 sortBy === value
                   ? 'bg-accent-500 text-black'
@@ -222,6 +196,7 @@ function Discover() {
                 <button
                   key={g.id}
                   onClick={() => toggleGenre(g.id)}
+                  aria-pressed={selectedGenres.includes(g.id)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
                     selectedGenres.includes(g.id)
                       ? 'bg-accent-500 text-black shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]'
@@ -257,31 +232,11 @@ function Discover() {
           </div>
         </div>
 
-        {providers.data && (
-          <div>
-            <p className="text-xs font-medium text-surface-400 uppercase tracking-wider mb-2">Streaming-Anbieter</p>
-            <div className="flex flex-wrap gap-2">
-              {providers.data.map((p) => (
-                <button
-                  key={p.provider_id}
-                  onClick={() => toggleProvider(p.provider_id)}
-                  title={p.provider_name}
-                  className={`rounded-xl overflow-hidden transition-all duration-300 ${
-                    selectedProviders.includes(p.provider_id)
-                      ? 'ring-2 ring-accent-400 scale-110 shadow-[0_0_16px_-4px_rgba(245,158,11,0.35)]'
-                      : 'opacity-60 hover:opacity-100 hover:scale-105'
-                  }`}
-                >
-                  <img
-                    src={`${IMAGE_BASE}/w92${p.logo_path}`}
-                    alt={p.provider_name}
-                    className="w-11 h-11 object-cover"
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        <ProviderFilter
+          providers={providers.data}
+          selected={selectedProviders}
+          onToggle={toggleProvider}
+        />
 
         {hasFilters && (
           <button

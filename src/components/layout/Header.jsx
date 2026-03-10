@@ -14,6 +14,12 @@ function Header() {
 
   return (
     <div className="sticky top-0 z-50">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[60] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-accent-500 focus:text-black focus:text-sm focus:font-medium"
+      >
+        Zum Inhalt springen
+      </a>
       <header className="w-full bg-surface-950/80 backdrop-blur-md pt-[env(safe-area-inset-top)] border-b border-accent-500/10" style={{ boxShadow: '0 1px 20px -4px rgba(245, 158, 11, 0.08)' }}>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <Link

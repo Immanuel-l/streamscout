@@ -44,9 +44,7 @@
 
 ## Offen
 
-- Weitere Features nach Bedarf.
-- ChatGPT Chat
-- ReadMe.md aktuallisieren
+gehe nochmal das ganze Projekt durch, wurden alle anforderungen richtig und gut umgesetzt, wo gibt es noch verbesserungspotentail und was kann man noch ergänzen, ändern?
 
 
   Was noch fehlen könnte (optional, für die Zukunft)

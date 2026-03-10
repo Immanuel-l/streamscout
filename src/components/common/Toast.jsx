@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { ToastContext } from './useToast'
+import { ToastContext, setGlobalToast } from './useToast'
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([])
@@ -9,6 +9,12 @@ export function ToastProvider({ children }) {
     const id = Date.now()
     setToasts((prev) => [...prev, { id, message, type }])
   }, [])
+
+  // Register global toast for Axios interceptor
+  useEffect(() => {
+    setGlobalToast(show)
+    return () => setGlobalToast(null)
+  }, [show])
 
   const dismiss = useCallback((id) => {
     setToasts((prev) => prev.filter((t) => t.id !== id))
@@ -48,6 +54,10 @@ function ToastItem({ toast, onDismiss }) {
   ) : toast.type === 'removed' ? (
     <svg className="w-4 h-4 text-surface-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+    </svg>
+  ) : toast.type === 'error' ? (
+    <svg className="w-4 h-4 text-red-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
     </svg>
   ) : null
 
