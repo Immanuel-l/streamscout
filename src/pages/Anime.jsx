@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
-import { usePersistedState } from '../hooks/usePersistedState'
-import { Link } from 'react-router-dom'
+import { useSearchParams, Link } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
@@ -15,8 +14,16 @@ const animeParams = {
 }
 
 function Anime() {
-  const [mediaType, setMediaType] = usePersistedState('anime.mediaType', 'tv')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [mediaType, setMediaType] = useState(() => searchParams.get('type') || 'tv')
   const [startPage, setStartPage] = useState(1)
+
+  // Sync state to URL params
+  useEffect(() => {
+    const params = {}
+    if (mediaType !== 'tv') params.type = mediaType
+    setSearchParams(params, { replace: true })
+  }, [mediaType, setSearchParams])
 
   const {
     data,

@@ -48,3 +48,4 @@
 - ChatGPT Chat
 
 Nicht streambare inhalte, unterhalb der card kann weggelassen werden, weil es sonst sehr buggy wirkt
+Prüfe immer nach CI fehlern bei GitHub
