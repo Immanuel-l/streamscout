@@ -166,9 +166,6 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
       <div className="mt-2 px-1 group-hover:opacity-0 transition-opacity duration-300">
         <p className="text-surface-200 text-sm font-medium leading-tight line-clamp-1">{title}</p>
         {year && <p className="text-surface-400 text-xs mt-0.5">{year}</p>}
-        {notStreamable && (
-          <p className="text-surface-500 text-[11px] mt-0.5">Nicht streambar</p>
-        )}
       </div>
     </Link>
   )

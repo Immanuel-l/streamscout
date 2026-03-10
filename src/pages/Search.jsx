@@ -136,8 +136,9 @@ function Search() {
     })),
   })
 
-  const isInitialLoad = !data || data.pages.length <= 1
-  const providersLoading = onlyStreamable && isInitialLoad && rawResults.length > 0 && providerQueries.some((q) => q.isLoading)
+  // Progressive provider loading — don't block the whole grid
+  const providersChecking = onlyStreamable && !isPersonSearch && rawResults.length > 0 && providerQueries.some((q) => q.isLoading)
+  const noProviderResolved = onlyStreamable && !isPersonSearch && rawResults.length > 0 && !providerQueries.some((q) => q.isSuccess || q.isError)
 
   const results = useMemo(() => {
     if (!rawResults.length) return []
@@ -216,7 +217,7 @@ function Search() {
   const hasQuery = debouncedQuery.length >= 2
   const hasResults = results.length > 0
   const noResults = hasQuery && !isLoading && !error && data && rawResults.length === 0
-  const allFilteredOut = hasQuery && !isLoading && rawResults.length > 0 && results.length === 0 && !providersLoading
+  const allFilteredOut = hasQuery && !isLoading && rawResults.length > 0 && results.length === 0 && !providersChecking
 
   return (
     <div className="space-y-8">
@@ -305,9 +306,9 @@ function Search() {
 
       {error && <ErrorBox message="Suche fehlgeschlagen. Bitte versuch es später nochmal." />}
 
-      {(hasQuery && isLoading) || providersLoading ? <GridSkeleton count={12} /> : null}
+      {(hasQuery && isLoading) || noProviderResolved ? <GridSkeleton count={12} /> : null}
 
-      {hasResults && !providersLoading && (
+      {hasResults && (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
             {isPersonSearch
@@ -352,6 +353,10 @@ function Search() {
             <div className="py-8 max-w-md mx-auto">
               <ErrorBox message="Fehler beim Laden weiterer Ergebnisse." onRetry={() => fetchNextPage()} />
             </div>
+          )}
+
+          {providersChecking && (
+            <p className="text-surface-500 text-sm text-center py-4 animate-pulse">Provider werden geprüft…</p>
           )}
 
           {!hasNextPage && results.length > 20 && (
