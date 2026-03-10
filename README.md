@@ -9,12 +9,19 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Immanuel-l/streamscout/actions"><img src="https://github.com/Immanuel-l/streamscout/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://immanuel-l.github.io/streamscout/">Live Demo</a> · <a href="#-installation">Installation</a> · <a href="#-features">Features</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Immanuel-l/streamscout/actions/workflows/ci.yml"><img src="https://github.com/Immanuel-l/streamscout/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://github.com/Immanuel-l/streamscout/actions/workflows/deploy.yml"><img src="https://github.com/Immanuel-l/streamscout/actions/workflows/deploy.yml/badge.svg" alt="Deploy" /></a>
 </p>
 
 ---
 
 ![StreamScout Home](docs/screenshot-home.png)
+
+> Cineastisches Design statt Dashboard-Optik: Dunkle Backdrops, Gradient-Overlays und Film-Atmosphäre — inspiriert von Netflix, MUBI und Apple TV+. Installierbar als Progressive Web App.
 
 ## ✨ Features
 
@@ -27,7 +34,7 @@
 | 📋 **Watchlist** | Filme und Serien merken (inkl. Filterung nach deinen Streaming-Anbietern) |
 | 💡 **Watchlist-Empfehlungen** | Personalisierte Film- & Serien-Tipps basierend auf deiner Watchlist |
 | 📺 **Streaming-Provider** | Sieh auf einen Blick, wo Filme/Serien in Deutschland streambar sind |
-| 🎬 **Detail-Seiten** | Backdrop-Hero, Cast, Trailer, Staffelübersichten und mehr |
+| 🎬 **Detail-Seiten** | Backdrop-Hero, Cast, Trailer, Staffelübersichten und Personen-Profile |
 | 🎞️ **Kino** | Aktuell im Kino laufende Filme |
 | 🇯🇵 **Anime** | Anime-Filme und -Serien entdecken |
 | ♾️ **Infinity Scroll** | Nahtloses Nachladen in Discover, Mood und Suche |
@@ -88,13 +95,14 @@ Die App läuft dann unter [http://localhost:5173](http://localhost:5173).
 
 ## 📋 Weitere Commands
 
-| Command           | Beschreibung                  |
-| ----------------- | ----------------------------- |
-| `npm run dev`     | Entwicklungsserver starten    |
-| `npm run build`   | Production Build erstellen    |
-| `npm run preview` | Production Build lokal testen |
-| `npm run lint`    | Code-Linting ausführen        |
-| `npm test`        | Tests ausführen               |
+| Command           | Beschreibung                              |
+| ----------------- | ----------------------------------------- |
+| `npm run dev`     | Entwicklungsserver starten                |
+| `npm run build`   | Production Build erstellen                |
+| `npm run preview` | Production Build lokal testen             |
+| `npm run lint`    | Code-Linting ausführen                    |
+| `npm test`        | Tests ausführen                           |
+| `npm run check`   | Lint + Tests + Build (vollständiger CI-Check) |
 
 ## 📁 Projektstruktur
 
@@ -107,6 +115,12 @@ src/
   utils/      – Helpers, Constants, Mood-Mappings
 ```
 
-## 📄 Lizenz
+## 🚢 Deployment
+
+Die App wird automatisch via GitHub Actions auf [GitHub Pages](https://immanuel-l.github.io/streamscout/) deployed. Bei jedem Push auf `master` läuft die CI-Pipeline (Lint, Tests, Build) und anschließend das Deployment.
+
+Für das Deployment wird der `VITE_TMDB_ACCESS_TOKEN` als GitHub Secret benötigt.
+
+## 📄 Lizenz & Attribution
 
 Dieses Projekt nutzt Daten von [The Movie Database (TMDB)](https://www.themoviedb.org/). TMDB ist nicht verantwortlich für die Inhalte dieser App.
