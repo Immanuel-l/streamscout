@@ -46,6 +46,11 @@
 
 - Weitere Features nach Bedarf.
 - ChatGPT Chat
+- ReadMe.md aktuallisieren
 
-Nicht streambare inhalte, unterhalb der card kann weggelassen werden, weil es sonst sehr buggy wirkt
-Prüfe immer nach CI fehlern bei GitHub
+
+  Was noch fehlen könnte (optional, für die Zukunft)
+
+  - E2E/Smoke-Tests mit Playwright für die zentralen User-Flows (Suchen, Discover, Watchlist)
+  - Coverage-Report (Vitest --coverage mit @vitest/coverage-v8)
+  - Tests für die Seiten-Komponenten (Search, Discover, Watchlist pages) - diese sind komplex und bräuchten umfangreiche Router/Query-Mocks

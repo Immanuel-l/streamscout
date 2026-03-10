@@ -17,6 +17,7 @@ const Mood = lazy(() => import('./pages/Mood'))
 const Anime = lazy(() => import('./pages/Anime'))
 const Kino = lazy(() => import('./pages/Kino'))
 const PersonDetail = lazy(() => import('./pages/PersonDetail'))
+const NotFound = lazy(() => import('./pages/NotFound'))
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
         <Route path="mood/:slug" element={<Suspense fallback={<GridSkeleton />}><Mood /></Suspense>} />
         <Route path="anime" element={<Suspense fallback={<GridSkeleton />}><Anime /></Suspense>} />
         <Route path="kino" element={<Suspense fallback={<GridSkeleton />}><Kino /></Suspense>} />
+        <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
       </Route>
     </Routes>
   )
