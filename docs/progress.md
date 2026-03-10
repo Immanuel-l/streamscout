@@ -44,3 +44,4 @@
 ## Offen
 
 - Weitere Features nach Bedarf.
+- ChatGPT chat

@@ -156,7 +156,12 @@ function Anime() {
               <MediaCard key={`${media.id}-${i}`} media={media} index={i} eager animate={i < firstPageCount} />
             ))}
 
-            {isFetchingNextPage && Array.from({ length: 12 }).map((_, i) => (
+            {/* Sentinel inside grid, before skeletons — prevents oscillation */}
+            {hasNextPage && (
+              <div ref={sentinelRef} className="col-span-full h-px" />
+            )}
+
+            {isFetchingNextPage && Array.from({ length: 6 }).map((_, i) => (
               <div key={`skel-${i}`}>
                 <div className="aspect-[2/3] rounded-xl bg-surface-800 animate-pulse" />
                 <div className="mt-2 px-1 space-y-1.5">
@@ -166,8 +171,6 @@ function Anime() {
               </div>
             ))}
           </div>
-
-          <div ref={sentinelRef} className="h-px" />
 
           {error && allResults.length > 0 && !isFetchingNextPage && (
             <div className="py-8 max-w-md mx-auto">

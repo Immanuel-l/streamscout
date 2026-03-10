@@ -304,8 +304,13 @@ function Discover() {
               <MediaCard key={`${media.id}-${i}`} media={media} index={i} eager animate={i < firstPageCount} />
             ))}
 
+            {/* Sentinel inside grid, before skeletons — prevents oscillation */}
+            {hasNextPage && (
+              <div ref={sentinelRef} className="col-span-full h-px" />
+            )}
+
             {/* Inline skeleton placeholders while fetching */}
-            {isFetchingNextPage && Array.from({ length: 12 }).map((_, i) => (
+            {isFetchingNextPage && Array.from({ length: 6 }).map((_, i) => (
               <div key={`skel-${i}`}>
                 <div className="aspect-[2/3] rounded-xl bg-surface-800 animate-pulse" />
                 <div className="mt-2 px-1 space-y-1.5">
@@ -315,9 +320,6 @@ function Discover() {
               </div>
             ))}
           </div>
-
-          {/* Sentinel triggers next fetch when scrolled near */}
-          <div ref={sentinelRef} className="h-px" />
 
           {/* Error on page load — show retry */}
           {error && allResults.length > 0 && !isFetchingNextPage && (
