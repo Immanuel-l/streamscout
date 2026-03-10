@@ -1,14 +1,15 @@
 import { useRef, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { posterUrl } from '../../api/tmdb'
+import { posterUrl, IMAGE_BASE } from '../../api/tmdb'
 
-const typeLabels = { movie: 'Film', tv: 'Serie' }
+const typeLabels = { movie: 'Film', tv: 'Serie', person: 'Person' }
 
-function SearchBar({ value, onChange, suggestions = [] }) {
+function SearchBar({ value, onChange, suggestions = [], history = [], onHistorySelect, onHistoryRemove, onHistoryClear }) {
   const inputRef = useRef(null)
   const wrapperRef = useRef(null)
   const focusedRef = useRef(true)
   const [open, setOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const [highlighted, setHighlighted] = useState(-1)
   const navigate = useNavigate()
 
@@ -16,34 +17,83 @@ function SearchBar({ value, onChange, suggestions = [] }) {
     inputRef.current?.focus()
   }, [])
 
-  // Close dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     function handleClick(e) {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
         setOpen(false)
+        setHistoryOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  // Open dropdown when suggestions arrive — only if input is focused
+  // Open suggestions dropdown when suggestions arrive — only if input is focused
   const suggestionsLenRef = useRef(suggestions.length)
   useEffect(() => {
     suggestionsLenRef.current = suggestions.length
     if (focusedRef.current) {
-      queueMicrotask(() => setOpen(suggestionsLenRef.current > 0))
+      queueMicrotask(() => {
+        const hasSuggestions = suggestionsLenRef.current > 0
+        setOpen(hasSuggestions)
+        if (hasSuggestions) setHistoryOpen(false)
+      })
     }
     queueMicrotask(() => setHighlighted(-1))
   }, [suggestions])
 
+  // Show history when input becomes empty and focused
+  useEffect(() => {
+    if (!value && focusedRef.current && history.length > 0) {
+      setHistoryOpen(true)
+      setOpen(false)
+      setHighlighted(-1)
+    } else if (value) {
+      setHistoryOpen(false)
+    }
+  }, [value, history.length])
+
   function goTo(item) {
-    const path = item.media_type === 'tv' ? `/tv/${item.id}` : `/movie/${item.id}`
+    const path = item.media_type === 'person'
+      ? `/person/${item.id}`
+      : item.media_type === 'tv' ? `/tv/${item.id}` : `/movie/${item.id}`
     setOpen(false)
     navigate(path)
   }
 
+  function handleHistoryClick(query) {
+    setHistoryOpen(false)
+    setHighlighted(-1)
+    onHistorySelect?.(query)
+  }
+
   function handleKeyDown(e) {
+    // Handle history keyboard navigation
+    if (historyOpen && history.length > 0) {
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault()
+          setHighlighted((prev) => (prev + 1) % history.length)
+          break
+        case 'ArrowUp':
+          e.preventDefault()
+          setHighlighted((prev) => (prev <= 0 ? history.length - 1 : prev - 1))
+          break
+        case 'Enter':
+          if (highlighted >= 0) {
+            e.preventDefault()
+            handleHistoryClick(history[highlighted])
+          }
+          break
+        case 'Escape':
+          setHistoryOpen(false)
+          setHighlighted(-1)
+          break
+      }
+      return
+    }
+
     if (!open || suggestions.length === 0) return
 
     switch (e.key) {
@@ -68,6 +118,13 @@ function SearchBar({ value, onChange, suggestions = [] }) {
     }
   }
 
+  function imgForItem(item) {
+    if (item.media_type === 'person') {
+      return item.profile_path ? `${IMAGE_BASE}/w185${item.profile_path}` : null
+    }
+    return posterUrl(item.poster_path, 'w185')
+  }
+
   return (
     <div className="relative" ref={wrapperRef}>
       <svg
@@ -84,18 +141,29 @@ function SearchBar({ value, onChange, suggestions = [] }) {
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        onFocus={() => { focusedRef.current = true; suggestions.length > 0 && setOpen(true) }}
+        onFocus={() => {
+          focusedRef.current = true
+          if (!value && history.length > 0) {
+            setHistoryOpen(true)
+          } else if (suggestions.length > 0) {
+            setOpen(true)
+          }
+        }}
         onBlur={() => { focusedRef.current = false }}
         onKeyDown={handleKeyDown}
-        placeholder="Film oder Serie suchen..."
+        placeholder="Film, Serie oder Person suchen..."
         role="combobox"
-        aria-expanded={open && suggestions.length > 0}
+        aria-expanded={(open && suggestions.length > 0) || historyOpen}
         aria-autocomplete="list"
         className="w-full pl-12 pr-4 py-4 rounded-xl bg-surface-800/80 border border-surface-700 text-white placeholder-surface-400 text-lg focus:outline-none focus:border-accent-500/60 focus:ring-1 focus:ring-accent-500/30 shadow-none focus:shadow-[0_0_30px_-6px_rgba(245,158,11,0.12)] transition-all duration-300"
       />
       {value && (
         <button
-          onClick={() => onChange('')}
+          onClick={() => {
+            onChange('')
+            focusedRef.current = true
+            inputRef.current?.focus()
+          }}
           className="absolute right-4 top-1/2 -translate-y-1/2 text-surface-400 hover:text-white transition-colors z-10"
           aria-label="Suche leeren"
         >
@@ -115,7 +183,7 @@ function SearchBar({ value, onChange, suggestions = [] }) {
             const title = item.title || item.name
             const date = item.release_date || item.first_air_date
             const year = date ? new Date(date).getFullYear() : null
-            const poster = posterUrl(item.poster_path, 'w185')
+            const img = imgForItem(item)
 
             return (
               <button
@@ -128,14 +196,14 @@ function SearchBar({ value, onChange, suggestions = [] }) {
                   index === highlighted ? 'bg-surface-700/60' : ''
                 }`}
               >
-                {poster ? (
+                {img ? (
                   <img
-                    src={poster}
+                    src={img}
                     alt={title}
-                    className="w-10 h-14 rounded-md object-cover flex-shrink-0"
+                    className={`${item.media_type === 'person' ? 'w-10 h-10 rounded-full' : 'w-10 h-14 rounded-md'} object-cover flex-shrink-0`}
                   />
                 ) : (
-                  <div className="w-10 h-14 rounded-md bg-surface-700 flex-shrink-0" />
+                  <div className={`${item.media_type === 'person' ? 'w-10 h-10 rounded-full' : 'w-10 h-14 rounded-md'} bg-surface-700 flex-shrink-0`} />
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="text-white text-sm font-medium truncate">{title}</p>
@@ -146,6 +214,49 @@ function SearchBar({ value, onChange, suggestions = [] }) {
               </button>
             )
           })}
+        </div>
+      )}
+
+      {/* Search History Dropdown */}
+      {historyOpen && history.length > 0 && (
+        <div className="absolute left-0 right-0 top-full mt-2 rounded-xl bg-surface-800/95 backdrop-blur-lg border border-surface-700/60 shadow-2xl shadow-black/60 overflow-hidden z-50">
+          <div className="px-4 py-2.5 flex items-center justify-between border-b border-surface-700/40">
+            <span className="text-surface-400 text-xs uppercase tracking-wider font-medium">Zuletzt gesucht</span>
+            <button
+              onClick={() => { onHistoryClear?.(); setHistoryOpen(false) }}
+              className="text-surface-500 text-xs hover:text-surface-300 transition-colors"
+            >
+              Löschen
+            </button>
+          </div>
+          {history.map((q, index) => (
+            <div
+              key={q}
+              onMouseEnter={() => setHighlighted(index)}
+              className={`flex items-center gap-3 w-full px-4 py-2.5 transition-colors ${
+                index === highlighted ? 'bg-surface-700/60' : ''
+              }`}
+            >
+              <svg className="w-4 h-4 text-surface-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <button
+                onClick={() => handleHistoryClick(q)}
+                className="flex-1 text-left text-surface-200 text-sm truncate hover:text-white transition-colors"
+              >
+                {q}
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onHistoryRemove?.(q) }}
+                className="text-surface-600 hover:text-surface-300 flex-shrink-0 transition-colors p-0.5"
+                aria-label={`"${q}" aus Verlauf entfernen`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ))}
         </div>
       )}
     </div>

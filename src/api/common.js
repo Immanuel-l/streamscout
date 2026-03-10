@@ -9,6 +9,9 @@ export const searchMovies = (query, page = 1) =>
 export const searchTv = (query, page = 1) =>
   tmdb.get('/search/tv', { params: { query, page } }).then((res) => res.data)
 
+export const searchPerson = (query, page = 1) =>
+  tmdb.get('/search/person', { params: { query, page } }).then((res) => res.data)
+
 export const getTrending = (timeWindow = 'week') =>
   tmdb.get(`/trending/all/${timeWindow}`).then((res) => res.data)
 

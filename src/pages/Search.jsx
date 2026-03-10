@@ -1,13 +1,14 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useInfiniteQuery, useQueries } from '@tanstack/react-query'
-import { searchMulti, searchMovies, searchTv } from '../api/common'
+import { searchMulti, searchMovies, searchTv, searchPerson } from '../api/common'
 import { getMovieProviders } from '../api/movies'
 import { getTvProviders } from '../api/tv'
 import { useDebounce } from '../hooks/useDebounce'
 import { ALLOWED_PROVIDER_SET } from '../utils/providers'
 import SearchBar from '../components/search/SearchBar'
 import MediaCard from '../components/common/MediaCard'
+import PersonCard from '../components/search/PersonCard'
 import GridSkeleton from '../components/common/GridSkeleton'
 import ErrorBox from '../components/common/ErrorBox'
 import ScrollToTop from '../components/common/ScrollToTop'
@@ -16,6 +17,18 @@ const searchFns = {
   all: searchMulti,
   movie: searchMovies,
   tv: searchTv,
+  person: searchPerson,
+}
+
+const HISTORY_KEY = 'streamscout-search-history'
+const MAX_HISTORY = 10
+
+function getSearchHistory() {
+  try {
+    return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []
+  } catch {
+    return []
+  }
 }
 
 function Search() {
@@ -24,7 +37,18 @@ function Search() {
   const [mediaType, setMediaType] = useState(() => searchParams.get('type') || 'all')
   const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || 'relevance')
   const [onlyStreamable, setOnlyStreamable] = useState(() => searchParams.get('streamable') === 'true')
+  const [searchHistory, setSearchHistory] = useState(getSearchHistory)
   const debouncedQuery = useDebounce(query, 300)
+
+  const isPersonSearch = mediaType === 'person'
+
+  // Reset irrelevant filters when switching to person search
+  useEffect(() => {
+    if (isPersonSearch) {
+      setSortBy('relevance')
+      setOnlyStreamable(false)
+    }
+  }, [isPersonSearch])
 
   // Sync state to URL params (replace to avoid history spam)
   useEffect(() => {
@@ -35,6 +59,18 @@ function Search() {
     if (onlyStreamable) params.streamable = 'true'
     setSearchParams(params, { replace: true })
   }, [debouncedQuery, mediaType, sortBy, onlyStreamable, setSearchParams])
+
+  // Save to search history when results arrive
+  useEffect(() => {
+    if (debouncedQuery.length >= 2 && data?.pages[0]?.results.length > 0) {
+      const trimmed = debouncedQuery.trim()
+      setSearchHistory((prev) => {
+        const next = [trimmed, ...prev.filter((h) => h !== trimmed)].slice(0, MAX_HISTORY)
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(next))
+        return next
+      })
+    }
+  }, [debouncedQuery]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const {
     data,
@@ -56,31 +92,41 @@ function Search() {
   })
 
   const firstPageCount = data?.pages[0]?.results.length || 0
-  const totalResults = data?.pages[0]?.total_results || 0
 
   const rawResults = useMemo(() => {
     if (!data) return []
+    if (isPersonSearch) {
+      return data.pages.flatMap((page) =>
+        page.results.filter((r) => r.profile_path)
+      )
+    }
     return data.pages.flatMap((page) => {
       let results = mediaType === 'all'
         ? page.results.filter((r) => r.media_type === 'movie' || r.media_type === 'tv')
         : page.results.map((r) => ({ ...r, media_type: mediaType }))
       return results.filter((r) => r.poster_path && r.overview)
     })
-  }, [data, mediaType])
+  }, [data, mediaType, isPersonSearch])
 
   // Suggestions for autocomplete (first 5 from first page)
   const suggestions = useMemo(() => {
     if (!data?.pages[0]) return []
     const page = data.pages[0].results
+    if (isPersonSearch) {
+      return page
+        .filter((r) => r.profile_path)
+        .slice(0, 5)
+        .map((r) => ({ ...r, media_type: 'person' }))
+    }
     const items = mediaType === 'all'
       ? page.filter((r) => r.media_type === 'movie' || r.media_type === 'tv')
       : page.map((r) => ({ ...r, media_type: mediaType }))
     return items.slice(0, 5)
-  }, [data, mediaType])
+  }, [data, mediaType, isPersonSearch])
 
-  // Fetch providers only when streamable filter is active
+  // Fetch providers only when streamable filter is active (not for person search)
   const providerQueries = useQueries({
-    queries: (rawResults || []).map((media) => ({
+    queries: (isPersonSearch ? [] : rawResults || []).map((media) => ({
       queryKey: [media.media_type, media.id, 'providers'],
       queryFn: () => media.media_type === 'tv' ? getTvProviders(media.id) : getMovieProviders(media.id),
       staleTime: 24 * 60 * 60 * 1000,
@@ -93,6 +139,8 @@ function Search() {
 
   const results = useMemo(() => {
     if (!rawResults.length) return []
+    if (isPersonSearch) return rawResults
+
     let filtered = [...rawResults]
 
     // Streamable filter (flatrate only)
@@ -113,7 +161,7 @@ function Search() {
     }
 
     return filtered
-  }, [rawResults, sortBy, onlyStreamable, providerQueries])
+  }, [rawResults, sortBy, onlyStreamable, providerQueries, isPersonSearch])
 
   // Infinite scroll — IntersectionObserver (same pattern as Discover)
   const fetchRef = useRef(fetchNextPage)
@@ -145,6 +193,24 @@ function Search() {
     }
   }, [])
 
+  // Search history handlers
+  function handleHistorySelect(q) {
+    setQuery(q)
+  }
+
+  function handleHistoryRemove(q) {
+    setSearchHistory((prev) => {
+      const next = prev.filter((h) => h !== q)
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(next))
+      return next
+    })
+  }
+
+  function handleHistoryClear() {
+    setSearchHistory([])
+    localStorage.removeItem(HISTORY_KEY)
+  }
+
   const hasQuery = debouncedQuery.length >= 2
   const hasResults = results.length > 0
   const noResults = hasQuery && !isLoading && !error && data && rawResults.length === 0
@@ -154,7 +220,15 @@ function Search() {
     <div className="space-y-8">
       <div>
         <h1 className="font-display text-5xl tracking-wide text-white mb-6">Suche</h1>
-        <SearchBar value={query} onChange={setQuery} suggestions={suggestions} />
+        <SearchBar
+          value={query}
+          onChange={setQuery}
+          suggestions={suggestions}
+          history={searchHistory}
+          onHistorySelect={handleHistorySelect}
+          onHistoryRemove={handleHistoryRemove}
+          onHistoryClear={handleHistoryClear}
+        />
       </div>
 
       {/* Filter controls */}
@@ -165,6 +239,7 @@ function Search() {
               { type: 'all', label: 'Alle' },
               { type: 'movie', label: 'Filme' },
               { type: 'tv', label: 'Serien' },
+              { type: 'person', label: 'Personen' },
             ].map(({ type, label }) => (
               <button
                 key={type}
@@ -180,43 +255,47 @@ function Search() {
             ))}
           </div>
 
-          <button
-            onClick={() => setOnlyStreamable(!onlyStreamable)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-              onlyStreamable
-                ? 'bg-accent-500/15 text-accent-400 border border-accent-500/30'
-                : 'bg-surface-800 text-surface-300 hover:text-white'
-            }`}
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
-            </svg>
-            Nur Streambar
-          </button>
-
-          <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
-            {[
-              { value: 'relevance', label: 'Relevanz' },
-              { value: 'rating', label: 'Bewertung' },
-              { value: 'year', label: 'Jahr' },
-            ].map(({ value, label }) => (
+          {!isPersonSearch && (
+            <>
               <button
-                key={value}
-                onClick={() => setSortBy(value)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  sortBy === value
-                    ? 'bg-accent-500 text-black'
-                    : 'text-surface-300 hover:text-white'
+                onClick={() => setOnlyStreamable(!onlyStreamable)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  onlyStreamable
+                    ? 'bg-accent-500/15 text-accent-400 border border-accent-500/30'
+                    : 'bg-surface-800 text-surface-300 hover:text-white'
                 }`}
               >
-                {label}
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+                </svg>
+                Nur Streambar
               </button>
-            ))}
-          </div>
 
-          {totalResults > 0 && !isLoading && (
+              <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
+                {[
+                  { value: 'relevance', label: 'Relevanz' },
+                  { value: 'rating', label: 'Bewertung' },
+                  { value: 'year', label: 'Jahr' },
+                ].map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setSortBy(value)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      sortBy === value
+                        ? 'bg-accent-500 text-black'
+                        : 'text-surface-300 hover:text-white'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {results.length > 0 && !isLoading && (
             <span className="text-surface-400 text-sm ml-auto">
-              {totalResults.toLocaleString('de-DE')} Ergebnisse
+              {results.length.toLocaleString('de-DE')}{hasNextPage ? '+' : ''} Ergebnisse
             </span>
           )}
         </div>
@@ -229,15 +308,25 @@ function Search() {
       {hasResults && !providersLoading && (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
-            {results.map((media, i) => (
-              <MediaCard
-                key={`${media.media_type}-${media.id}`}
-                media={media}
-                index={i}
-                eager
-                animate={i < firstPageCount}
-              />
-            ))}
+            {isPersonSearch
+              ? results.map((person, i) => (
+                  <PersonCard
+                    key={person.id}
+                    person={person}
+                    index={i}
+                    animate={i < firstPageCount}
+                  />
+                ))
+              : results.map((media, i) => (
+                  <MediaCard
+                    key={`${media.media_type}-${media.id}`}
+                    media={media}
+                    index={i}
+                    eager
+                    animate={i < firstPageCount}
+                  />
+                ))
+            }
 
             {/* Sentinel inside grid, before skeletons — prevents oscillation */}
             {hasNextPage && (
@@ -294,7 +383,7 @@ function Search() {
           <svg className="w-16 h-16 mx-auto text-surface-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h1.5C5.496 19.5 6 18.996 6 18.375m-3.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-1.5A1.125 1.125 0 0118 18.375M20.625 4.5H3.375m17.25 0c.621 0 1.125.504 1.125 1.125M20.625 4.5h-1.5C18.504 4.5 18 5.004 18 5.625m3.75 0v1.5c0 .621-.504 1.125-1.125 1.125M3.375 4.5c-.621 0-1.125.504-1.125 1.125M3.375 4.5h1.5C5.496 4.5 6 5.004 6 5.625m-3.75 0v1.5c0 .621.504 1.125 1.125 1.125m0 0h1.5m-1.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m1.5-3.75C5.496 8.25 6 7.746 6 7.125v-1.5M4.875 8.25C5.496 8.25 6 8.754 6 9.375v1.5m0-5.25v5.25m0-5.25C6 5.004 6.504 4.5 7.125 4.5h9.75c.621 0 1.125.504 1.125 1.125m1.125 2.625h1.5m-1.5 0A1.125 1.125 0 0118 7.125v-1.5m1.125 2.625c-.621 0-1.125.504-1.125 1.125v1.5m2.625-2.625c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125M18 5.625v5.25M7.125 12h9.75m-9.75 0A1.125 1.125 0 016 10.875M7.125 12C6.504 12 6 12.504 6 13.125m0-2.25C6 11.496 5.496 12 4.875 12M18 10.875c0 .621-.504 1.125-1.125 1.125M18 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m-12 5.25v-5.25m0 5.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125m-12 0v-1.5c0-.621-.504-1.125-1.125-1.125M18 18.375v-5.25m0 5.25v-1.5c0-.621.504-1.125 1.125-1.125M18 13.125v1.5c0 .621.504 1.125 1.125 1.125M18 13.125c0-.621.504-1.125 1.125-1.125M6 13.125v1.5c0 .621-.504 1.125-1.125 1.125M6 13.125C6 12.504 5.496 12 4.875 12m-1.5 0h1.5m-1.5 0c-.621 0-1.125-.504-1.125-1.125v-1.5c0-.621.504-1.125 1.125-1.125M19.125 12h1.5m0 0c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m1.5 3.75c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m0-3.75h-1.5" />
           </svg>
-          <p className="text-surface-400 text-lg">Finde Filme und Serien</p>
+          <p className="text-surface-400 text-lg">Finde Filme, Serien und Personen</p>
           <p className="text-surface-500 text-sm mt-1">Gib mindestens 2 Zeichen ein, um zu suchen.</p>
         </div>
       )}
