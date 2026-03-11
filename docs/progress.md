@@ -41,15 +41,59 @@
 - [x] Schritt 36: Personalisierte Watchlist-Empfehlungen auf der Startseite und Watchlist-Seite (nur streambare Inhalte)
 - [x] Schritt 37: Streaming-Provider auf mobilen Geräten
 - [x] Schritt 38: Design Überarbeitung
+- [x] Schritt 39: useInfiniteScroll Duplikate entfernt, Env-Validierung, Accessibility-Verbesserungen, API-Error-Handling
+- [x] Schritt 40: README.md verbessert
+- [x] Schritt 41: CI Pipeline Fix
+- [x] Schritt 42: Bug Fixes und Verbesserungen
+- [x] Schritt 43: E2E-Tests mit Playwright, erweiterte Unit Tests und Coverage-Reports
+
+## Aktueller Stand
+
+### Seiten (12)
+- Home (Trending, Populär, Top-Rated, Neu, Mood-Shortcuts, Anime, Watchlist-Empfehlungen)
+- Search (Multi-Suche: Filme, Serien, Personen + Suchverlauf + Provider-Filter)
+- Discover (Genre, Jahr, Bewertung, Sortierung, Provider-Filter + Infinity Scroll)
+- Mood (10 Stimmungen mit Filtern und Sortierung + Infinity Scroll)
+- Kino (Aktuell im Kino laufende Filme)
+- Anime (Anime-Filme und -Serien)
+- Random (Zufallsgenerator mit Genre, Bewertung, Sprache, Ära, Provider)
+- MovieDetail (Backdrop-Hero, Cast, Trailer, Provider, ähnliche Filme, „Im Kino"-Badge)
+- TvDetail (wie MovieDetail + Staffelübersicht mit staffelspezifischen Providern)
+- PersonDetail (Biografie, Filmografie, Cast- und Crew-Credits)
+- Watchlist (Tabs, Provider-Filter, Teilen/Importieren per Link, Empfehlungen)
+- NotFound (404-Seite)
+
+### Hooks (12)
+- useMovies, useTv, usePerson (Daten-Fetching)
+- useProviders, useWatchlistProviders (Provider-Daten)
+- useWatchlist (Watchlist-Verwaltung mit localStorage + Teilen/Import)
+- useWatchlistRecommendations (Personalisierte Empfehlungen)
+- useInfiniteScroll (IntersectionObserver, 600px rootMargin)
+- useDebounce (300ms Input-Debouncing)
+- usePersistedState (Session Storage Persistenz)
+- useDocumentTitle (Dynamischer Seitentitel)
+- useIsTouch (Touch-Device-Erkennung)
+
+### Komponenten (28)
+- Layout: Header (Skip-to-Content, Mobile-Menü), Footer (TMDB/JustWatch-Attribution), Layout
+- Common: MediaCard, MediaRow, SearchBar, ProviderFilter, Select, WatchlistButton, ErrorBox, ErrorBoundary, Toast, PageLoader, GridSkeleton, ScrollToTop
+- Detail: RatingRing, CastList, TrailerSection, ProviderList, DetailSkeleton
+- Search: SearchBar, PersonCard
+- Home: WatchlistRecommendations
+
+### Testing
+- 16 Unit-Test-Dateien (Vitest + Testing Library)
+- 8 E2E Smoke Tests (Playwright)
+- Coverage-Reports (v8, HTML-Output)
+
+### Infrastruktur
+- CI/CD: GitHub Actions (Lint → Test → Build → Deploy auf GitHub Pages)
+- Git Hooks: Husky (Pre-commit: Lint, Pre-push: Lint + Tests + Build)
+- PWA: Manifest, Icons (192px, 512px maskable), Social-Preview-Bilder
+- Accessibility: Skip-to-Content, ARIA-Labels, Keyboard-Shortcuts ("/", Escape)
+- Code Splitting: Lazy-Loading aller Seiten
+- Caching: TanStack Query (30min staleTime)
 
 ## Offen
 
-gehe nochmal das ganze Projekt durch, wurden alle anforderungen richtig und gut umgesetzt, wo gibt es noch verbesserungspotentail und was kann man noch ergänzen, ändern?
-
-bekomme jetzt die ganze Zeit den fehler in CI mit Error: VITE_TMDB_ACCESS_TOKEN fehlt. Erstelle eine .env-Datei mit deinem TMDB API Token.
-
-  Was noch fehlen könnte (optional, für die Zukunft)
-
-  - E2E/Smoke-Tests mit Playwright für die zentralen User-Flows (Suchen, Discover, Watchlist)
-  - Coverage-Report (Vitest --coverage mit @vitest/coverage-v8)
-  - Tests für die Seiten-Komponenten (Search, Discover, Watchlist pages) - diese sind komplex und bräuchten umfangreiche Router/Query-Mocks
+- Keine offenen Aufgaben

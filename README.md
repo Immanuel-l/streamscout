@@ -27,26 +27,34 @@
 
 | Feature | Beschreibung |
 |---|---|
-| 🔍 **Suche** | Film- und Seriensuche mit Autocomplete und Poster-Thumbnails |
-| 🎭 **Mood-Suche** | 10 Stimmungen (z.B. „Spannung pur", „Feel-Good", „Gehirnfutter") für passende Vorschläge |
-| 🧭 **Discover** | Entdecke Filme und Serien nach Genre, Jahr, Bewertung und Streaming-Anbieter |
-| 🎲 **Zufalls-Generator** | Genre wählen, Button drücken, überraschen lassen |
-| 📋 **Watchlist** | Filme und Serien merken (inkl. Filterung nach deinen Streaming-Anbietern) |
-| 💡 **Watchlist-Empfehlungen** | Personalisierte Film- & Serien-Tipps basierend auf deiner Watchlist |
-| 📺 **Streaming-Provider** | Sieh auf einen Blick, wo Filme/Serien in Deutschland streambar sind |
-| 🎬 **Detail-Seiten** | Backdrop-Hero, Cast, Trailer, Staffelübersichten und Personen-Profile |
-| 🎞️ **Kino** | Aktuell im Kino laufende Filme |
-| 🇯🇵 **Anime** | Anime-Filme und -Serien entdecken |
+| 🔍 **Suche** | Film-, Serien- und Personensuche mit Autocomplete, Poster-Thumbnails und Suchverlauf |
+| 🎭 **Mood-Suche** | 10 Stimmungen (z.B. „Spannung pur", „Feel-Good", „Gehirnfutter") mit Filter- und Sortieroptionen |
+| 🧭 **Discover** | Entdecke Filme und Serien nach Genre, Jahr, Bewertung, Sortierung und Streaming-Anbieter |
+| 🎲 **Zufalls-Generator** | Genre, Bewertung, Sprache und Ära wählen — überraschen lassen |
+| 📋 **Watchlist** | Filme und Serien merken, per Link teilen und importieren (inkl. Provider-Filterung) |
+| 💡 **Watchlist-Empfehlungen** | Personalisierte Film- & Serien-Tipps basierend auf deiner Watchlist (nur streambare Inhalte) |
+| 📺 **Streaming-Provider** | Sieh auf einen Blick, wo Filme/Serien in Deutschland streambar sind (Abo, Leihen, Kaufen) |
+| 🎬 **Detail-Seiten** | Backdrop-Hero, Cast, Trailer, Staffelübersichten mit staffelspezifischen Providern |
+| 🧑 **Personen-Profile** | Biografie, Filmografie und Credits für Schauspieler und Crew |
+| 🎞️ **Kino** | Aktuell im Kino laufende Filme mit „Im Kino"-Badge |
+| 🇯🇵 **Anime** | Anime-Filme und -Serien entdecken (Genre Animation + japanischer Ursprung) |
+| 📱 **PWA** | Installierbar als Progressive Web App auf allen Geräten |
 | ♾️ **Infinity Scroll** | Nahtloses Nachladen in Discover, Mood und Suche |
+| ⌨️ **Tastaturkürzel** | „/" zum Suchen, Escape zum Schließen, Skip-to-Content für Screenreader |
+| ♿ **Barrierefreiheit** | Semantisches HTML, ARIA-Labels, Skip-to-Content, Keyboard-Navigation |
 
 ## 🛠️ Tech Stack
 
 - [React 19](https://react.dev/) + JavaScript
-- [Vite](https://vite.dev/) als Build Tool
-- [React Router](https://reactrouter.com/) für Navigation
-- [TanStack Query](https://tanstack.com/query) für API Calls und Caching
+- [Vite 7](https://vite.dev/) als Build Tool
+- [React Router 7](https://reactrouter.com/) für Navigation
+- [TanStack Query 5](https://tanstack.com/query) für API Calls und Caching
 - [Axios](https://axios-http.com/) für HTTP Requests
-- [Tailwind CSS](https://tailwindcss.com/) für Styling
+- [Tailwind CSS 4](https://tailwindcss.com/) für Styling
+- [Vitest](https://vitest.dev/) + [Testing Library](https://testing-library.com/) für Unit Tests
+- [Playwright](https://playwright.dev/) für E2E Tests
+- [ESLint 9](https://eslint.org/) für Linting
+- [Husky](https://typicode.github.io/husky/) für Git Hooks
 
 ## 🚀 Installation
 
@@ -95,25 +103,64 @@ Die App läuft dann unter [http://localhost:5173](http://localhost:5173).
 
 ## 📋 Weitere Commands
 
-| Command           | Beschreibung                              |
-| ----------------- | ----------------------------------------- |
-| `npm run dev`     | Entwicklungsserver starten                |
-| `npm run build`   | Production Build erstellen                |
-| `npm run preview` | Production Build lokal testen             |
-| `npm run lint`    | Code-Linting ausführen                    |
-| `npm test`        | Tests ausführen                           |
-| `npm run check`   | Lint + Tests + Build (vollständiger CI-Check) |
+| Command                | Beschreibung                                  |
+| ---------------------- | --------------------------------------------- |
+| `npm run dev`          | Entwicklungsserver starten                    |
+| `npm run build`        | Production Build erstellen                    |
+| `npm run preview`      | Production Build lokal testen                 |
+| `npm run lint`         | Code-Linting ausführen                        |
+| `npm test`             | Unit Tests ausführen (Vitest)                 |
+| `npm run test:watch`   | Unit Tests im Watch-Modus                     |
+| `npm run test:coverage`| Unit Tests mit Coverage-Report (HTML)         |
+| `npm run test:e2e`     | E2E Smoke Tests ausführen (Playwright)        |
+| `npm run check`        | Lint + Tests + Build (vollständiger CI-Check) |
+| `npm audit`            | Dependency Security Check                     |
 
 ## 📁 Projektstruktur
 
 ```
 src/
-  api/        – Axios Instance + API Calls
-  components/ – UI-Komponenten (layout, common, search, discover, detail, watchlist)
-  pages/      – Seitenkomponenten (Home, Search, Discover, Mood, Watchlist, …)
-  hooks/      – Custom Hooks (useMovies, useTv, useProviders, useDebounce, useWatchlist)
-  utils/      – Helpers, Constants, Mood-Mappings
+  api/          – Axios Instance + API Calls (tmdb.js, movies.js, tv.js, common.js)
+  components/
+    layout/     – Header, Footer, Layout-Wrapper
+    common/     – MediaCard, MediaRow, SearchBar, ProviderFilter, Toast, ErrorBox, …
+    detail/     – RatingRing, CastList, TrailerSection, ProviderList, DetailSkeleton
+    search/     – SearchBar, PersonCard
+    home/       – WatchlistRecommendations
+  pages/        – Home, Search, Discover, Mood, Kino, Anime, Random,
+                  MovieDetail, TvDetail, PersonDetail, Watchlist, NotFound
+  hooks/        – useMovies, useTv, usePerson, useProviders, useWatchlist,
+                  useWatchlistProviders, useWatchlistRecommendations,
+                  useInfiniteScroll, useDebounce, usePersistedState,
+                  useDocumentTitle, useIsTouch
+  utils/        – Helpers, Constants, Mood-Mappings (10 Stimmungen)
+  test/         – Test-Setup (Vitest + Testing Library)
+e2e/            – Playwright Smoke Tests (8 Tests)
+public/         – PWA-Manifest, Icons, Social-Preview-Bilder
+.github/        – CI/CD Workflows (Lint, Test, Build, Deploy)
 ```
+
+## 🧪 Testing
+
+**Unit Tests** (Vitest + Testing Library): 16 Test-Dateien mit Tests für Hooks, Komponenten und Seiten.
+
+```bash
+npm test                 # Tests einmalig ausführen
+npm run test:coverage    # Mit Coverage-Report
+```
+
+**E2E Tests** (Playwright): 8 Smoke Tests für Navigation, Suche, Discover und Watchlist.
+
+```bash
+npm run test:e2e         # Playwright Tests (startet Preview-Server automatisch)
+```
+
+## 🔒 Code-Qualität
+
+- **Husky Git Hooks**: Pre-commit (Lint), Pre-push (Lint + Tests + Build)
+- **ESLint 9**: React Hooks und React Refresh Plugins
+- **CI Pipeline**: Automatische Prüfung bei jedem Push und PR auf `master`
+- `npm run check` für den vollständigen CI-Check lokal
 
 ## 🚢 Deployment
 
@@ -123,4 +170,4 @@ Für das Deployment wird der `VITE_TMDB_ACCESS_TOKEN` als GitHub Secret benötig
 
 ## 📄 Lizenz & Attribution
 
-Dieses Projekt nutzt Daten von [The Movie Database (TMDB)](https://www.themoviedb.org/). TMDB ist nicht verantwortlich für die Inhalte dieser App.
+Dieses Projekt nutzt Daten von [The Movie Database (TMDB)](https://www.themoviedb.org/) und [JustWatch](https://www.justwatch.com/) (Streaming-Verfügbarkeit). TMDB und JustWatch sind nicht verantwortlich für die Inhalte dieser App.
