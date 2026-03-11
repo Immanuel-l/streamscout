@@ -15,29 +15,15 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version-file: '.nvmrc'
           cache: npm
 
       - run: npm ci
 
-      - name: Security Audit
-        run: npm audit --audit-level=high
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Tests
-        run: npm test
-
-      - name: Build
-        run: npm run build
-        env:
-          VITE_TMDB_ACCESS_TOKEN: ${{ secrets.VITE_TMDB_ACCESS_TOKEN }}
-
       - name: Install Playwright Browser
         run: npx playwright install --with-deps chromium
 
-      - name: E2E Tests
-        run: npm run test:e2e
-
-
+      - name: CI Gate
+        run: npm run check:ci
+        env:
+          VITE_TMDB_ACCESS_TOKEN: ${{ secrets.VITE_TMDB_ACCESS_TOKEN }}

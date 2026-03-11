@@ -13,6 +13,8 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "check": "npm run lint && npm test && npm run build",
+    "check:node": "node ./scripts/check-node-version.mjs",
+    "check:ci": "npm run check:node && npm run check && npm audit --audit-level=high && npm run test:e2e",
     "prepare": "husky"
   },
   "dependencies": {

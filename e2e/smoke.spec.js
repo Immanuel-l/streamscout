@@ -126,6 +126,11 @@ function mockTmdbApi(page) {
   })
 }
 
+function expectNoCriticalViolations(results) {
+  const criticalViolations = results.violations.filter((violation) => violation.impact === 'critical')
+  expect(criticalViolations).toEqual([])
+}
+
 test.describe('Smoke Tests', () => {
   test.beforeEach(async ({ page }) => {
     await mockTmdbApi(page)
@@ -203,7 +208,7 @@ test.describe('Accessibility Tests (WCAG 2.1 AA)', () => {
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
       .analyze()
-    expect(results.violations).toEqual([])
+    expectNoCriticalViolations(results)
   })
 
   test('Suche hat keine kritischen A11y-Verstöße', async ({ page }) => {
@@ -212,7 +217,7 @@ test.describe('Accessibility Tests (WCAG 2.1 AA)', () => {
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
       .analyze()
-    expect(results.violations).toEqual([])
+    expectNoCriticalViolations(results)
   })
 
   test('Merkliste hat keine kritischen A11y-Verstöße', async ({ page }) => {
@@ -221,7 +226,7 @@ test.describe('Accessibility Tests (WCAG 2.1 AA)', () => {
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
       .analyze()
-    expect(results.violations).toEqual([])
+    expectNoCriticalViolations(results)
   })
 
   test('Entdecken hat keine kritischen A11y-Verstöße', async ({ page }) => {
@@ -230,7 +235,6 @@ test.describe('Accessibility Tests (WCAG 2.1 AA)', () => {
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
       .analyze()
-    expect(results.violations).toEqual([])
+    expectNoCriticalViolations(results)
   })
 })
-

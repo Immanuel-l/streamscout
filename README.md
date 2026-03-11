@@ -60,7 +60,7 @@
 
 ### Voraussetzungen
 
-- [Node.js](https://nodejs.org/) (Version 18 oder höher)
+- [Node.js](https://nodejs.org/) (Version 22.x, siehe `.nvmrc`)
 - [Git](https://git-scm.com/)
 - Ein kostenloser [TMDB Account](https://www.themoviedb.org/signup)
 
@@ -113,7 +113,8 @@ Die App läuft dann unter [http://localhost:5173](http://localhost:5173).
 | `npm run test:watch`   | Unit Tests im Watch-Modus                     |
 | `npm run test:coverage`| Unit Tests mit Coverage-Report (HTML)         |
 | `npm run test:e2e`     | E2E Smoke Tests ausführen (Playwright)        |
-| `npm run check`        | Lint + Tests + Build (vollständiger CI-Check) |
+| `npm run check`        | Lint + Tests + Build (schneller lokaler Check) |
+| `npm run check:ci`     | Node-Version + Lint + Tests + Build + Audit + E2E |
 | `npm audit`            | Dependency Security Check                     |
 
 ## 📁 Projektstruktur
@@ -135,7 +136,7 @@ src/
                   useDocumentTitle, useIsTouch
   utils/        – Helpers, Constants, Mood-Mappings (10 Stimmungen)
   test/         – Test-Setup (Vitest + Testing Library)
-e2e/            – Playwright Smoke Tests (8 Tests)
+e2e/            – Playwright Smoke Tests (12 Tests)
 public/         – PWA-Manifest, Icons, Social-Preview-Bilder
 .github/        – CI/CD Workflows (Lint, Test, Build, Deploy)
 ```
@@ -149,7 +150,7 @@ npm test                 # Tests einmalig ausführen
 npm run test:coverage    # Mit Coverage-Report
 ```
 
-**E2E Tests** (Playwright): 8 Smoke Tests für Navigation, Suche, Discover und Watchlist.
+**E2E Tests** (Playwright): 12 Smoke/A11y-Tests für Navigation, Suche, Discover und Watchlist.
 
 ```bash
 npm run test:e2e         # Playwright Tests (startet Preview-Server automatisch)
@@ -157,10 +158,10 @@ npm run test:e2e         # Playwright Tests (startet Preview-Server automatisch)
 
 ## 🔒 Code-Qualität
 
-- **Husky Git Hooks**: Pre-commit (Lint), Pre-push (Lint + Tests + Build)
+- **Husky Git Hooks**: Pre-commit (Lint), Pre-push (`npm run check:ci`)
 - **ESLint 9**: React Hooks und React Refresh Plugins
 - **CI Pipeline**: Automatische Prüfung bei jedem Push und PR auf `master`
-- `npm run check` für den vollständigen CI-Check lokal
+- `npm run check:ci` für denselben Gate-Flow wie in GitHub Actions
 
 ## 🚢 Deployment
 
