@@ -34,7 +34,10 @@ class ErrorBoundary extends Component {
                 Erneut versuchen
               </button>
               <button
-                onClick={() => { this.handleReset(); window.location.href = '/' }}
+                onClick={() => {
+                  this.handleReset()
+                  window.location.hash = '#/'
+                }}
                 className="px-5 py-2.5 rounded-lg bg-accent-500 text-black text-sm font-medium hover:bg-accent-400 transition-colors"
               >
                 Zur Startseite
@@ -50,3 +53,4 @@ class ErrorBoundary extends Component {
 }
 
 export default ErrorBoundary
+

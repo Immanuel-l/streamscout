@@ -16,6 +16,7 @@ function GoodChild() {
 describe('ErrorBoundary', () => {
   beforeEach(() => {
     shouldThrow = true
+    window.location.hash = ''
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
@@ -46,6 +47,19 @@ describe('ErrorBoundary', () => {
     )
     expect(screen.getByText('Erneut versuchen')).toBeInTheDocument()
     expect(screen.getByText('Zur Startseite')).toBeInTheDocument()
+  })
+
+  it('navigiert per Hash zur Startseite beim Klick auf Startseite', () => {
+    render(
+      <ErrorBoundary>
+        <ConditionalChild />
+      </ErrorBoundary>
+    )
+
+    shouldThrow = false
+    fireEvent.click(screen.getByText('Zur Startseite'))
+
+    expect(window.location.hash).toBe('#/')
   })
 
   it('setzt den Fehlerstatus beim Klick auf Erneut versuchen zurück', () => {
