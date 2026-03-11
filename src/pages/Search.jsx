@@ -197,7 +197,7 @@ function Search() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-display text-5xl tracking-wide text-white mb-6">Suche</h1>
+        <h1 className="font-display text-5xl tracking-wide text-surface-100 mb-6">Suche</h1>
         <SearchBar
           value={query}
           onChange={setQuery}
@@ -226,7 +226,7 @@ function Search() {
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   mediaType === type
                     ? 'bg-accent-500 text-black'
-                    : 'text-surface-300 hover:text-white'
+                    : 'text-surface-300 hover:text-surface-100'
                 }`}
               >
                 {label}
@@ -242,7 +242,7 @@ function Search() {
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                   onlyStreamable
                     ? 'bg-accent-500/15 text-accent-400 border border-accent-500/30'
-                    : 'bg-surface-800 text-surface-300 hover:text-white'
+                    : 'bg-surface-800 text-surface-300 hover:text-surface-100'
                 }`}
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -264,7 +264,7 @@ function Search() {
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                       sortBy === value
                         ? 'bg-accent-500 text-black'
-                        : 'text-surface-300 hover:text-white'
+                        : 'text-surface-300 hover:text-surface-100'
                     }`}
                   >
                     {label}

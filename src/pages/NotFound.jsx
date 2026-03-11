@@ -16,7 +16,7 @@ function NotFound() {
             </svg>
           </div>
         </div>
-        <h1 className="text-2xl font-display text-white">Seite nicht gefunden</h1>
+        <h1 className="text-2xl font-display text-surface-100">Seite nicht gefunden</h1>
         <p className="text-surface-400 text-sm leading-relaxed">
           Diese Seite existiert nicht oder wurde verschoben.
         </p>

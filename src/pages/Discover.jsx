@@ -148,7 +148,7 @@ function Discover() {
 
   return (
     <div className="space-y-8">
-      <h1 className="font-display text-5xl tracking-wide text-white">Entdecken</h1>
+      <h1 className="font-display text-5xl tracking-wide text-surface-100">Entdecken</h1>
 
       {/* Media Type Toggle + Sort */}
       <div className="flex flex-wrap items-center gap-3">
@@ -164,7 +164,7 @@ function Discover() {
               className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
                 mediaType === type
                   ? 'bg-accent-500 text-black'
-                  : 'text-surface-300 hover:text-white'
+                  : 'text-surface-300 hover:text-surface-100'
               }`}
             >
               {label}
@@ -181,7 +181,7 @@ function Discover() {
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 sortBy === value
                   ? 'bg-accent-500 text-black'
-                  : 'text-surface-300 hover:text-white'
+                  : 'text-surface-300 hover:text-surface-100'
               }`}
             >
               {label}

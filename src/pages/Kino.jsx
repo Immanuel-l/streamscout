@@ -43,14 +43,14 @@ function Kino() {
       <div>
         <Link
           to="/"
-          className="text-sm text-surface-400 hover:text-white transition-colors inline-flex items-center gap-1 mb-4"
+          className="text-sm text-surface-400 hover:text-surface-100 transition-colors inline-flex items-center gap-1 mb-4"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
           Zurück
         </Link>
-        <h1 className="font-display text-5xl tracking-wide text-white">Aktuell im Kino</h1>
+        <h1 className="font-display text-5xl tracking-wide text-surface-100">Aktuell im Kino</h1>
         <p className="text-surface-300 text-sm mt-1.5">Filme, die gerade in deutschen Kinos laufen.</p>
       </div>
 
@@ -66,7 +66,7 @@ function Kino() {
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               sortBy === value
                 ? 'bg-accent-500 text-black'
-                : 'text-surface-300 hover:text-white'
+                : 'text-surface-300 hover:text-surface-100'
             }`}
           >
             {label}

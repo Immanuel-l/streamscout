@@ -72,7 +72,7 @@ function Anime() {
       <div>
         <Link
           to="/"
-          className="text-sm text-surface-400 hover:text-white transition-colors inline-flex items-center gap-1 mb-4"
+          className="text-sm text-surface-400 hover:text-surface-100 transition-colors inline-flex items-center gap-1 mb-4"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -82,7 +82,7 @@ function Anime() {
         <div className="flex items-center gap-3">
           <span className="text-4xl">🎌</span>
           <div>
-            <h1 className="font-display text-5xl tracking-wide text-white">Anime</h1>
+            <h1 className="font-display text-5xl tracking-wide text-surface-100">Anime</h1>
             <p className="text-surface-300 text-sm mt-1.5 max-w-2xl">Japanische Animationsfilme und -serien — von Shōnen-Action bis Studio Ghibli.</p>
             <div className="flex flex-wrap gap-1.5 mt-2.5">
               {['Animation', 'Japan', 'Nur im Abo'].map((tag) => (
@@ -109,7 +109,7 @@ function Anime() {
               className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
                 mediaType === type
                   ? 'bg-accent-500 text-black'
-                  : 'text-surface-300 hover:text-white'
+                  : 'text-surface-300 hover:text-surface-100'
               }`}
             >
               {label}
@@ -119,7 +119,7 @@ function Anime() {
 
         <button
           onClick={shuffle}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-800 text-surface-300 hover:text-white hover:bg-surface-700 transition-colors text-sm font-medium"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-800 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-colors text-sm font-medium"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />

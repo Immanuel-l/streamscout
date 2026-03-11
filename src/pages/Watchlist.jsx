@@ -196,11 +196,11 @@ function Watchlist() {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           {isSharedView ? (
-            <h1 className="font-display text-4xl sm:text-5xl tracking-wide text-white">
+            <h1 className="font-display text-4xl sm:text-5xl tracking-wide text-surface-100">
               Geteilte Merkliste
             </h1>
           ) : (
-            <h1 className="font-display text-5xl tracking-wide text-white">Merkliste</h1>
+            <h1 className="font-display text-5xl tracking-wide text-surface-100">Merkliste</h1>
           )}
           
           {displayedItems.length > 0 && !isFetchingShared && (
@@ -234,7 +234,7 @@ function Watchlist() {
       {isSharedView && !isFetchingShared && sharedItems.length > 0 && (
         <div className="bg-accent-500/10 border border-accent-500/20 rounded-xl p-4 sm:p-5 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
           <div>
-            <h3 className="text-white font-medium text-lg">Ein Freund hat diese Liste mit dir geteilt!</h3>
+            <h3 className="text-surface-100 font-medium text-lg">Ein Freund hat diese Liste mit dir geteilt!</h3>
             <p className="text-surface-300 text-sm mt-1">
               Wähle aus, welche Filme und Serien du in deine eigene Merkliste übernehmen möchtest.
             </p>
@@ -242,7 +242,7 @@ function Watchlist() {
           <div className="flex flex-wrap items-center gap-3 shrink-0 w-full lg:w-auto">
             <button
               onClick={handleSelectAll}
-              className="px-4 py-2 bg-surface-800 text-surface-200 text-sm font-medium rounded-lg hover:bg-surface-700 hover:text-white transition-colors flex-1 sm:flex-none"
+              className="px-4 py-2 bg-surface-800 text-surface-200 text-sm font-medium rounded-lg hover:bg-surface-700 hover:text-surface-100 transition-colors flex-1 sm:flex-none"
             >
               {selectedItems.size === sharedItems.length ? 'Alle abwählen' : 'Alle auswählen'}
             </button>
@@ -280,7 +280,7 @@ function Watchlist() {
                     className={`px-4 sm:px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
                       activeTab === key
                         ? 'bg-accent-500 text-black'
-                        : 'text-surface-300 hover:text-white'
+                        : 'text-surface-300 hover:text-surface-100'
                     }`}
                   >
                     {label} ({count})
@@ -302,7 +302,7 @@ function Watchlist() {
                   className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                     sortBy === value
                       ? 'bg-accent-500 text-black'
-                      : 'text-surface-300 hover:text-white'
+                      : 'text-surface-300 hover:text-surface-100'
                   }`}
                 >
                   {label}

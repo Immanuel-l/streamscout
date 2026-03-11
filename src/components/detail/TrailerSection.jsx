@@ -15,7 +15,7 @@ function TrailerSection({ videos }) {
 
   return (
     <div>
-      <h2 className="font-display text-2xl tracking-wide text-white mb-3">Trailer</h2>
+      <h2 className="font-display text-2xl tracking-wide text-surface-100 mb-3">Trailer</h2>
       {playing ? (
         <div className="relative w-full max-w-3xl aspect-video rounded-xl overflow-hidden ring-1 ring-white/10">
           <iframe

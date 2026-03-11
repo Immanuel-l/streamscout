@@ -92,7 +92,7 @@ function Select({ value, onChange, options, placeholder = 'Auswählen' }) {
             : 'border-surface-700 hover:border-surface-600'
         }`}
       >
-        <span className={selected?.value ? 'text-white' : 'text-surface-400'}>
+        <span className={selected?.value ? 'text-surface-100' : 'text-surface-400'}>
           {selected?.label || placeholder}
         </span>
         <svg
@@ -124,8 +124,8 @@ function Select({ value, onChange, options, placeholder = 'Auswählen' }) {
                   String(option.value) === String(value)
                     ? 'text-accent-400 bg-accent-400/10'
                     : index === highlighted
-                      ? 'text-white bg-surface-700/60'
-                      : 'text-surface-200 hover:bg-surface-700/60 hover:text-white'
+                      ? 'text-surface-100 bg-surface-700/60'
+                      : 'text-surface-200 hover:bg-surface-700/60 hover:text-surface-100'
                 }`}
               >
                 {option.label}

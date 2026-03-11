@@ -153,7 +153,7 @@ function SearchBar({ value, onChange, suggestions = [], history = [], onHistoryS
         role="combobox"
         aria-expanded={(open && suggestions.length > 0) || historyOpen}
         aria-autocomplete="list"
-        className="w-full pl-12 pr-4 py-4 rounded-xl bg-surface-800/80 border border-surface-700 text-white placeholder-surface-400 text-lg focus:outline-none focus:border-accent-500/60 focus:ring-1 focus:ring-accent-500/30 shadow-none focus:shadow-[0_0_30px_-6px_rgba(245,158,11,0.12)] transition-all duration-300"
+        className="w-full pl-12 pr-4 py-4 rounded-xl bg-surface-800/80 border border-surface-700 text-surface-100 placeholder-surface-400 text-lg focus:outline-none focus:border-accent-500/60 focus:ring-1 focus:ring-accent-500/30 shadow-none focus:shadow-[0_0_30px_-6px_rgba(245,158,11,0.12)] transition-all duration-300"
       />
       {value && (
         <button
@@ -162,7 +162,7 @@ function SearchBar({ value, onChange, suggestions = [], history = [], onHistoryS
             focusedRef.current = true
             inputRef.current?.focus()
           }}
-          className="absolute right-4 top-1/2 -translate-y-1/2 text-surface-400 hover:text-white transition-colors z-10"
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-100 transition-colors z-10"
           aria-label="Suche leeren"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -204,7 +204,7 @@ function SearchBar({ value, onChange, suggestions = [], history = [], onHistoryS
                   <div className={`${item.media_type === 'person' ? 'w-10 h-10 rounded-full' : 'w-10 h-14 rounded-md'} bg-surface-700 flex-shrink-0`} />
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="text-white text-sm font-medium truncate">{title}</p>
+                  <p className="text-surface-100 text-sm font-medium truncate">{title}</p>
                   <p className="text-surface-400 text-xs">
                     {typeLabels[item.media_type] || ''}{year ? ` · ${year}` : ''}
                   </p>
@@ -240,7 +240,7 @@ function SearchBar({ value, onChange, suggestions = [], history = [], onHistoryS
               </svg>
               <button
                 onClick={() => handleHistoryClick(q)}
-                className="flex-1 text-left text-surface-200 text-sm truncate hover:text-white transition-colors"
+                className="flex-1 text-left text-surface-200 text-sm truncate hover:text-surface-100 transition-colors"
               >
                 {q}
               </button>

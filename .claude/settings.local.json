@@ -20,7 +20,9 @@
       "Bash(git diff:*)",
       "Bash(npm ls:*)",
       "Bash(ls -lh C:\\\\Users\\\\leine\\\\Desktop\\\\StreamScout/public/*.png 2>/dev/null || echo \"No PNG icons found\")",
-      "Bash(npx vitest:*)"
+      "Bash(npx vitest:*)",
+      "Bash(ls -la /c/Users/leine/Desktop/StreamScout/*.js | head -20)",
+      "Bash(find /c/Users/leine/Desktop/StreamScout/src -type f -name \"*.jsx\" | xargs grep -l -i \"theme\\\\|dark\\\\|light\" | head -20)"
     ]
   }
 }

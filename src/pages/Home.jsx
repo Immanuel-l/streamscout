@@ -83,9 +83,9 @@ function HeroSection({ items }) {
           className={`absolute inset-0 w-full h-full object-cover object-top transition-opacity duration-500 ${fade ? 'opacity-100' : 'opacity-0'}`}
         />
         {/* Gradients */}
-        <div className="absolute inset-0 bg-gradient-to-t from-surface-950 via-surface-950/60 via-55% to-surface-950/20" />
-        <div className="absolute inset-0 bg-gradient-to-r from-surface-950/80 via-transparent to-transparent" />
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(5,5,5,0.5) 100%)' }} />
+        <div className="absolute inset-0 bg-gradient-to-t from-overlay via-overlay-light/60 via-55% to-overlay/20" />
+        <div className="absolute inset-0 bg-gradient-to-r from-overlay/80 via-transparent to-transparent" />
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(5, 5, 5, 0.5) 100%)' }} />
 
         {/* Arrow Buttons */}
         {heroItems.length > 1 && (
@@ -93,7 +93,7 @@ function HeroSection({ items }) {
             <button
               onClick={prev}
               aria-label="Vorheriger Slide"
-              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-surface-950/60 backdrop-blur-sm border border-surface-700/40 flex items-center justify-center text-white/70 hover:text-white hover:bg-surface-800/80 transition-all duration-300 opacity-100 sm:opacity-0 sm:group-hover/hero:opacity-100"
+              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-overlay/60 backdrop-blur-sm border border-overlay-mid/50 flex items-center justify-center text-white/70 hover:text-white hover:bg-overlay-light/80 transition-all duration-300 opacity-100 sm:opacity-0 sm:group-hover/hero:opacity-100"
             >
               <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -102,7 +102,7 @@ function HeroSection({ items }) {
             <button
               onClick={next}
               aria-label="Nächster Slide"
-              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-surface-950/60 backdrop-blur-sm border border-surface-700/40 flex items-center justify-center text-white/70 hover:text-white hover:bg-surface-800/80 transition-all duration-300 opacity-100 sm:opacity-0 sm:group-hover/hero:opacity-100"
+              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-overlay/60 backdrop-blur-sm border border-overlay-mid/50 flex items-center justify-center text-white/70 hover:text-white hover:bg-overlay-light/80 transition-all duration-300 opacity-100 sm:opacity-0 sm:group-hover/hero:opacity-100"
             >
               <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -121,14 +121,14 @@ function HeroSection({ items }) {
               {score && (
                 <span className="text-accent-400 text-sm font-bold">{score}%</span>
               )}
-              {year && <span className="text-surface-300 text-sm">{year}</span>}
+              {year && <span className="text-white/65 text-sm">{year}</span>}
             </div>
 
             <h2 className="font-display text-4xl sm:text-5xl md:text-6xl tracking-wide text-white leading-tight">
               {title}
             </h2>
 
-            <p className="text-surface-200 text-sm sm:text-base leading-relaxed line-clamp-2 sm:line-clamp-3">
+            <p className="text-white/85 text-sm sm:text-base leading-relaxed line-clamp-2 sm:line-clamp-3">
               {item.overview}
             </p>
 
@@ -150,7 +150,7 @@ function HeroSection({ items }) {
                 <button
                   key={i}
                   onClick={() => goTo(i)}
-                  className={`h-1 rounded-full transition-all duration-300 ${i === index ? 'w-6 bg-accent-500' : 'w-1.5 bg-surface-500/50 hover:bg-surface-400/50'}`}
+                  className={`h-1 rounded-full transition-all duration-300 ${i === index ? 'w-6 bg-accent-500' : 'w-1.5 bg-white/35 hover:bg-white/55'}`}
                   aria-label={`Slide ${i + 1}`}
                 />
               ))}
@@ -166,7 +166,7 @@ function MoodSection() {
   return (
     <section className="space-y-6">
       <div>
-        <h2 className="font-display text-4xl sm:text-5xl tracking-wide text-white">Worauf hast du Lust?</h2>
+        <h2 className="font-display text-4xl sm:text-5xl tracking-wide text-surface-100">Worauf hast du Lust?</h2>
         <p className="text-surface-400 text-sm mt-1">Wähle deine Stimmung und lass dich überraschen.</p>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -177,8 +177,8 @@ function MoodSection() {
             className={`group relative rounded-xl border bg-gradient-to-br ${mood.gradient} ${mood.border} p-4 sm:p-5 transition-all duration-300 hover:scale-[1.04] hover:shadow-xl hover:shadow-black/30`}
           >
             <span className="text-3xl block mb-2 transition-transform duration-300 group-hover:scale-110">{mood.icon}</span>
-            <p className="text-white font-medium text-sm sm:text-base leading-tight">{mood.title}</p>
-            <p className="text-white/50 text-xs mt-1 leading-snug">{mood.subtitle}</p>
+            <p className="text-surface-100 font-medium text-sm sm:text-base leading-tight">{mood.title}</p>
+            <p className="text-surface-400 text-xs mt-1 leading-snug">{mood.subtitle}</p>
           </Link>
         ))}
       </div>
@@ -302,3 +302,4 @@ function Home() {
 }
 
 export default Home
+

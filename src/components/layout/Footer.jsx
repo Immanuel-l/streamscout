@@ -26,7 +26,7 @@ function Footer() {
               <Link
                 key={to}
                 to={to}
-                className="text-sm text-surface-400 hover:text-white transition-colors"
+                className="text-sm text-surface-400 hover:text-surface-100 transition-colors"
               >
                 {label}
               </Link>

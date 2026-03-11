@@ -73,7 +73,7 @@ function PersonDetail() {
         )}
 
         <div className="flex-1 min-w-0 space-y-4">
-          <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl tracking-wide text-white leading-tight">
+          <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl tracking-wide text-surface-100 leading-tight">
             {person.name}
           </h1>
 
@@ -103,7 +103,7 @@ function PersonDetail() {
       {/* Filmografie — Schauspiel */}
       {castCredits.length > 0 && (
         <section className="mb-10">
-          <h2 className="font-display text-2xl tracking-wide text-white mb-4">
+          <h2 className="font-display text-2xl tracking-wide text-surface-100 mb-4">
             Bekannt für ({castCredits.length})
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
@@ -117,7 +117,7 @@ function PersonDetail() {
       {/* Filmografie — Crew */}
       {crewCredits.length > 0 && (
         <section className="mb-10">
-          <h2 className="font-display text-2xl tracking-wide text-white mb-4">
+          <h2 className="font-display text-2xl tracking-wide text-surface-100 mb-4">
             Hinter der Kamera ({crewCredits.length})
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">

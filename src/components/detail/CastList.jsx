@@ -10,7 +10,7 @@ function ArrowButton({ direction, onClick }) {
       aria-label={isLeft ? 'Zurück scrollen' : 'Weiter scrollen'}
       className={`absolute top-0 ${isLeft ? 'left-0' : 'right-0'} z-10 h-full w-12 sm:w-14 flex items-center ${isLeft ? 'justify-start' : 'justify-end'} opacity-0 group-hover/cast:opacity-100 transition-opacity duration-300 cursor-pointer`}
     >
-      <span className="w-10 h-10 rounded-full bg-surface-950/80 backdrop-blur-sm border border-surface-700/50 flex items-center justify-center text-white hover:bg-surface-800 hover:border-surface-600 transition-colors">
+      <span className="w-10 h-10 rounded-full bg-surface-950/80 backdrop-blur-sm border border-surface-700/50 flex items-center justify-center text-surface-100 hover:bg-surface-800 hover:border-surface-600 transition-colors">
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           {isLeft ? (
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -61,7 +61,7 @@ function CastList({ cast }) {
 
   return (
     <div>
-      <h2 className="font-display text-2xl tracking-wide text-white mb-3">Besetzung</h2>
+      <h2 className="font-display text-2xl tracking-wide text-surface-100 mb-3">Besetzung</h2>
       <div className="group/cast relative">
         {/* Fade edges */}
         {canScrollLeft && (
@@ -100,7 +100,7 @@ function CastList({ cast }) {
                 className="w-full aspect-[2/3] rounded-lg object-cover ring-1 ring-white/5 group-hover/card:ring-accent-500/50 transition-all duration-300 group-hover/card:scale-105"
                 loading="lazy"
               />
-              <p className="text-white text-xs font-medium mt-1.5 truncate">{person.name}</p>
+              <p className="text-surface-100 text-xs font-medium mt-1.5 truncate">{person.name}</p>
               <p className="text-surface-400 text-xs truncate">{person.character}</p>
             </Link>
           ))}

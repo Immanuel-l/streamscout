@@ -154,7 +154,7 @@ function Random() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-display text-5xl tracking-wide text-white">Zufallsgenerator</h1>
+        <h1 className="font-display text-5xl tracking-wide text-surface-100">Zufallsgenerator</h1>
         <p className="text-surface-400 text-sm mt-2">
           Keine Ahnung was du schauen sollst? Lass den Zufall entscheiden.
         </p>
@@ -175,7 +175,7 @@ function Random() {
               className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
                 mediaType === type
                   ? 'bg-accent-500 text-black'
-                  : 'text-surface-300 hover:text-white'
+                  : 'text-surface-300 hover:text-surface-100'
               }`}
             >
               {label}
@@ -273,7 +273,7 @@ function Random() {
               />
               <div className="absolute inset-0 bg-gradient-to-r from-surface-900 via-surface-900/85 to-surface-900/30" />
               <div className="absolute inset-0 bg-gradient-to-t from-surface-900 via-transparent to-surface-900/50" />
-              <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 30% 50%, transparent 30%, rgba(10,10,10,0.5) 100%)' }} />
+              <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 30% 50%, transparent 30%, rgba(var(--vignette-rgb), 0.5) 100%)' }} />
             </div>
           )}
 
@@ -291,7 +291,7 @@ function Random() {
             <div className="flex-1 min-w-0 flex flex-col justify-between gap-4">
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
-                  <h2 className="font-display text-3xl sm:text-4xl tracking-wide text-white leading-tight">
+                  <h2 className="font-display text-3xl sm:text-4xl tracking-wide text-surface-100 leading-tight">
                     {title}
                   </h2>
                   <WatchlistButton media={result} size="lg" />

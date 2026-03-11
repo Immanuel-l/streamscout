@@ -21,7 +21,7 @@ function RatingRing({ rating }) {
           strokeDashoffset={offset}
         />
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-white">
+      <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-surface-100">
         {score}<span className="text-[9px] text-surface-300">%</span>
       </span>
     </div>

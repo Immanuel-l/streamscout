@@ -35,11 +35,17 @@
   --color-accent-700: #b45309;
   --color-accent-800: #92400e;
   --color-accent-900: #78350f;
+
+  /* Overlay colors — always dark, used for hero/backdrop gradients over images */
+  --color-overlay: #050505;
+  --color-overlay-light: #0a0a0a;
+  --color-overlay-mid: #1e1e1e;
 }
 
 html {
   background-color: var(--color-surface-950);
   color-scheme: dark;
+  --vignette-rgb: 5, 5, 5;
 }
 
 [data-theme="light"] {
@@ -54,6 +60,7 @@ html {
   --color-surface-200: #1e1e1e;
   --color-surface-100: #0a0a0a;
   color-scheme: light;
+  --vignette-rgb: 245, 245, 245;
 }
 
 body {
@@ -101,6 +108,11 @@ body::after {
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--color-surface-600) transparent;
+}
+
+/* In light mode: don't invert logos to white — keep them dark */
+[data-theme="light"] .light-no-invert {
+  filter: brightness(0) opacity(0.7);
 }
 
 /* Global focus-visible styles for keyboard navigation */

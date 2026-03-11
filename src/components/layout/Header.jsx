@@ -51,7 +51,7 @@ function Header() {
                   `px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     isActive
                       ? 'text-accent-400 bg-accent-400/10'
-                      : 'text-surface-300 hover:text-white hover:bg-surface-800/60'
+                      : 'text-surface-300 hover:text-surface-100 hover:bg-surface-800/60'
                   }`
                 }
               >
@@ -60,7 +60,7 @@ function Header() {
             ))}
             <button
               onClick={toggleTheme}
-              className="ml-2 p-2 rounded-lg text-surface-300 hover:text-white hover:bg-surface-800/60 transition-colors"
+              className="ml-2 p-2 rounded-lg text-surface-300 hover:text-surface-100 hover:bg-surface-800/60 transition-colors"
               aria-label={theme === 'dark' ? 'Helles Design aktivieren' : 'Dunkles Design aktivieren'}
             >
               {theme === 'dark' ? (
@@ -78,7 +78,7 @@ function Header() {
           <div className="flex items-center gap-1 md:hidden">
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg text-surface-300 hover:text-white hover:bg-surface-800/60 transition-colors"
+              className="p-2 rounded-lg text-surface-300 hover:text-surface-100 hover:bg-surface-800/60 transition-colors"
               aria-label={theme === 'dark' ? 'Helles Design aktivieren' : 'Dunkles Design aktivieren'}
             >
               {theme === 'dark' ? (
@@ -93,7 +93,7 @@ function Header() {
             </button>
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="text-surface-300 hover:text-white p-2 rounded-lg hover:bg-surface-800/60 transition-colors"
+              className="text-surface-300 hover:text-surface-100 p-2 rounded-lg hover:bg-surface-800/60 transition-colors"
               aria-label={mobileOpen ? 'Menü schließen' : 'Menü öffnen'}
               aria-expanded={mobileOpen}
             >
@@ -136,7 +136,7 @@ function Header() {
                 `block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                   isActive
                     ? 'text-accent-400 bg-accent-400/10'
-                    : 'text-surface-300 hover:text-white hover:bg-surface-800/60'
+                    : 'text-surface-300 hover:text-surface-100 hover:bg-surface-800/60'
                 }`
               }
             >

@@ -58,7 +58,7 @@ function MovieDetail() {
           {/* Three-layer gradient: bottom fade, left fade, vignette */}
           <div className="absolute inset-0 bg-gradient-to-t from-surface-950 via-surface-950/70 via-60% to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-surface-950/90 via-surface-950/30 via-50% to-transparent" />
-          <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, transparent 50%, rgba(5,5,5,0.4) 100%)' }} />
+          <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, transparent 50%, rgba(var(--vignette-rgb), 0.4) 100%)' }} />
         </div>
       </section>
 
@@ -78,7 +78,7 @@ function MovieDetail() {
         <div className="flex-1 min-w-0 space-y-5">
           <div>
             <div className="flex items-start gap-4">
-              <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl tracking-wide text-white leading-tight">
+              <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl tracking-wide text-surface-100 leading-tight">
                 {movie.title}
               </h1>
               <WatchlistButton
@@ -134,7 +134,7 @@ function MovieDetail() {
 
           {!isInCinema && (
             <div>
-              <h2 className="font-display text-2xl tracking-wide text-white mb-3">Wo streamen?</h2>
+              <h2 className="font-display text-2xl tracking-wide text-surface-100 mb-3">Wo streamen?</h2>
               {providers.isLoading ? (
                 <div className="flex gap-2">
                   {Array.from({ length: 4 }).map((_, i) => (
