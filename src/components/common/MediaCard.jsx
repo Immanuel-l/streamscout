@@ -44,10 +44,10 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
   const score = media.vote_average > 0 ? Math.round(media.vote_average * 10) : null
   const scoreColor =
     score >= 70
-      ? 'bg-emerald-500/90 text-white'
+      ? 'bg-emerald-500/90 text-black'
       : score >= 50
-        ? 'bg-amber-500/90 text-white'
-        : 'bg-red-500/90 text-white'
+        ? 'bg-amber-500/90 text-black'
+        : 'bg-red-500/90 text-black'
 
   // "Im Kino" — based on TMDB now_playing endpoint via cached React Query
   const { data: nowPlayingData } = useNowPlaying()
@@ -181,7 +181,7 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
                 ))}
               </div>
             ) : notStreamable ? (
-              <p className="text-surface-400 text-xs pt-1">Nicht streambar</p>
+              <p className="text-surface-200 text-xs pt-1">Nicht streambar</p>
             ) : null}
           </div>
         </div>
@@ -190,10 +190,11 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
       {/* Title below card — fades out on hover */}
       <div className="mt-2 px-1 group-hover:opacity-0 transition-opacity duration-300">
         <p className="text-surface-200 text-sm font-medium leading-tight line-clamp-1">{title}</p>
-        {year && <p className="text-surface-400 text-xs mt-0.5">{year}</p>}
+        {year && <p className="text-surface-200 text-xs mt-0.5">{year}</p>}
       </div>
     </Link>
   )
 }
 
 export default memo(MediaCard)
+

@@ -130,7 +130,7 @@ input:focus-visible,
 
 @keyframes fade-in {
   from {
-    opacity: 0;
+    opacity: 0.92;
     transform: translateY(8px);
   }
   to {
@@ -154,3 +154,5 @@ input:focus-visible,
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
 }
+
+

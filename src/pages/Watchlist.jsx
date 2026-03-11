@@ -204,7 +204,7 @@ function Watchlist() {
           )}
           
           {displayedItems.length > 0 && !isFetchingShared && (
-            <p className="text-surface-400 text-sm mt-2">
+            <p className="text-surface-200 text-sm mt-2">
               {displayedItems.length} {displayedItems.length === 1 ? 'Eintrag' : 'Einträge'}
             </p>
           )}
@@ -235,7 +235,7 @@ function Watchlist() {
         <div className="bg-accent-500/10 border border-accent-500/20 rounded-xl p-4 sm:p-5 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
           <div>
             <h3 className="text-surface-100 font-medium text-lg">Ein Freund hat diese Liste mit dir geteilt!</h3>
-            <p className="text-surface-300 text-sm mt-1">
+            <p className="text-surface-200 text-sm mt-1">
               Wähle aus, welche Filme und Serien du in deine eigene Merkliste übernehmen möchtest.
             </p>
           </div>
@@ -280,7 +280,7 @@ function Watchlist() {
                     className={`px-4 sm:px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
                       activeTab === key
                         ? 'bg-accent-500 text-black'
-                        : 'text-surface-300 hover:text-surface-100'
+                        : 'text-surface-200 hover:text-surface-100'
                     }`}
                   >
                     {label} ({count})
@@ -302,7 +302,7 @@ function Watchlist() {
                   className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                     sortBy === value
                       ? 'bg-accent-500 text-black'
-                      : 'text-surface-300 hover:text-surface-100'
+                      : 'text-surface-200 hover:text-surface-100'
                   }`}
                 >
                   {label}
@@ -315,7 +315,7 @@ function Watchlist() {
         {/* Provider Filter */}
         {availableProviders.length > 0 && !isFetchingShared && (
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-surface-400 text-xs uppercase tracking-wider font-medium max-sm:hidden">
+            <span className="text-surface-200 text-xs uppercase tracking-wider font-medium max-sm:hidden">
               Anbieter
             </span>
             <div className="flex flex-wrap gap-1.5">
@@ -341,7 +341,7 @@ function Watchlist() {
               ))}
             </div>
             {providersLoading && (
-              <div className="text-surface-500">
+              <div className="text-surface-200">
                 <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -379,7 +379,7 @@ function Watchlist() {
         </div>
       ) : displayedItems.length > 0 ? (
         <div className="text-center py-20">
-          <p className="text-surface-400 text-lg">
+          <p className="text-surface-200 text-lg">
             Keine {activeTab === 'movie' ? 'Filme' : 'Serien'} auf der Merkliste.
           </p>
         </div>
@@ -388,12 +388,12 @@ function Watchlist() {
           <svg className="w-16 h-16 mx-auto text-surface-600 mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
           </svg>
-          <p className="text-surface-400 text-lg">
+          <p className="text-surface-200 text-lg">
             {isSharedView ? 'Diese geteilte Merkliste ist leer.' : 'Deine Merkliste ist leer'}
           </p>
           {!isSharedView && (
             <>
-              <p className="text-surface-500 text-sm mt-1">
+              <p className="text-surface-200 text-sm mt-1">
                 Klicke auf das Lesezeichen-Symbol bei Filmen oder Serien, um sie hier zu speichern.
               </p>
               <Link
@@ -418,5 +418,6 @@ function Watchlist() {
 }
 
 export default Watchlist
+
 
 

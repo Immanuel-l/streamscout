@@ -16,7 +16,7 @@ function Footer() {
             <Link to="/" className="font-display text-2xl tracking-wider text-accent-400 hover:text-accent-300 transition-colors">
               StreamScout
             </Link>
-            <p className="text-surface-500 text-sm max-w-xs">
+            <p className="text-surface-200 text-sm max-w-xs">
               Finde Filme und Serien auf deinen Streaming-Diensten — schnell, einfach und ohne langes Suchen.
             </p>
           </div>
@@ -26,7 +26,7 @@ function Footer() {
               <Link
                 key={to}
                 to={to}
-                className="text-sm text-surface-400 hover:text-surface-100 transition-colors"
+                className="text-sm text-surface-200 hover:text-surface-100 transition-colors"
               >
                 {label}
               </Link>
@@ -35,13 +35,13 @@ function Footer() {
         </div>
 
         <div className="mt-8 pt-6 border-t border-surface-800/40 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-surface-500">
+          <p className="text-xs text-surface-200">
             Daten bereitgestellt von{' '}
             <a
               href="https://www.themoviedb.org/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-surface-400 hover:text-accent-400 transition-colors"
+              className="text-accent-300 underline underline-offset-2 decoration-accent-500/70 hover:text-accent-200 transition-colors"
             >
               TMDB
             </a>
@@ -51,7 +51,7 @@ function Footer() {
               href="https://www.justwatch.com/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-surface-400 hover:text-accent-400 transition-colors"
+              className="text-accent-300 underline underline-offset-2 decoration-accent-500/70 hover:text-accent-200 transition-colors"
             >
               JustWatch
             </a>
@@ -68,3 +68,4 @@ function Footer() {
 }
 
 export default Footer
+

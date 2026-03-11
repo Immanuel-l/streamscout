@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 
-function Select({ value, onChange, options, placeholder = 'Auswählen' }) {
+function Select({ value, onChange, options, placeholder = 'Auswählen', ariaLabel }) {
   const [open, setOpen] = useState(false)
   const [highlighted, setHighlighted] = useState(-1)
   const ref = useRef(null)
@@ -86,17 +86,18 @@ function Select({ value, onChange, options, placeholder = 'Auswählen' }) {
         role="combobox"
         aria-expanded={open}
         aria-haspopup="listbox"
+        aria-label={ariaLabel || placeholder}
         className={`flex items-center justify-between gap-2 min-w-[140px] bg-surface-800 border text-sm rounded-lg px-3 py-2 transition-colors text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 ${
           open
             ? 'border-accent-500/60 shadow-[0_0_12px_-4px_rgba(245,158,11,0.15)]'
             : 'border-surface-700 hover:border-surface-600'
         }`}
       >
-        <span className={selected?.value ? 'text-surface-100' : 'text-surface-400'}>
+        <span className={selected?.value ? 'text-surface-100' : 'text-surface-200'}>
           {selected?.label || placeholder}
         </span>
         <svg
-          className={`w-4 h-4 text-surface-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-surface-200 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -139,3 +140,7 @@ function Select({ value, onChange, options, placeholder = 'Auswählen' }) {
 }
 
 export default Select
+
+
+
+

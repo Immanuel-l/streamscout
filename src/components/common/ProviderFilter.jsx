@@ -5,7 +5,7 @@ function ProviderFilter({ providers, selected, onToggle, label = 'Streaming-Anbi
 
   return (
     <div>
-      <p className="text-xs font-medium text-surface-400 uppercase tracking-wider mb-2">{label}</p>
+      <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">{label}</p>
       <div className="flex flex-wrap gap-2">
         {providers.map((p) => (
           <button
@@ -32,3 +32,4 @@ function ProviderFilter({ providers, selected, onToggle, label = 'Streaming-Anbi
 }
 
 export default ProviderFilter
+
