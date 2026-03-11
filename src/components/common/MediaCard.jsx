@@ -6,13 +6,15 @@ import { getMovieProviders } from '../../api/movies'
 import { getTvProviders } from '../../api/tv'
 import { ALLOWED_PROVIDER_SET } from '../../utils/providers'
 import { useNowPlaying } from '../../hooks/useMovies'
+import { useIsTouch } from '../../hooks/useIsTouch'
 import WatchlistButton from './WatchlistButton'
 
 const typeLabels = { movie: 'Film', tv: 'Serie' }
 
 function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchlistButton = false }) {
   const [hovered, setHovered] = useState(false)
-  const isTouch = typeof window !== 'undefined' && window.matchMedia('(hover: none) and (pointer: coarse)').matches
+  const [imgError, setImgError] = useState(false)
+  const isTouch = useIsTouch()
 
   const title = media.title || media.name
   const date = media.release_date || media.first_air_date
@@ -58,11 +60,12 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
       onMouseEnter={() => setHovered(true)}
     >
       <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-surface-800 transition-shadow duration-500 group-hover:shadow-[0_8px_40px_-8px_rgba(245,158,11,0.15)]">
-        {poster ? (
+        {poster && !imgError ? (
           <img
             src={poster}
             alt={title}
             loading={eager ? "eager" : "lazy"}
+            onError={() => setImgError(true)}
             className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.08]"
           />
         ) : (

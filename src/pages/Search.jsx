@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useInfiniteQuery, useQueries } from '@tanstack/react-query'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { searchMulti, searchMovies, searchTv, searchPerson } from '../api/common'
 import { getMovieProviders } from '../api/movies'
 import { getTvProviders } from '../api/tv'
@@ -35,6 +36,7 @@ function getSearchHistory() {
 function Search() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState(() => searchParams.get('q') || '')
+  useDocumentTitle(query ? `Suche: ${query}` : 'Suche')
   const [mediaType, setMediaType] = useState(() => searchParams.get('type') || 'all')
   const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || 'relevance')
   const [onlyStreamable, setOnlyStreamable] = useState(() => searchParams.get('streamable') === 'true')

@@ -7,7 +7,12 @@
       "Bash(npx eslint:*)",
       "Bash(npm test:*)",
       "Bash(cd \"C:/Users/leine/Desktop/StreamScout\" && npm install --save-dev husky 2>&1)",
-      "Bash(cd \"C:/Users/leine/Desktop/StreamScout\" && npx husky init 2>&1)"
+      "Bash(cd \"C:/Users/leine/Desktop/StreamScout\" && npx husky init 2>&1)",
+      "Bash(find /c/Users/leine/Desktop/StreamScout -type f -name \"*.js\" -o -name \"*.jsx\" -o -name \"*.json\" | grep -E \"\\\\.\\(js|jsx|json\\)$\" | head -30)",
+      "Bash(find /c/Users/leine/Desktop/StreamScout -name \".env*\" -o -name \"*.env*\" 2>/dev/null | head -20)",
+      "Bash(find /c/Users/leine/Desktop/StreamScout -maxdepth 1 -type f -name \".*\" | grep -v \"^\\\\.$\\\\|^\\\\.\\\\.$\" | head -20)",
+      "Bash(npm audit:*)",
+      "Bash(tree -L 3 -I 'node_modules' /c/Users/leine/Desktop/StreamScout 2>/dev/null || find /c/Users/leine/Desktop/StreamScout -not -path '*/node_modules/*' -not -path '*/.git/*' -type f | head -100)"
     ]
   }
 }

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll'
@@ -15,6 +16,7 @@ const animeParams = {
 }
 
 function Anime() {
+  useDocumentTitle('Anime')
   const [searchParams, setSearchParams] = useSearchParams()
   const [mediaType, setMediaType] = useState(() => searchParams.get('type') || 'tv')
   const [startPage, setStartPage] = useState(1)

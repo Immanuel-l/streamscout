@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { usePersonDetails, usePersonCredits } from '../hooks/usePerson'
 import { IMAGE_BASE } from '../api/tmdb'
 import MediaCard from '../components/common/MediaCard'
@@ -30,6 +31,7 @@ function calcAge(birthday, deathday) {
 function PersonDetail() {
   const { id } = useParams()
   const { data: person, isLoading, error } = usePersonDetails(id)
+  useDocumentTitle(person?.name)
   const credits = usePersonCredits(id)
 
   if (isLoading) return <PersonSkeleton />

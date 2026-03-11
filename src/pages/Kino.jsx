@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { useNowPlaying } from '../hooks/useMovies'
 import MediaCard from '../components/common/MediaCard'
 import GridSkeleton from '../components/common/GridSkeleton'
@@ -20,6 +21,7 @@ function sortKinoMovies(movies, sortBy) {
 }
 
 function Kino() {
+  useDocumentTitle('Aktuell im Kino')
   const { data, isLoading, error } = useNowPlaying()
   const [searchParams, setSearchParams] = useSearchParams()
   const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || 'recommended')

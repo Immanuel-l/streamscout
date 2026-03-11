@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 
 const navLinks = [
@@ -11,6 +11,16 @@ const navLinks = [
 
 function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
+
+  const close = useCallback(() => setMobileOpen(false), [])
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!mobileOpen) return
+    const handler = (e) => { if (e.key === 'Escape') close() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [mobileOpen, close])
 
   return (
     <div className="sticky top-0 z-50">
@@ -52,6 +62,7 @@ function Header() {
             onClick={() => setMobileOpen(!mobileOpen)}
             className="md:hidden text-surface-300 hover:text-white p-2 rounded-lg hover:bg-surface-800/60 transition-colors"
             aria-label={mobileOpen ? 'Menü schließen' : 'Menü öffnen'}
+            aria-expanded={mobileOpen}
           >
             {mobileOpen ? (
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -66,6 +77,15 @@ function Header() {
         </div>
       </header>
 
+      {/* Backdrop overlay — closes menu on tap outside */}
+      {mobileOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-[-1] bg-black/40"
+          onClick={close}
+          aria-hidden="true"
+        />
+      )}
+
       <nav
         className={`md:hidden absolute left-0 w-full border-b border-surface-800/60 bg-surface-950/80 backdrop-blur-xl overflow-hidden transition-all duration-300 ease-out shadow-2xl ${
           mobileOpen ? 'max-h-80 opacity-100 border-t border-surface-800/60' : 'max-h-0 opacity-0 border-t-transparent'
@@ -77,7 +97,7 @@ function Header() {
               key={to}
               to={to}
               end={to === '/'}
-              onClick={() => setMobileOpen(false)}
+              onClick={close}
               className={({ isActive }) =>
                 `block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                   isActive

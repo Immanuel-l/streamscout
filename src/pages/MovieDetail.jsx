@@ -1,4 +1,5 @@
 import { useParams } from 'react-router-dom'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { useMovieDetails, useMovieProviders, useMovieSimilar, useNowPlaying } from '../hooks/useMovies'
 import { backdropUrl, posterUrl } from '../api/tmdb'
 import DetailSkeleton from '../components/detail/DetailSkeleton'
@@ -13,6 +14,7 @@ import ErrorBox from '../components/common/ErrorBox'
 function MovieDetail() {
   const { id } = useParams()
   const { data: movie, isLoading, error } = useMovieDetails(id)
+  useDocumentTitle(movie?.title)
   const providers = useMovieProviders(id)
   const { data: nowPlayingData } = useNowPlaying()
   const nowPlayingIds = nowPlayingData?.ids
@@ -48,6 +50,7 @@ function MovieDetail() {
               src={backdrop}
               alt=""
               className="absolute inset-0 w-full h-full object-cover object-top"
+              onError={(e) => { e.target.style.display = 'none' }}
             />
           ) : (
             <div className="absolute inset-0 bg-surface-800" />
@@ -66,6 +69,7 @@ function MovieDetail() {
             <img
               src={poster}
               alt={movie.title}
+              onError={(e) => { e.target.style.display = 'none' }}
               className="w-36 sm:w-44 md:w-56 lg:w-64 rounded-xl shadow-2xl shadow-black/60 ring-1 ring-white/5"
             />
           </div>

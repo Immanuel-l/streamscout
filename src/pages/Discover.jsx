@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
 import { useGenres, useWatchProviders } from '../hooks/useProviders'
@@ -31,6 +32,7 @@ const sortOptions = [
 ]
 
 function Discover() {
+  useDocumentTitle('Entdecken')
   const [searchParams, setSearchParams] = useSearchParams()
   const [mediaType, setMediaType] = useState(() => searchParams.get('type') || 'movie')
   const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || 'popularity')
@@ -62,7 +64,9 @@ function Discover() {
 
   const filterParams = useMemo(() => {
     const sort = sortOptions.find((s) => s.value === sortBy) || sortOptions[0]
-    const params = { sort_by: sort.sortBy }
+    let sortParam = sort.sortBy
+    if (sortBy === 'date' && mediaType === 'tv') sortParam = 'first_air_date.desc'
+    const params = { sort_by: sortParam }
     if (selectedGenres.length > 0) params.with_genres = selectedGenres.join(',')
     if (year) {
       if (mediaType === 'movie') params.primary_release_year = year
@@ -106,8 +110,8 @@ function Discover() {
 
   const allResults = useMemo(
     () =>
-      data?.pages.flatMap((page) =>
-        page.results.map((m) => ({ ...m, media_type: mediaType }))
+      data?.pages.flatMap((page, pageIndex) =>
+        page.results.map((m) => ({ ...m, media_type: mediaType, _pageIndex: pageIndex }))
       ) || [],
     [data, mediaType]
   )
@@ -257,7 +261,7 @@ function Discover() {
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
             {allResults.map((media, i) => (
-              <MediaCard key={`${media.id}-${i}`} media={media} index={i} eager animate={i < firstPageCount} />
+              <MediaCard key={`${media.media_type}-${media.id}-p${media._pageIndex}`} media={media} index={i} eager animate={i < firstPageCount} />
             ))}
 
             {/* Sentinel inside grid, before skeletons — prevents oscillation */}

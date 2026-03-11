@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { useWatchlist } from '../hooks/useWatchlist'
 import { useWatchlistProviders } from '../hooks/useWatchlistProviders'
 import { useToast } from '../components/common/useToast'
@@ -64,6 +65,7 @@ function WatchlistCard({ item, index, onRemove, readOnly = false, isSelected = f
 }
 
 function Watchlist() {
+  useDocumentTitle('Merkliste')
   const [activeTab, setActiveTab] = useState('all')
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -272,6 +274,7 @@ function Watchlist() {
                   <button
                     key={key}
                     onClick={() => setActiveTab(key)}
+                    aria-pressed={activeTab === key}
                     className={`px-4 sm:px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
                       activeTab === key
                         ? 'bg-accent-500 text-black'
@@ -293,6 +296,7 @@ function Watchlist() {
                 <button
                   key={value}
                   onClick={() => setSortBy(value)}
+                  aria-pressed={sortBy === value}
                   className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                     sortBy === value
                       ? 'bg-accent-500 text-black'

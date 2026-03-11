@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 
 function NotFound() {
+  useDocumentTitle('Seite nicht gefunden')
   return (
     <div className="flex items-center justify-center px-4" style={{ minHeight: 'calc(100vh - 200px)' }}>
       <div className="text-center max-w-md space-y-5">

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useParams, useSearchParams, Navigate, Link, useNavigate } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
 import { getMoodBySlug } from '../utils/moods'
@@ -19,6 +20,7 @@ const sortOptions = [
 function Mood() {
   const { slug } = useParams()
   const mood = getMoodBySlug(slug)
+  useDocumentTitle(mood?.title)
   const [searchParams, setSearchParams] = useSearchParams()
   const [mediaType, setMediaType] = useState(() => searchParams.get('type') || 'movie')
   const [sortValue, setSortValue] = useState(() => searchParams.get('sort') || 'popularity')

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
 import { posterUrl, backdropUrl } from '../api/tmdb'
@@ -35,6 +36,7 @@ const eraOptions = [
 const MAX_RETRIES = 3
 
 function Random() {
+  useDocumentTitle('Zufallsgenerator')
   const [searchParams, setSearchParams] = useSearchParams()
   const [mediaType, setMediaType] = useState(() => searchParams.get('type') || 'movie')
   const [genre, setGenre] = useState(() => searchParams.get('genre') || '')

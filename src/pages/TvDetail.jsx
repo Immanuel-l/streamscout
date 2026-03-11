@@ -1,4 +1,5 @@
 import { useParams } from 'react-router-dom'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { useTvDetails, useTvProviders, useTvSimilar, useTvSeasonProviders } from '../hooks/useTv'
 import { backdropUrl, posterUrl, IMAGE_BASE } from '../api/tmdb'
 import { ALLOWED_PROVIDER_SET } from '../utils/providers'
@@ -169,6 +170,7 @@ function SeasonList({ seasons, tvId }) {
 function TvDetail() {
   const { id } = useParams()
   const { data: show, isLoading, error } = useTvDetails(id)
+  useDocumentTitle(show?.name)
   const providers = useTvProviders(id)
   const genreIds = show?.genres?.map((g) => g.id)
   const keywordIds = show?.keywords?.results?.map((k) => k.id)
@@ -197,6 +199,7 @@ function TvDetail() {
               src={backdrop}
               alt=""
               className="absolute inset-0 w-full h-full object-cover object-top"
+              onError={(e) => { e.target.style.display = 'none' }}
             />
           ) : (
             <div className="absolute inset-0 bg-surface-800" />
@@ -215,6 +218,7 @@ function TvDetail() {
             <img
               src={poster}
               alt={show.name}
+              onError={(e) => { e.target.style.display = 'none' }}
               className="w-36 sm:w-44 md:w-56 lg:w-64 rounded-xl shadow-2xl shadow-black/60 ring-1 ring-white/5"
             />
           </div>

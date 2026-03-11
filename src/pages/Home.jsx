@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import MediaRow from '../components/common/MediaRow'
 import WatchlistButton from '../components/common/WatchlistButton'
 import { useNowPlaying, usePopularMovies, useTopRatedMovies, useNewMovies, usePopularAnime, useTrendingAll } from '../hooks/useMovies'
@@ -92,7 +93,7 @@ function HeroSection({ items }) {
             <button
               onClick={prev}
               aria-label="Vorheriger Slide"
-              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-surface-950/60 backdrop-blur-sm border border-surface-700/40 flex items-center justify-center text-white/70 hover:text-white hover:bg-surface-800/80 transition-all duration-300 opacity-0 group-hover/hero:opacity-100"
+              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-surface-950/60 backdrop-blur-sm border border-surface-700/40 flex items-center justify-center text-white/70 hover:text-white hover:bg-surface-800/80 transition-all duration-300 opacity-100 sm:opacity-0 sm:group-hover/hero:opacity-100"
             >
               <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -101,7 +102,7 @@ function HeroSection({ items }) {
             <button
               onClick={next}
               aria-label="Nächster Slide"
-              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-surface-950/60 backdrop-blur-sm border border-surface-700/40 flex items-center justify-center text-white/70 hover:text-white hover:bg-surface-800/80 transition-all duration-300 opacity-0 group-hover/hero:opacity-100"
+              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-surface-950/60 backdrop-blur-sm border border-surface-700/40 flex items-center justify-center text-white/70 hover:text-white hover:bg-surface-800/80 transition-all duration-300 opacity-100 sm:opacity-0 sm:group-hover/hero:opacity-100"
             >
               <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -206,6 +207,7 @@ function sortKinoMovies(movies, sortBy) {
 }
 
 function Home() {
+  useDocumentTitle(null)
   const nowPlaying = useNowPlaying()
   const [kinoSort, setKinoSort] = usePersistedState('kino.sortBy', 'recommended')
   const kinoMovies = useMemo(() =>
