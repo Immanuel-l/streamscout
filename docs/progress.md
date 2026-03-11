@@ -46,6 +46,7 @@
 
 gehe nochmal das ganze Projekt durch, wurden alle anforderungen richtig und gut umgesetzt, wo gibt es noch verbesserungspotentail und was kann man noch ergänzen, ändern?
 
+bekomme jetzt die ganze Zeit den fehler in CI mit Error: VITE_TMDB_ACCESS_TOKEN fehlt. Erstelle eine .env-Datei mit deinem TMDB API Token.
 
   Was noch fehlen könnte (optional, für die Zukunft)
 

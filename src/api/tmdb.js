@@ -1,11 +1,7 @@
 import axios from 'axios'
 import { showGlobalToast } from '../components/common/useToast'
 
-if (!import.meta.env.VITE_TMDB_ACCESS_TOKEN) {
-  throw new Error(
-    'VITE_TMDB_ACCESS_TOKEN fehlt. Erstelle eine .env-Datei mit deinem TMDB API Token.'
-  )
-}
+const token = import.meta.env.VITE_TMDB_ACCESS_TOKEN
 
 const tmdb = axios.create({
   baseURL: 'https://api.themoviedb.org/3',
@@ -13,9 +9,17 @@ const tmdb = axios.create({
     language: 'de-DE',
     region: 'DE',
   },
-  headers: {
-    Authorization: `Bearer ${import.meta.env.VITE_TMDB_ACCESS_TOKEN}`,
-  },
+  headers: token ? { Authorization: `Bearer ${token}` } : {},
+})
+
+// Validate token before every request
+tmdb.interceptors.request.use((config) => {
+  if (!token) {
+    throw new Error(
+      'VITE_TMDB_ACCESS_TOKEN fehlt. Erstelle eine .env-Datei mit deinem TMDB API Token.'
+    )
+  }
+  return config
 })
 
 // Centralized error handling
