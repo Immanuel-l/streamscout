@@ -35,7 +35,7 @@ function PersonDetail() {
   const credits = usePersonCredits(id)
 
   if (isLoading) return <PersonSkeleton />
-  if (error) return <ErrorBox message="Person konnte nicht geladen werden." />
+  if (error) return <ErrorBox message={error.response?.status === 404 ? 'Diese Person wurde nicht gefunden oder existiert nicht mehr.' : 'Person konnte nicht geladen werden. Bitte versuch es später nochmal.'} />
   if (!person) return null
 
   const age = person.birthday

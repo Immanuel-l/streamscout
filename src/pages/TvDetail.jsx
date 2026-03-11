@@ -177,7 +177,7 @@ function TvDetail() {
   const similar = useTvSimilar(id, genreIds, keywordIds)
 
   if (isLoading) return <DetailSkeleton />
-  if (error) return <ErrorBox message="Serie konnte nicht geladen werden. Bitte versuch es später nochmal." />
+  if (error) return <ErrorBox message={error.response?.status === 404 ? 'Diese Serie wurde nicht gefunden oder existiert nicht mehr.' : 'Serie konnte nicht geladen werden. Bitte versuch es später nochmal.'} />
   if (!show) return null
 
   const year = show.first_air_date ? new Date(show.first_air_date).getFullYear() : null

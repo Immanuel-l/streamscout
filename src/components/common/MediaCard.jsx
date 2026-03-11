@@ -1,4 +1,4 @@
-import { useState, memo } from 'react'
+import { useEffect, useRef, useState, memo } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { posterUrl, IMAGE_BASE } from '../../api/tmdb'
@@ -15,6 +15,25 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
   const [hovered, setHovered] = useState(false)
   const [imgError, setImgError] = useState(false)
   const isTouch = useIsTouch()
+  const cardRef = useRef(null)
+  const [isNearViewport, setIsNearViewport] = useState(false)
+
+  useEffect(() => {
+    if (!isTouch || isNearViewport || !cardRef.current) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setIsNearViewport(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '150px' }
+    )
+
+    observer.observe(cardRef.current)
+    return () => observer.disconnect()
+  }, [isTouch, isNearViewport])
 
   const title = media.title || media.name
   const date = media.release_date || media.first_air_date
@@ -34,11 +53,13 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
   const { data: nowPlayingData } = useNowPlaying()
   const isInCinema = type === 'movie' && nowPlayingData?.ids?.has(media.id)
 
-  // Fetch providers on hover (lazy to reduce API load)
+  const shouldFetchProviders = hovered || (isTouch && isNearViewport && index < 12)
+
+  // Fetch providers lazily; on touch only for near-viewport cards.
   const { data: providerData, isSuccess: providersLoaded, isError: providersErrored } = useQuery({
     queryKey: [type, media.id, 'providers'],
     queryFn: () => (type === 'tv' ? getTvProviders(media.id) : getMovieProviders(media.id)),
-    enabled: hovered || isTouch,
+    enabled: shouldFetchProviders,
     staleTime: 24 * 60 * 60 * 1000,
   })
 
@@ -54,6 +75,7 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
 
   return (
     <Link
+      ref={cardRef}
       to={linkPath}
       className={`group relative w-full ${animate ? 'animate-fade-in' : ''}`}
       style={animate ? { animationDelay: `${(index % 20) * 50}ms` } : undefined}

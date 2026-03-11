@@ -1,6 +1,16 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useWatchlist } from './useWatchlist'
+import * as moviesApi from '../api/movies'
+import * as tvApi from '../api/tv'
+
+vi.mock('../api/movies', () => ({
+  getMovieDetails: vi.fn(),
+}))
+
+vi.mock('../api/tv', () => ({
+  getTvDetails: vi.fn(),
+}))
 
 const movieA = { id: 1, media_type: 'movie', title: 'Film A', poster_path: '/a.jpg' }
 const movieB = { id: 2, media_type: 'movie', title: 'Film B', poster_path: '/b.jpg' }
@@ -9,6 +19,7 @@ const tvA = { id: 1, media_type: 'tv', name: 'Serie A', poster_path: '/c.jpg' }
 describe('useWatchlist', () => {
   beforeEach(() => {
     localStorage.clear()
+    vi.clearAllMocks()
   })
 
   it('startet mit leerer Liste', () => {
@@ -16,7 +27,7 @@ describe('useWatchlist', () => {
     expect(result.current.items).toEqual([])
   })
 
-  it('fügt einen Film hinzu', () => {
+  it('fuegt einen Film hinzu', () => {
     const { result } = renderHook(() => useWatchlist())
     act(() => result.current.add(movieA))
 
@@ -54,7 +65,7 @@ describe('useWatchlist', () => {
     expect(result.current.items[0].id).toBe(2)
   })
 
-  it('toggle fügt hinzu wenn nicht vorhanden', () => {
+  it('toggle fuegt hinzu wenn nicht vorhanden', () => {
     const { result } = renderHook(() => useWatchlist())
     act(() => result.current.toggle(movieA))
 
@@ -69,7 +80,7 @@ describe('useWatchlist', () => {
     expect(result.current.items).toHaveLength(0)
   })
 
-  it('isInWatchlist prüft korrekt', () => {
+  it('isInWatchlist prueft korrekt', () => {
     const { result } = renderHook(() => useWatchlist())
     act(() => result.current.add(movieA))
 
@@ -96,11 +107,156 @@ describe('useWatchlist', () => {
 
   it('liest existierende Daten aus localStorage', () => {
     localStorage.setItem('streamscout_watchlist', JSON.stringify([
-      { id: 5, media_type: 'movie', title: 'Gespeichert', poster_path: '/x.jpg' }
+      { id: 5, media_type: 'movie', title: 'Gespeichert', poster_path: '/x.jpg' },
     ]))
 
     const { result } = renderHook(() => useWatchlist())
     expect(result.current.items).toHaveLength(1)
     expect(result.current.items[0].title).toBe('Gespeichert')
+  })
+
+  it('ist robust bei fehlerhaftem LocalStorage-JSON', () => {
+    localStorage.setItem('streamscout_watchlist', '{kaputt')
+    const { result } = renderHook(() => useWatchlist())
+    expect(result.current.items).toEqual([])
+  })
+
+  it('synchronisiert ueber das storage-Event', () => {
+    const { result } = renderHook(() => useWatchlist())
+
+    act(() => {
+      localStorage.setItem('streamscout_watchlist', JSON.stringify([movieA]))
+      window.dispatchEvent(new Event('storage'))
+    })
+
+    expect(result.current.items).toHaveLength(1)
+    expect(result.current.items[0].id).toBe(1)
+  })
+
+  it('mergeItems ignoriert ungueltige und doppelte Eintraege', () => {
+    const { result } = renderHook(() => useWatchlist())
+    act(() => result.current.add(movieA))
+
+    let mergeResult
+    act(() => {
+      mergeResult = result.current.mergeItems([
+        movieA,
+        { media_type: 'movie' },
+        { id: 3, title: 'Ohne Typ' },
+        { id: 9, media_type: 'tv', name: 'Neu' },
+      ])
+    })
+
+    expect(mergeResult).toEqual({ success: true, count: 1 })
+    expect(result.current.items).toHaveLength(2)
+    expect(result.current.items[0]).toMatchObject({ id: 9, media_type: 'tv', title: 'Neu' })
+  })
+
+  it('mergeItems liefert count=0 bei leerer Eingabe', () => {
+    const { result } = renderHook(() => useWatchlist())
+    let mergeResult
+
+    act(() => {
+      mergeResult = result.current.mergeItems([])
+    })
+
+    expect(mergeResult).toEqual({ success: true, count: 0 })
+  })
+
+  it('erzeugt einen HashRouter-kompatiblen Share-Link', () => {
+    const { result } = renderHook(() => useWatchlist())
+    act(() => result.current.add(movieA))
+    act(() => result.current.add(tvA))
+
+    const link = result.current.generateShareLink()
+    expect(link).toContain('#/watchlist?share=')
+
+    const encodedShare = link.split('share=')[1]
+    const decodedShare = decodeURIComponent(encodedShare)
+    expect(decodedShare).toContain('m1')
+    expect(decodedShare).toContain('t1')
+  })
+
+  it('fetchSharedList liefert false bei leerem Share-String', async () => {
+    const { result } = renderHook(() => useWatchlist())
+    const response = await result.current.fetchSharedList('')
+    expect(response).toEqual({ success: false, items: [] })
+  })
+
+  it('fetchSharedList ueberspringt ungueltige Tokens', async () => {
+    const { result } = renderHook(() => useWatchlist())
+    const response = await result.current.fetchSharedList('abc,t,mx,mNaN,')
+
+    expect(response).toEqual({ success: true, items: [] })
+    expect(moviesApi.getMovieDetails).not.toHaveBeenCalled()
+    expect(tvApi.getTvDetails).not.toHaveBeenCalled()
+  })
+
+  it('fetchSharedList hydriert Film- und Seriendaten', async () => {
+    moviesApi.getMovieDetails.mockResolvedValue({
+      title: 'Hydrierter Film',
+      poster_path: '/m.jpg',
+      vote_average: 8.1,
+      release_date: '2025-01-01',
+    })
+    tvApi.getTvDetails.mockResolvedValue({
+      name: 'Hydrierte Serie',
+      poster_path: '/t.jpg',
+      vote_average: 7.3,
+      first_air_date: '2024-06-10',
+    })
+
+    const { result } = renderHook(() => useWatchlist())
+    const response = await result.current.fetchSharedList('m1,t2')
+
+    expect(response.success).toBe(true)
+    expect(response.items).toHaveLength(2)
+    expect(response.items[0]).toMatchObject({ id: 1, media_type: 'movie', title: 'Hydrierter Film' })
+    expect(response.items[1]).toMatchObject({ id: 2, media_type: 'tv', title: 'Hydrierte Serie' })
+    expect(moviesApi.getMovieDetails).toHaveBeenCalledWith(1)
+    expect(tvApi.getTvDetails).toHaveBeenCalledWith(2)
+  })
+
+  it('fetchSharedList verarbeitet Chunks groesser als 10 Eintraege', async () => {
+    moviesApi.getMovieDetails.mockImplementation(async (id) => ({
+      title: `Film ${id}`,
+      poster_path: `/m-${id}.jpg`,
+      vote_average: 6.5,
+      release_date: '2025-01-01',
+    }))
+
+    const shareString = Array.from({ length: 11 }, (_, i) => `m${i + 1}`).join(',')
+    const { result } = renderHook(() => useWatchlist())
+    const response = await result.current.fetchSharedList(shareString)
+
+    expect(response.success).toBe(true)
+    expect(response.items).toHaveLength(11)
+    expect(moviesApi.getMovieDetails).toHaveBeenCalledTimes(11)
+  })
+
+  it('fetchSharedList macht bei Einzel-Fehlern weiter', async () => {
+    moviesApi.getMovieDetails
+      .mockRejectedValueOnce(new Error('Boom'))
+      .mockResolvedValueOnce({
+        title: 'Nur zweiter Film',
+        poster_path: '/ok.jpg',
+        vote_average: 7.0,
+        release_date: '2024-01-01',
+      })
+
+    const { result } = renderHook(() => useWatchlist())
+    const response = await result.current.fetchSharedList('m1,m2')
+
+    expect(response.success).toBe(true)
+    expect(response.items).toHaveLength(1)
+    expect(response.items[0].id).toBe(2)
+  })
+
+  it('fetchSharedList liefert Fehlerobjekt bei unerwartetem Crash', async () => {
+    const { result } = renderHook(() => useWatchlist())
+    const response = await result.current.fetchSharedList({ kaputt: true })
+
+    expect(response.success).toBe(false)
+    expect(response.error).toBe('Abruf fehlgeschlagen')
   })
 })

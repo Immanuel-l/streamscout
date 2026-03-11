@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import AxeBuilder from '@axe-core/playwright'
 
 // Intercept TMDB API calls and return mock data
 function mockTmdbApi(page) {
@@ -69,21 +70,21 @@ function mockTmdbApi(page) {
       })
     }
 
+    // Movie/TV providers (must come before generic /watch/providers match)
+    if (url.match(/\/(movie|tv)\/\d+\/watch\/providers/)) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ results: { DE: { flatrate: [] } } }),
+      })
+    }
+
     // Watch providers (list)
     if (url.includes('/watch/providers')) {
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({ results: [] }),
-      })
-    }
-
-    // Movie/TV providers
-    if (url.match(/\/(movie|tv)\/\d+\/watch\/providers/)) {
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ results: { DE: { flatrate: [] } } }),
       })
     }
 
@@ -190,3 +191,46 @@ test.describe('Smoke Tests', () => {
     await expect(page.locator('text=Seite nicht gefunden')).toBeVisible({ timeout: 5000 })
   })
 })
+
+test.describe('Accessibility Tests (WCAG 2.1 AA)', () => {
+  test.beforeEach(async ({ page }) => {
+    await mockTmdbApi(page)
+  })
+
+  test('Startseite hat keine kritischen A11y-Verstöße', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForSelector('nav')
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+      .analyze()
+    expect(results.violations).toEqual([])
+  })
+
+  test('Suche hat keine kritischen A11y-Verstöße', async ({ page }) => {
+    await page.goto('/#/search')
+    await page.waitForSelector('h1')
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+      .analyze()
+    expect(results.violations).toEqual([])
+  })
+
+  test('Merkliste hat keine kritischen A11y-Verstöße', async ({ page }) => {
+    await page.goto('/#/watchlist')
+    await page.waitForSelector('h1')
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+      .analyze()
+    expect(results.violations).toEqual([])
+  })
+
+  test('Entdecken hat keine kritischen A11y-Verstöße', async ({ page }) => {
+    await page.goto('/#/discover')
+    await page.waitForSelector('h1')
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+      .analyze()
+    expect(results.violations).toEqual([])
+  })
+})
+

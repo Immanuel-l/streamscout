@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import Watchlist from './Watchlist'
@@ -207,8 +207,10 @@ describe('Watchlist Page', () => {
     expect(mockRemove).toHaveBeenCalledWith(1, 'movie')
   })
 
-  it('zeigt geteilte Merkliste im Shared View', () => {
+  it('zeigt geteilte Merkliste im Shared View', async () => {
     renderWatchlist(['/watchlist?share=m1,t2'])
     expect(screen.getByText('Geteilte Merkliste')).toBeInTheDocument()
+    await waitFor(() => expect(mockFetchSharedList).toHaveBeenCalledWith('m1,t2'))
   })
 })
+

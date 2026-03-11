@@ -106,8 +106,9 @@ export function useWatchlist() {
   const generateShareLink = useCallback(() => {
     // Format: "m1234,t5678"
     const current = readWatchlist()
-    const hash = current.map(m => `${m.media_type === 'tv' ? 't' : 'm'}${m.id}`).join(',')
-    return `${window.location.origin}/watchlist?share=${hash}`
+    const shareValue = current.map((m) => `${m.media_type === 'tv' ? 't' : 'm'}${m.id}`).join(',')
+    const basePath = (import.meta.env.BASE_URL || '/').replace(/\/?$/, '/')
+    return `${window.location.origin}${basePath}#/watchlist?share=${encodeURIComponent(shareValue)}`
   }, [])
 
   const fetchSharedList = useCallback(async (shareString) => {
@@ -173,3 +174,4 @@ export function useWatchlist() {
     fetchSharedList 
   }
 }
+

@@ -30,18 +30,16 @@ function SearchBar({ value, onChange, suggestions = [], history = [], onHistoryS
   }, [])
 
   // Open suggestions dropdown when suggestions arrive — only if input is focused
-  const suggestionsLenRef = useRef(suggestions.length)
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    suggestionsLenRef.current = suggestions.length
     if (focusedRef.current) {
-      queueMicrotask(() => {
-        const hasSuggestions = suggestionsLenRef.current > 0
-        setOpen(hasSuggestions)
-        if (hasSuggestions) setHistoryOpen(false)
-      })
+      const hasSuggestions = suggestions.length > 0
+      setOpen(hasSuggestions)
+      if (hasSuggestions) setHistoryOpen(false)
     }
-    queueMicrotask(() => setHighlighted(-1))
+    setHighlighted(-1)
   }, [suggestions])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   function handleValueChange(newValue) {
     onChange(newValue)
@@ -264,3 +262,5 @@ function SearchBar({ value, onChange, suggestions = [], history = [], onHistoryS
 }
 
 export default SearchBar
+
+

@@ -8,9 +8,10 @@ export function useWatchlistRecommendations(count = 2) {
   const { items } = useWatchlist()
 
   // Random selection + fetching happens inside queryFn (not during render)
-  // Static query key + high staleTime prevents re-picking on every add/remove
+  // Query key includes watchlist signature so recommendations refresh after list changes
+  const watchlistKey = items.map((item) => `${item.media_type}-${item.id}`).join(',')
   const recommendationsQuery = useQuery({
-    queryKey: ['watchlist-recommendations'],
+    queryKey: ['watchlist-recommendations', count, watchlistKey],
     queryFn: async () => {
       const shuffled = [...items].sort(() => 0.5 - Math.random())
       const selectedItems = shuffled.slice(0, Math.min(count, items.length))
@@ -66,3 +67,4 @@ export function useWatchlistRecommendations(count = 2) {
     refresh: () => recommendationsQuery.refetch()
   }
 }
+

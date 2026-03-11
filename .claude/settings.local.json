@@ -16,7 +16,11 @@
       "Bash(find C:/Users/leine/Desktop/StreamScout -maxdepth 2 -name \"playwright.config.*\" -o -name \".playwright*\" 2>/dev/null | head -20)",
       "Bash(npm install:*)",
       "Bash(npx playwright:*)",
-      "Bash(find /c/Users/leine/Desktop/StreamScout -name \"index.html\" | head -1 | xargs head -50)"
+      "Bash(find /c/Users/leine/Desktop/StreamScout -name \"index.html\" | head -1 | xargs head -50)",
+      "Bash(git diff:*)",
+      "Bash(npm ls:*)",
+      "Bash(ls -lh C:\\\\Users\\\\leine\\\\Desktop\\\\StreamScout/public/*.png 2>/dev/null || echo \"No PNG icons found\")",
+      "Bash(npx vitest:*)"
     ]
   }
 }

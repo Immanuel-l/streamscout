@@ -23,7 +23,7 @@ function MovieDetail() {
   const similar = useMovieSimilar(id, genreIds, keywordIds)
 
   if (isLoading) return <DetailSkeleton />
-  if (error) return <ErrorBox message="Film konnte nicht geladen werden. Bitte versuch es später nochmal." />
+  if (error) return <ErrorBox message={error.response?.status === 404 ? 'Dieser Film wurde nicht gefunden oder existiert nicht mehr.' : 'Film konnte nicht geladen werden. Bitte versuch es später nochmal.'} />
   if (!movie) return null
 
   const year = movie.release_date ? new Date(movie.release_date).getFullYear() : null

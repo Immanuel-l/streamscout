@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 
-const query = typeof window !== 'undefined'
+const query = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
   ? window.matchMedia('(hover: none) and (pointer: coarse)')
   : null
 

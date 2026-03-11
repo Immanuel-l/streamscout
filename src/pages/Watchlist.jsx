@@ -89,10 +89,11 @@ function Watchlist() {
   const { isLoading: providersLoading, providerMap, availableProviders } = useWatchlistProviders(displayedItems)
 
   // Handle URL share link (fetching the preview)
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (isSharedView && shareString && initializedShare.current !== shareString) {
       initializedShare.current = shareString
-      queueMicrotask(() => setIsFetchingShared(true))
+      setIsFetchingShared(true)
       
       fetchSharedList(shareString).then((res) => {
         if (res.success) {
@@ -106,6 +107,7 @@ function Watchlist() {
       })
     }
   }, [isSharedView, shareString, fetchSharedList, toast])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleShare = () => {
     const link = generateShareLink()
@@ -416,3 +418,5 @@ function Watchlist() {
 }
 
 export default Watchlist
+
+

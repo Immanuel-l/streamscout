@@ -42,6 +42,20 @@ html {
   color-scheme: dark;
 }
 
+[data-theme="light"] {
+  --color-surface-950: #f5f5f5;
+  --color-surface-900: #ebebeb;
+  --color-surface-800: #e0e0e0;
+  --color-surface-700: #d4d4d4;
+  --color-surface-600: #a3a3a3;
+  --color-surface-500: #737373;
+  --color-surface-400: #525252;
+  --color-surface-300: #3a3a3a;
+  --color-surface-200: #1e1e1e;
+  --color-surface-100: #0a0a0a;
+  color-scheme: light;
+}
+
 body {
   font-family: var(--font-body);
   background-color: var(--color-surface-950);
@@ -68,6 +82,10 @@ body {
 }
 
 /* Film grain overlay — subtle noise texture for cinematic feel */
+[data-theme="light"] body::after {
+  opacity: 0;
+}
+
 body::after {
   content: "";
   position: fixed;
