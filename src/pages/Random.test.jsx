@@ -135,8 +135,8 @@ describe('Random Page', () => {
     renderRandom()
 
     expect(screen.getByRole('heading', { name: 'Zufallsgenerator' })).toBeInTheDocument()
-    expect(screen.getByText('Film')).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByText('Serie')).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByText('Filme')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Serien')).toHaveAttribute('aria-pressed', 'false')
     expect(screen.getByText(/W.hle deine Filter/)).toBeInTheDocument()
     expect(mockUseDocumentTitle).toHaveBeenCalledWith('Zufallsgenerator')
   })
@@ -165,7 +165,7 @@ describe('Random Page', () => {
   it('wechselt auf Serien und nutzt discoverTv', async () => {
     renderRandom()
 
-    fireEvent.click(screen.getByText('Serie'))
+    fireEvent.click(screen.getByText('Serien'))
     fireEvent.click(screen.getByText('Würfeln!'))
 
     await waitFor(() => {
@@ -181,12 +181,14 @@ describe('Random Page', () => {
   it('uebergibt gesetzte Filter inklusive FSK-Modus an discoverMovies', async () => {
     renderRandom()
 
+    fireEvent.click(screen.getByRole('button', { name: 'Weitere Filter anzeigen' }))
+
+    fireEvent.click(screen.getByText('Action'))
+
     const selects = screen.getAllByTestId('mock-select')
-    fireEvent.change(selects[0], { target: { value: '28' } })
+    fireEvent.change(selects[0], { target: { value: '2010' } })
     fireEvent.change(selects[1], { target: { value: '7' } })
     fireEvent.change(selects[2], { target: { value: '12' } })
-    fireEvent.change(selects[3], { target: { value: 'de' } })
-    fireEvent.change(selects[4], { target: { value: '2010' } })
 
     fireEvent.click(screen.getByText('Ab FSK'))
 
@@ -204,8 +206,7 @@ describe('Random Page', () => {
       'vote_average.gte': '7',
       'certification.gte': '12',
       certification_country: 'DE',
-      with_original_language: 'de',
-      'primary_release_date.gte': '2010-01-01',
+      primary_release_year: '2010',
       with_watch_providers: '8',
     }))
   })
@@ -219,17 +220,18 @@ describe('Random Page', () => {
     expect(await screen.findByText(/Keine Ergebnisse f.r diese Filter/)).toBeInTheDocument()
   })
 
-  it('nutzt Retry-Loop bei nicht passenden Sprachen und zeigt Fehler', async () => {
-    const frenchOnly = discoveryResponse([
+  it('nutzt Retry-Loop wenn keine verwertbaren Ergebnisse gefunden werden', async () => {
+    const unusableResults = discoveryResponse([
       {
         ...sampleMovie,
         id: 201,
-        title: 'Film FR',
-        original_language: 'fr',
+        title: 'Film ohne Poster',
+        poster_path: null,
+        overview: '',
       },
     ], { total_pages: 2, total_results: 10 })
 
-    mockDiscoverMovies.mockResolvedValue(frenchOnly)
+    mockDiscoverMovies.mockResolvedValue(unusableResults)
     vi.spyOn(Math, 'random').mockReturnValue(0)
 
     renderRandom()
@@ -272,3 +274,6 @@ describe('Random Page', () => {
     })
   })
 })
+
+
+

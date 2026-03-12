@@ -94,6 +94,11 @@ function renderDiscover(initialEntries) {
   return render(<Discover />, { wrapper: Wrapper })
 }
 
+function openAdvancedFilters() {
+  const openButton = screen.queryByRole('button', { name: 'Weitere Filter anzeigen' })
+  if (openButton) fireEvent.click(openButton)
+}
+
 describe('Discover Page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -147,8 +152,9 @@ describe('Discover Page', () => {
     expect(ratingBtn).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('zeigt Genre-Buttons', () => {
+  it('zeigt Genre-Buttons in den erweiterten Filtern', () => {
     renderDiscover()
+    openAdvancedFilters()
     expect(screen.getByText('Action')).toBeInTheDocument()
     expect(screen.getByText('Komödie')).toBeInTheDocument()
     expect(screen.getByText('Drama')).toBeInTheDocument()
@@ -156,6 +162,7 @@ describe('Discover Page', () => {
 
   it('toggled Genre-Auswahl per Klick', () => {
     renderDiscover()
+    openAdvancedFilters()
     const actionBtn = screen.getByText('Action')
     expect(actionBtn).toHaveAttribute('aria-pressed', 'false')
     fireEvent.click(actionBtn)
@@ -165,16 +172,21 @@ describe('Discover Page', () => {
   it('zeigt Jahr-, Bewertungs- und FSK-Select', () => {
     renderDiscover()
     expect(screen.getByTestId('select-Alle Jahre')).toBeInTheDocument()
+    expect(screen.getAllByTestId('select-Alle').length).toBeGreaterThanOrEqual(1)
+
+    openAdvancedFilters()
     expect(screen.getAllByTestId('select-Alle').length).toBeGreaterThanOrEqual(2)
   })
 
-  it('zeigt Provider-Filter', () => {
+  it('zeigt Provider-Filter in den erweiterten Filtern', () => {
     renderDiscover()
+    openAdvancedFilters()
     expect(screen.getByTestId('provider-filter')).toBeInTheDocument()
   })
 
   it('zeigt "Filter zurücksetzen" wenn Filter aktiv sind', () => {
     renderDiscover()
+    openAdvancedFilters()
     fireEvent.click(screen.getByText('Action'))
     expect(screen.getByText('Filter zurücksetzen')).toBeInTheDocument()
   })
@@ -186,6 +198,7 @@ describe('Discover Page', () => {
 
   it('setzt Filter per "Filter zurücksetzen" zurück', () => {
     renderDiscover()
+    openAdvancedFilters()
     fireEvent.click(screen.getByText('Action'))
     expect(screen.getByText('Action')).toHaveAttribute('aria-pressed', 'true')
     fireEvent.click(screen.getByText('Filter zurücksetzen'))
@@ -195,6 +208,7 @@ describe('Discover Page', () => {
   it('speichert und laedt ein Filter-Preset', () => {
     renderDiscover()
 
+    openAdvancedFilters()
     fireEvent.click(screen.getByText('Action'))
     fireEvent.click(screen.getByText('Bewertung'))
 
@@ -219,6 +233,7 @@ describe('Discover Page', () => {
   it('benennt ein Preset um und exportiert/importiert Daten', () => {
     renderDiscover()
 
+    openAdvancedFilters()
     fireEvent.change(screen.getByLabelText('Preset-Name'), { target: { value: 'Temp' } })
     fireEvent.click(screen.getByRole('button', { name: 'Preset speichern' }))
 
@@ -243,7 +258,7 @@ describe('Discover Page', () => {
 
     expect(screen.getByRole('status')).toHaveTextContent('1 Presets importiert, 0 aktualisiert.')
     expect(screen.getByRole('option', { name: 'Importiert' })).toBeInTheDocument()
-  })
+  }, 10000)
 
   it('kopiert einen Preset-Link in die Zwischenablage', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
@@ -255,6 +270,7 @@ describe('Discover Page', () => {
     renderDiscover()
 
     fireEvent.click(screen.getByText('Bewertung'))
+    openAdvancedFilters()
     fireEvent.change(screen.getByLabelText('Preset-Name'), { target: { value: 'Share' } })
     fireEvent.click(screen.getByRole('button', { name: 'Preset speichern' }))
 
@@ -278,6 +294,7 @@ describe('Discover Page', () => {
   it('loescht ein gespeichertes Preset', () => {
     renderDiscover()
 
+    openAdvancedFilters()
     fireEvent.change(screen.getByLabelText('Preset-Name'), { target: { value: 'Temp' } })
     fireEvent.click(screen.getByRole('button', { name: 'Preset speichern' }))
 
@@ -302,4 +319,5 @@ describe('Discover Page', () => {
     expect(screen.getByText('Bewertung')).toHaveAttribute('aria-pressed', 'true')
   })
 })
+
 

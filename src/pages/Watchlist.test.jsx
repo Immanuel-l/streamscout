@@ -165,6 +165,7 @@ describe('Watchlist Page', () => {
     })
 
     renderWatchlist()
+    fireEvent.click(screen.getByRole('button', { name: 'Weitere Filter anzeigen' }))
     fireEvent.click(screen.getByTitle('Netflix'))
 
     expect(screen.getByText('Keine Einträge für den ausgewählten Anbieter.')).toBeInTheDocument()
@@ -334,4 +335,5 @@ describe('Watchlist Page', () => {
     })
   })
 })
+
 

@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useInfiniteQuery, useQueries } from '@tanstack/react-query'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
+import { useGenres } from '../hooks/useProviders'
 import { searchMulti, searchMovies, searchTv, searchPerson } from '../api/common'
 import { useDebounce } from '../hooks/useDebounce'
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll'
@@ -14,6 +15,8 @@ import MediaCard from '../components/common/MediaCard'
 import PersonCard from '../components/search/PersonCard'
 import GridSkeleton from '../components/common/GridSkeleton'
 import ErrorBox from '../components/common/ErrorBox'
+import FilterPanel from '../components/common/FilterPanel'
+import Select from '../components/common/Select'
 import ScrollToTop from '../components/common/ScrollToTop'
 
 const searchFns = {
@@ -22,6 +25,24 @@ const searchFns = {
   tv: searchTv,
   person: searchPerson,
 }
+
+const currentYear = new Date().getFullYear()
+const years = Array.from({ length: 50 }, (_, i) => currentYear - i)
+
+const ratingOptions = [
+  { value: '', label: 'Alle' },
+  { value: '9', label: '9+' },
+  { value: '8', label: '8+' },
+  { value: '7', label: '7+' },
+  { value: '6', label: '6+' },
+  { value: '5', label: '5+' },
+]
+
+const sortOptions = [
+  { value: 'popularity', label: 'Beliebtheit' },
+  { value: 'rating', label: 'Bewertung' },
+  { value: 'date', label: 'Erscheinungsdatum' },
+]
 
 const HISTORY_KEY = 'streamscout-search-history'
 const MAX_HISTORY = 10
@@ -34,43 +55,98 @@ function getSearchHistory() {
   }
 }
 
+function isValidSortValue(value) {
+  return ['relevance', ...sortOptions.map((option) => option.value)].includes(value)
+}
+
 function Search() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState(() => searchParams.get('q') || '')
   useDocumentTitle(query ? `Suche: ${query}` : 'Suche')
   const [mediaType, setMediaType] = useState(() => searchParams.get('type') || 'all')
-  const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || 'relevance')
+  const [sortBy, setSortBy] = useState(() => {
+    const rawType = searchParams.get('type') || 'all'
+    const rawSort = searchParams.get('sort')
+    if (rawSort && isValidSortValue(rawSort)) return rawSort
+    return rawType === 'person' ? 'relevance' : 'popularity'
+  })
+  const [selectedGenres, setSelectedGenres] = useState(() => {
+    const value = searchParams.get('genres')
+    return value ? value.split(',').map(Number).filter(Boolean) : []
+  })
+  const [year, setYear] = useState(() => searchParams.get('year') || '')
+  const [rating, setRating] = useState(() => searchParams.get('rating') || '')
   const [onlyStreamable, setOnlyStreamable] = useState(() => searchParams.get('streamable') === 'true')
   const [searchHistory, setSearchHistory] = useState(getSearchHistory)
   const [streamableCheckLimit, setStreamableCheckLimit] = useState(STREAMABLE_CHECK_STEP)
   const debouncedQuery = useDebounce(query, 300)
 
+  const movieGenres = useGenres('movie')
+  const tvGenres = useGenres('tv')
+
+  const availableGenres = useMemo(() => {
+    if (mediaType === 'movie') return movieGenres.data || []
+    if (mediaType === 'tv') return tvGenres.data || []
+
+    const map = new Map()
+    for (const item of movieGenres.data || []) {
+      map.set(item.id, item)
+    }
+    for (const item of tvGenres.data || []) {
+      if (!map.has(item.id)) map.set(item.id, item)
+    }
+
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'de'))
+  }, [mediaType, movieGenres.data, tvGenres.data])
+
   const isPersonSearch = mediaType === 'person'
 
-  // Switch media type and reset irrelevant filters for person search
   function handleMediaType(type) {
     setMediaType(type)
     if (type === 'person') {
       setSortBy('relevance')
       setOnlyStreamable(false)
+      setSelectedGenres([])
+      setYear('')
+      setRating('')
+      return
     }
+
+    setSortBy((prev) => (prev === 'relevance' ? 'popularity' : prev))
   }
 
-  // Sync state to URL params (replace to avoid history spam)
+  function resetSearchFilters() {
+    setMediaType('all')
+    setSortBy('popularity')
+    setSelectedGenres([])
+    setYear('')
+    setRating('')
+    setOnlyStreamable(false)
+  }
+
+  function toggleGenre(id) {
+    setSelectedGenres((prev) =>
+      prev.includes(id) ? prev.filter((genreId) => genreId !== id) : [...prev, id]
+    )
+  }
+
   useEffect(() => {
     const params = {}
+    const defaultSort = mediaType === 'person' ? 'relevance' : 'popularity'
     if (debouncedQuery) params.q = debouncedQuery
     if (mediaType !== 'all') params.type = mediaType
-    if (sortBy !== 'relevance') params.sort = sortBy
+    if (sortBy !== defaultSort) params.sort = sortBy
+    if (selectedGenres.length > 0) params.genres = selectedGenres.join(',')
+    if (year) params.year = year
+    if (rating) params.rating = rating
     if (onlyStreamable) params.streamable = 'true'
     setSearchParams(params, { replace: true })
-  }, [debouncedQuery, mediaType, sortBy, onlyStreamable, setSearchParams])
+  }, [debouncedQuery, mediaType, sortBy, selectedGenres, year, rating, onlyStreamable, setSearchParams])
 
   /* eslint-disable react-hooks/set-state-in-effect */
-  // Start each new streamable check with an initial work window
   useEffect(() => {
     setStreamableCheckLimit(STREAMABLE_CHECK_STEP)
-  }, [debouncedQuery, mediaType, sortBy, onlyStreamable])
+  }, [debouncedQuery, mediaType, sortBy, selectedGenres, year, rating, onlyStreamable])
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const {
@@ -93,7 +169,6 @@ function Search() {
   })
 
   /* eslint-disable react-hooks/set-state-in-effect */
-  // Save to search history when results arrive
   useEffect(() => {
     if (debouncedQuery.length >= 2 && data?.pages[0]?.results.length > 0) {
       const trimmed = debouncedQuery.trim()
@@ -127,7 +202,6 @@ function Search() {
     [isPersonSearch, rawResults, streamableCheckLimit]
   )
 
-  // Suggestions for autocomplete (first 5 from first page)
   const suggestions = useMemo(() => {
     if (!data?.pages[0]) return []
     const page = data.pages[0].results
@@ -164,16 +238,35 @@ function Search() {
       ? providerCheckItems.filter((_, i) => providerQueries[i]?.data?.state === 'streamable')
       : [...rawResults]
 
-    // Sort
-    if (sortBy === 'rating') {
+    if (selectedGenres.length > 0) {
+      filtered = filtered.filter((item) =>
+        Array.isArray(item.genre_ids) && selectedGenres.some((genreId) => item.genre_ids.includes(genreId))
+      )
+    }
+
+    if (year) {
+      filtered = filtered.filter((item) => {
+        const date = item.release_date || item.first_air_date || ''
+        return date.startsWith(year)
+      })
+    }
+
+    if (rating) {
+      const minRating = Number(rating)
+      filtered = filtered.filter((item) => (Number(item.vote_average) || 0) >= minRating)
+    }
+
+    if (sortBy === 'popularity') {
+      filtered.sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+    } else if (sortBy === 'rating') {
       filtered.sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0))
-    } else if (sortBy === 'year') {
+    } else if (sortBy === 'date') {
       const getDate = (m) => m.release_date || m.first_air_date || ''
       filtered.sort((a, b) => getDate(b).localeCompare(getDate(a)))
     }
 
     return filtered
-  }, [rawResults, providerCheckItems, providerQueries, sortBy, onlyStreamable, isPersonSearch])
+  }, [rawResults, providerCheckItems, providerQueries, sortBy, selectedGenres, year, rating, onlyStreamable, isPersonSearch])
 
   const fetchNextWithProviderWindow = useCallback(() => {
     if (onlyStreamable && !isPersonSearch) {
@@ -184,7 +277,6 @@ function Search() {
 
   const sentinelRef = useInfiniteScroll({ fetchNextPage: fetchNextWithProviderWindow, hasNextPage, isFetchingNextPage })
 
-  // Search history handlers
   function handleHistorySelect(q) {
     setQuery(q)
   }
@@ -206,6 +298,120 @@ function Search() {
   const hasResults = results.length > 0
   const noResults = hasQuery && !isLoading && !error && data && rawResults.length === 0
   const allFilteredOut = hasQuery && !isLoading && rawResults.length > 0 && results.length === 0 && !providersChecking
+  const defaultSort = isPersonSearch ? 'relevance' : 'popularity'
+  const hasActiveFilters = mediaType !== 'all' || sortBy !== defaultSort || selectedGenres.length > 0 || year || rating || onlyStreamable
+  const activeFilterCount =
+    (mediaType !== 'all' ? 1 : 0) +
+    (sortBy !== defaultSort ? 1 : 0) +
+    selectedGenres.length +
+    (year ? 1 : 0) +
+    (rating ? 1 : 0) +
+    (onlyStreamable ? 1 : 0)
+
+  const quickFilters = (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
+          {[
+            { type: 'all', label: 'Alle' },
+            { type: 'movie', label: 'Filme' },
+            { type: 'tv', label: 'Serien' },
+            { type: 'person', label: 'Personen' },
+          ].map(({ type, label }) => (
+            <button
+              key={type}
+              onClick={() => handleMediaType(type)}
+              aria-pressed={mediaType === type}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                mediaType === type
+                  ? 'bg-accent-500 text-black'
+                  : 'text-surface-200 hover:text-surface-100'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {!isPersonSearch && (
+          <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
+            {sortOptions.map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setSortBy(value)}
+                aria-pressed={sortBy === value}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  sortBy === value
+                    ? 'bg-accent-500 text-black'
+                    : 'text-surface-200 hover:text-surface-100'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {results.length > 0 && !isLoading && (
+          <span className="text-surface-200 text-sm ml-auto">
+            {results.length.toLocaleString('de-DE')}{hasNextPage ? '+' : ''} Ergebnisse
+          </span>
+        )}
+      </div>
+
+      {!isPersonSearch && (
+        <>
+          {availableGenres.length > 0 ? (
+            <div>
+              <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">Genre</p>
+              <div className="flex flex-wrap gap-2">
+                {availableGenres.map((genreOption) => (
+                  <button
+                    key={genreOption.id}
+                    onClick={() => toggleGenre(genreOption.id)}
+                    aria-pressed={selectedGenres.includes(genreOption.id)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                      selectedGenres.includes(genreOption.id)
+                        ? 'bg-accent-500 text-black shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]'
+                        : 'bg-surface-800 text-surface-200 hover:bg-surface-700'
+                    }`}
+                  >
+                    {genreOption.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-surface-300">Genre-Filter sind für diesen Modus gerade nicht verfügbar.</p>
+          )}
+
+          <div className="flex flex-wrap gap-4">
+            <div>
+              <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">Jahr</p>
+              <Select
+                value={year}
+                onChange={setYear}
+                options={[{ value: '', label: 'Alle Jahre' }, ...years.map((itemYear) => ({ value: String(itemYear), label: String(itemYear) }))]}
+                placeholder="Alle Jahre"
+                ariaLabel="Jahr"
+              />
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">Bewertung</p>
+              <Select
+                value={rating}
+                onChange={setRating}
+                options={ratingOptions}
+                placeholder="Alle"
+                ariaLabel="Bewertung"
+              />
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
 
   return (
     <div className="space-y-8">
@@ -222,33 +428,17 @@ function Search() {
         />
       </div>
 
-      {/* Filter controls */}
       {hasQuery && (
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
-            {[
-              { type: 'all', label: 'Alle' },
-              { type: 'movie', label: 'Filme' },
-              { type: 'tv', label: 'Serien' },
-              { type: 'person', label: 'Personen' },
-            ].map(({ type, label }) => (
-              <button
-                key={type}
-                onClick={() => handleMediaType(type)}
-                aria-pressed={mediaType === type}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  mediaType === type
-                    ? 'bg-accent-500 text-black'
-                    : 'text-surface-200 hover:text-surface-100'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {!isPersonSearch && (
-            <>
+        <FilterPanel
+          title="Suchfilter"
+          quickLabel="Schnellfilter"
+          quickContent={quickFilters}
+          defaultOpen={hasActiveFilters}
+          activeCount={activeFilterCount}
+          onReset={hasActiveFilters ? resetSearchFilters : undefined}
+        >
+          {!isPersonSearch ? (
+            <div className="space-y-4">
               <button
                 onClick={() => setOnlyStreamable(!onlyStreamable)}
                 aria-pressed={onlyStreamable}
@@ -263,36 +453,11 @@ function Search() {
                 </svg>
                 Nur Streambar
               </button>
-
-              <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
-                {[
-                  { value: 'relevance', label: 'Relevanz' },
-                  { value: 'rating', label: 'Bewertung' },
-                  { value: 'year', label: 'Jahr' },
-                ].map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => setSortBy(value)}
-                    aria-pressed={sortBy === value}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      sortBy === value
-                        ? 'bg-accent-500 text-black'
-                        : 'text-surface-200 hover:text-surface-100'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </>
+            </div>
+          ) : (
+            <p className="text-sm text-surface-300">Für Personen sind nur Typ-Filter verfügbar.</p>
           )}
-
-          {results.length > 0 && !isLoading && (
-            <span className="text-surface-200 text-sm ml-auto">
-              {results.length.toLocaleString('de-DE')}{hasNextPage ? '+' : ''} Ergebnisse
-            </span>
-          )}
-        </div>
+        </FilterPanel>
       )}
 
       {error && <ErrorBox message="Suche fehlgeschlagen. Bitte versuch es später nochmal." />}
@@ -322,12 +487,10 @@ function Search() {
                 ))
             }
 
-            {/* Sentinel inside grid, before skeletons — prevents oscillation */}
             {hasNextPage && (
               <div ref={sentinelRef} className="col-span-full h-px" />
             )}
 
-            {/* Inline skeleton placeholders while fetching next page */}
             {isFetchingNextPage && Array.from({ length: 6 }).map((_, i) => (
               <div key={`skel-${i}`}>
                 <div className="aspect-[2/3] rounded-xl bg-surface-800 animate-pulse" />
@@ -339,7 +502,6 @@ function Search() {
             ))}
           </div>
 
-          {/* Error on page load — show retry */}
           {error && rawResults.length > 0 && !isFetchingNextPage && (
             <div className="py-8 max-w-md mx-auto">
               <ErrorBox message="Fehler beim Laden weiterer Ergebnisse." onRetry={() => fetchNextWithProviderWindow()} />
@@ -349,7 +511,6 @@ function Search() {
           {providersChecking && (
             <p role="status" aria-live="polite" className="text-surface-200 text-sm text-center py-4 animate-pulse">Streaming-Verfügbarkeit wird geprüft…</p>
           )}
-
 
           {streamableLimitReached && (
             <p role="status" aria-live="polite" className="text-surface-300 text-xs text-center py-2">
@@ -405,4 +566,13 @@ function Search() {
 }
 
 export default Search
+
+
+
+
+
+
+
+
+
 

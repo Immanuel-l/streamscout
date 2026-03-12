@@ -8,6 +8,8 @@ const mockUseInfiniteScroll = vi.fn(() => vi.fn())
 const mockUseInfiniteQuery = vi.fn()
 const mockDiscoverMovies = vi.fn()
 const mockDiscoverTv = vi.fn()
+const mockUseGenres = vi.fn()
+const mockUseWatchProviders = vi.fn()
 const mediaCardCalls = []
 
 vi.mock('../hooks/useDocumentTitle', () => ({
@@ -16,6 +18,11 @@ vi.mock('../hooks/useDocumentTitle', () => ({
 
 vi.mock('../hooks/useInfiniteScroll', () => ({
   useInfiniteScroll: (...args) => mockUseInfiniteScroll(...args),
+}))
+
+vi.mock('../hooks/useProviders', () => ({
+  useGenres: (...args) => mockUseGenres(...args),
+  useWatchProviders: (...args) => mockUseWatchProviders(...args),
 }))
 
 vi.mock('@tanstack/react-query', () => ({
@@ -77,11 +84,18 @@ function renderMood(initialEntries = ['/mood/leichte-kost']) {
   )
 }
 
+function openAdvancedFilters() {
+  const openButton = screen.queryByRole('button', { name: 'Weitere Filter anzeigen' })
+  if (openButton) fireEvent.click(openButton)
+}
+
 describe('Mood Page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mediaCardCalls.length = 0
     localStorage.clear()
+    mockUseGenres.mockReturnValue({ data: [{ id: 28, name: 'Action' }] })
+    mockUseWatchProviders.mockReturnValue({ data: [{ provider_id: 8, provider_name: 'Netflix' }] })
     mockUseInfiniteQuery.mockReturnValue(buildInfiniteState())
   })
 
@@ -99,7 +113,7 @@ describe('Mood Page', () => {
     renderMood()
 
     const config = mockUseInfiniteQuery.mock.calls[0][0]
-    expect(config.queryKey).toEqual(['mood', 'leichte-kost', 'movie', 'popularity', '', 'lte', 1])
+    expect(config.queryKey).toEqual(['mood', 'leichte-kost', 'movie', 'popularity', [], '', '', [], '', 'lte', 1])
     expect(config.enabled).toBe(true)
     expect(config.retry).toBe(1)
     expect(config.initialPageParam).toBe(1)
@@ -133,11 +147,11 @@ describe('Mood Page', () => {
     renderMood()
 
     fireEvent.click(screen.getByText('Serien'))
-    fireEvent.click(screen.getByText('Neueste zuerst'))
+    fireEvent.click(screen.getByText('Erscheinungsdatum'))
 
     await waitFor(() => {
       const latestConfig = mockUseInfiniteQuery.mock.calls.at(-1)[0]
-      expect(latestConfig.queryKey).toEqual(['mood', 'leichte-kost', 'tv', 'date', '', 'lte', 1])
+      expect(latestConfig.queryKey).toEqual(['mood', 'leichte-kost', 'tv', 'date', [], '', '', [], '', 'lte', 1])
     })
 
     const config = mockUseInfiniteQuery.mock.calls.at(-1)[0]
@@ -156,8 +170,9 @@ describe('Mood Page', () => {
     renderMood()
 
     fireEvent.click(screen.getByText('Serien'))
-    fireEvent.click(screen.getByText('Neueste zuerst'))
+    fireEvent.click(screen.getByText('Erscheinungsdatum'))
 
+    openAdvancedFilters()
     fireEvent.change(screen.getByLabelText('Preset-Name'), { target: { value: 'TV Neu' } })
     fireEvent.click(screen.getByRole('button', { name: 'Preset speichern' }))
 
@@ -174,12 +189,12 @@ describe('Mood Page', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Serien')).toHaveAttribute('aria-pressed', 'true')
-      expect(screen.getByText('Neueste zuerst')).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByText('Erscheinungsdatum')).toHaveAttribute('aria-pressed', 'true')
     })
 
     await waitFor(() => {
       const latestConfig = mockUseInfiniteQuery.mock.calls.at(-1)[0]
-      expect(latestConfig.queryKey).toEqual(['mood', 'leichte-kost', 'tv', 'date', '', 'lte', 1])
+      expect(latestConfig.queryKey).toEqual(['mood', 'leichte-kost', 'tv', 'date', [], '', '', [], '', 'lte', 1])
     })
   })
 
@@ -193,8 +208,9 @@ describe('Mood Page', () => {
     renderMood()
 
     fireEvent.click(screen.getByText('Serien'))
-    fireEvent.click(screen.getByText('Neueste zuerst'))
+    fireEvent.click(screen.getByText('Erscheinungsdatum'))
 
+    openAdvancedFilters()
     fireEvent.change(screen.getByLabelText('Preset-Name'), { target: { value: 'TV Neu' } })
     fireEvent.click(screen.getByRole('button', { name: 'Preset speichern' }))
 
@@ -343,7 +359,7 @@ describe('Mood Page', () => {
 
     await waitFor(() => {
       const latestConfig = mockUseInfiniteQuery.mock.calls.at(-1)[0]
-      expect(latestConfig.queryKey).toEqual(['mood', 'leichte-kost', 'movie', 'popularity', '', 'lte', 5])
+      expect(latestConfig.queryKey).toEqual(['mood', 'leichte-kost', 'movie', 'popularity', [], '', '', [], '', 'lte', 5])
       expect(latestConfig.initialPageParam).toBe(5)
     })
 
@@ -357,4 +373,5 @@ describe('Mood Page', () => {
     })
   })
 })
+
 

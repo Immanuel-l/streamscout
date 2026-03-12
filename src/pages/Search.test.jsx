@@ -11,6 +11,7 @@ const mockSearchMulti = vi.fn()
 const mockSearchMovies = vi.fn()
 const mockSearchTv = vi.fn()
 const mockSearchPerson = vi.fn()
+const mockUseGenres = vi.fn()
 
 
 const mockUseInfiniteQuery = vi.fn()
@@ -26,6 +27,10 @@ vi.mock('../hooks/useInfiniteScroll', () => ({
 
 vi.mock('../hooks/useDocumentTitle', () => ({
   useDocumentTitle: (...args) => mockUseDocumentTitle(...args),
+}))
+
+vi.mock('../hooks/useProviders', () => ({
+  useGenres: (...args) => mockUseGenres(...args),
 }))
 
 vi.mock('../api/common', () => ({
@@ -112,6 +117,11 @@ describe('Search Page', () => {
     vi.clearAllMocks()
     cleanup()
     localStorage.clear()
+    mockUseGenres.mockImplementation((type) => {
+      if (type === 'movie') return { data: [{ id: 28, name: 'Action' }] }
+      if (type === 'tv') return { data: [{ id: 10765, name: 'Sci-Fi' }] }
+      return { data: [] }
+    })
     mockUseInfiniteQuery.mockReturnValue(buildInfiniteState())
     mockUseQueries.mockReturnValue([])
   })
@@ -196,7 +206,7 @@ describe('Search Page', () => {
 
     fireEvent.click(screen.getByText('Filme'))
     expect(screen.getByText('Nur Streambar')).toHaveAttribute('aria-pressed', 'false')
-    expect(screen.getByText('Relevanz')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Beliebtheit')).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('zeigt Skeleton wenn Provider bei aktivem Streamable-Filter noch nicht aufgeloest sind', () => {
@@ -290,7 +300,7 @@ describe('Search Page', () => {
     cleanup()
 
     mockUseInfiniteQuery.mockReturnValue(buildInfiniteState({ data: mixedData }))
-    renderSearch(['/search?q=test&sort=year'])
+    renderSearch(['/search?q=test&sort=date'])
     expect(screen.getAllByTestId('media-card')[0]).toHaveTextContent('Neuer Film')
   })
 
@@ -444,6 +454,8 @@ describe('Search Page', () => {
     expect(screen.getByText('Aktuell werden die ersten 60 Treffer auf Streambarkeit geprüft. Beim Weiter-Scrollen werden weitere geprüft.')).toBeInTheDocument()
   })
 })
+
+
 
 
 

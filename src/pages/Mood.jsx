@@ -4,6 +4,7 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
+import { useGenres, useWatchProviders } from '../hooks/useProviders'
 import { getMoodBySlug } from '../utils/moods'
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll'
 import { useFilterPresets } from '../hooks/useFilterPresets'
@@ -12,6 +13,8 @@ import GridSkeleton from '../components/common/GridSkeleton'
 import ErrorBox from '../components/common/ErrorBox'
 import ScrollToTop from '../components/common/ScrollToTop'
 import Select from '../components/common/Select'
+import ProviderFilter from '../components/common/ProviderFilter'
+import FilterPanel from '../components/common/FilterPanel'
 import FilterPresets from '../components/common/FilterPresets'
 import {
   FSK_VALUES,
@@ -21,16 +24,35 @@ import {
   setMovieFskFilterParams,
 } from '../utils/fsk'
 
+const currentYear = new Date().getFullYear()
+const years = Array.from({ length: 50 }, (_, i) => currentYear - i)
+
 const sortOptions = [
   { value: 'popularity', label: 'Beliebtheit', sortBy: 'popularity.desc' },
-  { value: 'date', label: 'Neueste zuerst', sortByMovie: 'primary_release_date.desc', sortByTv: 'first_air_date.desc' },
+  { value: 'date', label: 'Erscheinungsdatum', sortByMovie: 'primary_release_date.desc', sortByTv: 'first_air_date.desc' },
   { value: 'rating', label: 'Bewertung', sortBy: 'vote_average.desc' },
+]
+
+const ratingOptions = [
+  { value: '', label: 'Alle' },
+  { value: '9', label: '9+' },
+  { value: '8', label: '8+' },
+  { value: '7', label: '7+' },
+  { value: '6', label: '6+' },
+  { value: '5', label: '5+' },
 ]
 
 const fskOptions = [
   { value: '', label: 'Alle' },
   ...FSK_VALUES.map((value) => ({ value, label: `FSK ${value}` })),
 ]
+
+function parseNumberList(values) {
+  if (!Array.isArray(values)) return []
+  return values
+    .map((id) => Number(id))
+    .filter((id) => Number.isInteger(id) && id > 0)
+}
 
 function normalizeSortValue(value) {
   return sortOptions.some((option) => option.value === value) ? value : 'popularity'
@@ -39,11 +61,19 @@ function normalizeSortValue(value) {
 function normalizeMoodPresetValues(values) {
   const mediaType = values?.mediaType === 'tv' ? 'tv' : 'movie'
   const sortValue = normalizeSortValue(values?.sortValue)
+  const selectedGenres = parseNumberList(values?.selectedGenres)
+  const selectedProviders = parseNumberList(values?.selectedProviders)
+  const year = typeof values?.year === 'string' ? values.year : ''
+  const rating = typeof values?.rating === 'string' ? values.rating : ''
 
   if (mediaType === 'movie') {
     return {
       mediaType,
       sortValue,
+      selectedGenres,
+      year,
+      rating,
+      selectedProviders,
       fsk: normalizeFskCertification(values?.fsk) || '',
       fskMode: normalizeFskFilterMode(values?.fskMode),
     }
@@ -52,6 +82,10 @@ function normalizeMoodPresetValues(values) {
   return {
     mediaType,
     sortValue,
+    selectedGenres,
+    year,
+    rating,
+    selectedProviders,
     fsk: '',
     fskMode: 'lte',
   }
@@ -63,6 +97,10 @@ function buildMoodSearchParams(values) {
 
   if (normalized.mediaType !== 'movie') params.type = normalized.mediaType
   if (normalized.sortValue !== 'popularity') params.sort = normalized.sortValue
+  if (normalized.selectedGenres.length > 0) params.genres = normalized.selectedGenres.join(',')
+  if (normalized.year) params.year = normalized.year
+  if (normalized.rating) params.rating = normalized.rating
+  if (normalized.selectedProviders.length > 0) params.providers = normalized.selectedProviders.join(',')
   if (normalized.fsk) {
     params.fsk = normalized.fsk
     if (normalized.fskMode !== 'lte') params.fskMode = normalized.fskMode
@@ -76,11 +114,25 @@ function Mood() {
   const mood = getMoodBySlug(slug)
   useDocumentTitle(mood?.title)
   const [searchParams, setSearchParams] = useSearchParams()
+
   const [mediaType, setMediaType] = useState(() => searchParams.get('type') || 'movie')
   const [sortValue, setSortValue] = useState(() => searchParams.get('sort') || 'popularity')
+  const [selectedGenres, setSelectedGenres] = useState(() => {
+    const value = searchParams.get('genres')
+    return value ? value.split(',').map(Number).filter(Boolean) : []
+  })
+  const [year, setYear] = useState(() => searchParams.get('year') || '')
+  const [rating, setRating] = useState(() => searchParams.get('rating') || '')
+  const [selectedProviders, setSelectedProviders] = useState(() => {
+    const value = searchParams.get('providers')
+    return value ? value.split(',').map(Number).filter(Boolean) : []
+  })
   const [fsk, setFsk] = useState(() => normalizeFskCertification(searchParams.get('fsk')) || '')
   const [fskMode, setFskMode] = useState(() => normalizeFskFilterMode(searchParams.get('fskMode')))
   const [startPage, setStartPage] = useState(1)
+
+  const genres = useGenres(mediaType)
+  const providers = useWatchProviders(mediaType)
 
   const presetStorageKey = `streamscout-mood-presets:${slug || 'unknown'}`
   const {
@@ -102,10 +154,14 @@ function Mood() {
     () => ({
       mediaType,
       sortValue,
+      selectedGenres,
+      year,
+      rating,
+      selectedProviders,
       fsk,
       fskMode,
     }),
-    [mediaType, sortValue, fsk, fskMode]
+    [mediaType, sortValue, selectedGenres, year, rating, selectedProviders, fsk, fskMode]
   )
 
   function applyPresetValues(values) {
@@ -113,6 +169,10 @@ function Mood() {
 
     setMediaType(normalized.mediaType)
     setSortValue(normalized.sortValue)
+    setSelectedGenres(normalized.selectedGenres)
+    setYear(normalized.year)
+    setRating(normalized.rating)
+    setSelectedProviders(normalized.selectedProviders)
     setFsk(normalized.fsk)
     setFskMode(normalized.fskMode)
   }
@@ -214,17 +274,31 @@ function Mood() {
     setPresetStatus('Preset gelöscht.')
   }
 
+  function resetFilters() {
+    setSortValue('popularity')
+    setSelectedGenres([])
+    setYear('')
+    setRating('')
+    setSelectedProviders([])
+    setFsk('')
+    setFskMode('lte')
+  }
+
   // Sync state to URL params
   useEffect(() => {
     const params = {}
     if (mediaType !== 'movie') params.type = mediaType
     if (sortValue !== 'popularity') params.sort = sortValue
+    if (selectedGenres.length > 0) params.genres = selectedGenres.join(',')
+    if (year) params.year = year
+    if (rating) params.rating = rating
+    if (selectedProviders.length > 0) params.providers = selectedProviders.join(',')
     if (fsk) {
       params.fsk = fsk
       if (fskMode !== 'lte') params.fskMode = fskMode
     }
     setSearchParams(params, { replace: true })
-  }, [mediaType, sortValue, fsk, fskMode, setSearchParams])
+  }, [mediaType, sortValue, selectedGenres, year, rating, selectedProviders, fsk, fskMode, setSearchParams])
 
   const moodParams = mood?.[mediaType] || {}
   const sortOption = sortOptions.find((o) => o.value === sortValue) || sortOptions[0]
@@ -238,10 +312,19 @@ function Mood() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['mood', slug, mediaType, sortValue, fsk, fskMode, startPage],
+    queryKey: ['mood', slug, mediaType, sortValue, selectedGenres, year, rating, selectedProviders, fsk, fskMode, startPage],
     queryFn: ({ pageParam }) => {
       const discoverParams = { ...moodParams, sort_by: apiSortBy, page: pageParam }
+
+      if (selectedGenres.length > 0) discoverParams.with_genres = selectedGenres.join(',')
+      if (year) {
+        if (mediaType === 'movie') discoverParams.primary_release_year = year
+        else discoverParams.first_air_date_year = year
+      }
+      if (rating) discoverParams['vote_average.gte'] = rating
+      if (selectedProviders.length > 0) discoverParams.with_watch_providers = selectedProviders.join('|')
       if (fsk && mediaType === 'movie') setMovieFskFilterParams(discoverParams, fsk, fskMode)
+
       return mediaType === 'tv' ? discoverTv(discoverParams) : discoverMovies(discoverParams)
     },
     initialPageParam: startPage,
@@ -273,13 +356,169 @@ function Mood() {
 
   function switchMediaType(type) {
     setMediaType(type)
+    setSelectedGenres([])
+    setSelectedProviders([])
     setFsk('')
     setFskMode('lte')
+  }
+
+  function toggleGenre(id) {
+    setSelectedGenres((prev) =>
+      prev.includes(id) ? prev.filter((genreId) => genreId !== id) : [...prev, id]
+    )
+  }
+
+  function toggleProvider(id) {
+    setSelectedProviders((prev) =>
+      prev.includes(id) ? prev.filter((providerId) => providerId !== id) : [...prev, id]
+    )
   }
 
   const navigate = useNavigate()
 
   if (!mood) return <Navigate to="/" replace />
+
+  const hasFilters = selectedGenres.length > 0 || year || rating || fsk || selectedProviders.length > 0 || sortValue !== 'popularity'
+  const activeFilterCount =
+    selectedGenres.length +
+    (year ? 1 : 0) +
+    (rating ? 1 : 0) +
+    (fsk ? 1 : 0) +
+    selectedProviders.length +
+    (sortValue !== 'popularity' ? 1 : 0)
+
+  const quickFilters = (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
+          {[
+            { type: 'movie', label: 'Filme' },
+            { type: 'tv', label: 'Serien' },
+          ].map(({ type, label }) => (
+            <button
+              key={type}
+              onClick={() => switchMediaType(type)}
+              aria-pressed={mediaType === type}
+              className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                mediaType === type
+                  ? 'bg-accent-500 text-black'
+                  : 'text-surface-300 hover:text-surface-100'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
+          {sortOptions.map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => setSortValue(value)}
+              aria-pressed={sortValue === value}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                sortValue === value
+                  ? 'bg-accent-500 text-black'
+                  : 'text-surface-300 hover:text-surface-100'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={shuffle}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-800 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-colors text-sm font-medium"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
+          </svg>
+          Mischen
+        </button>
+      </div>
+
+      {genres.data && (
+        <div>
+          <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">Genre</p>
+          <div className="flex flex-wrap gap-2">
+            {genres.data.map((genreOption) => (
+              <button
+                key={genreOption.id}
+                onClick={() => toggleGenre(genreOption.id)}
+                aria-pressed={selectedGenres.includes(genreOption.id)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                  selectedGenres.includes(genreOption.id)
+                    ? 'bg-accent-500 text-black shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]'
+                    : 'bg-surface-800 text-surface-200 hover:bg-surface-700'
+                }`}
+              >
+                {genreOption.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-4">
+        <div>
+          <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">Jahr</p>
+          <Select
+            value={year}
+            onChange={setYear}
+            options={[{ value: '', label: 'Alle Jahre' }, ...years.map((itemYear) => ({ value: String(itemYear), label: String(itemYear) }))]}
+            placeholder="Alle Jahre"
+            ariaLabel="Jahr"
+          />
+        </div>
+
+        <div>
+          <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">Bewertung</p>
+          <Select
+            value={rating}
+            onChange={setRating}
+            options={ratingOptions}
+            placeholder="Alle"
+            ariaLabel="Bewertung"
+          />
+        </div>
+
+        {mediaType === 'movie' && (
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">FSK</p>
+              <Select
+                value={fsk}
+                onChange={setFsk}
+                options={fskOptions}
+                placeholder="Alle"
+                ariaLabel="FSK"
+              />
+            </div>
+
+            {fsk && (
+              <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
+                {FSK_FILTER_MODE_OPTIONS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setFskMode(value)}
+                    aria-pressed={fskMode === value}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      fskMode === value
+                        ? 'bg-accent-500 text-black'
+                        : 'text-surface-300 hover:text-surface-100'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
 
   return (
     <div className="space-y-8">
@@ -314,86 +553,19 @@ function Mood() {
         </div>
       </div>
 
-      {/* Controls: Media Type Toggle + Sort + Shuffle */}
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
-            {[
-              { type: 'movie', label: 'Filme' },
-              { type: 'tv', label: 'Serien' },
-            ].map(({ type, label }) => (
-              <button
-                key={type}
-                onClick={() => switchMediaType(type)}
-                aria-pressed={mediaType === type}
-                className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  mediaType === type
-                    ? 'bg-accent-500 text-black'
-                    : 'text-surface-300 hover:text-surface-100'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
-            {sortOptions.map(({ value, label }) => (
-              <button
-                key={value}
-                onClick={() => setSortValue(value)}
-                aria-pressed={sortValue === value}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  sortValue === value
-                    ? 'bg-accent-500 text-black'
-                    : 'text-surface-300 hover:text-surface-100'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {mediaType === 'movie' && (
-            <div className="space-y-2">
-              <Select
-                value={fsk}
-                onChange={setFsk}
-                options={fskOptions}
-                placeholder="FSK"
-              />
-
-              {fsk && (
-                <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
-                  {FSK_FILTER_MODE_OPTIONS.map(({ value, label }) => (
-                    <button
-                      key={value}
-                      onClick={() => setFskMode(value)}
-                      aria-pressed={fskMode === value}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                        fskMode === value
-                          ? 'bg-accent-500 text-black'
-                          : 'text-surface-300 hover:text-surface-100'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          <button
-            onClick={shuffle}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-800 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-colors text-sm font-medium"
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
-            </svg>
-            Mischen
-          </button>
-        </div>
+      <FilterPanel
+        title="Stimmungs-Filter"
+        quickLabel="Schnellfilter"
+        quickContent={quickFilters}
+        defaultOpen={hasFilters}
+        activeCount={activeFilterCount}
+        onReset={hasFilters ? resetFilters : undefined}
+      >
+        <ProviderFilter
+          providers={providers.data}
+          selected={selectedProviders}
+          onToggle={toggleProvider}
+        />
 
         <FilterPresets
           presets={presets}
@@ -413,7 +585,7 @@ function Mood() {
           statusMessage={presetStatus}
           emptyMessage="Noch keine Presets für diese Stimmung gespeichert."
         />
-      </div>
+      </FilterPanel>
 
       {/* Results */}
       {error && <ErrorBox message="Ergebnisse konnten nicht geladen werden. Bitte versuch es später nochmal." />}
@@ -427,12 +599,10 @@ function Mood() {
               <MediaCard key={`${media.id}-${i}`} media={media} index={i} eager animate={i < firstPageCount} />
             ))}
 
-            {/* Sentinel inside grid, before skeletons - prevents oscillation */}
             {hasNextPage && (
               <div ref={sentinelRef} className="col-span-full h-px" />
             )}
 
-            {/* Inline skeleton placeholders while fetching */}
             {isFetchingNextPage && Array.from({ length: 6 }).map((_, i) => (
               <div key={`skel-${i}`}>
                 <div className="aspect-[2/3] rounded-xl bg-surface-800 animate-pulse" />
@@ -444,7 +614,6 @@ function Mood() {
             ))}
           </div>
 
-          {/* Error on page load - show retry */}
           {error && allResults.length > 0 && !isFetchingNextPage && (
             <div className="py-8 max-w-md mx-auto">
               <ErrorBox message="Fehler beim Laden weiterer Ergebnisse." onRetry={() => fetchNextPage()} />
@@ -471,3 +640,5 @@ function Mood() {
 }
 
 export default Mood
+
+

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { discoverMovies, getMovieReleaseDates } from '../api/movies'
@@ -9,6 +9,7 @@ import WatchlistButton from '../components/common/WatchlistButton'
 import ErrorBox from '../components/common/ErrorBox'
 import Select from '../components/common/Select'
 import ProviderFilter from '../components/common/ProviderFilter'
+import FilterPanel from '../components/common/FilterPanel'
 import {
   FSK_VALUES,
   FSK_FILTER_MODE_OPTIONS,
@@ -19,8 +20,12 @@ import {
   getTvFskLabelFromContentRatings,
 } from '../utils/fsk'
 
+const currentYear = new Date().getFullYear()
+const years = Array.from({ length: 50 }, (_, i) => currentYear - i)
+
 const ratingOptions = [
-  { value: '', label: 'Egal' },
+  { value: '', label: 'Alle' },
+  { value: '9', label: '9+' },
   { value: '8', label: '8+' },
   { value: '7', label: '7+' },
   { value: '6', label: '6+' },
@@ -32,53 +37,47 @@ const fskOptions = [
   ...FSK_VALUES.map((value) => ({ value, label: `FSK ${value}` })),
 ]
 
-const languageOptions = [
-  { value: 'de|en', label: 'Deutsch & Englisch' },
-  { value: 'de', label: 'Nur Deutsch' },
-  { value: 'en', label: 'Nur Englisch' },
-  { value: '', label: 'Alle Sprachen' },
-]
-
-const eraOptions = [
-  { value: '', label: 'Egal' },
-  { value: '2020', label: 'Ab 2020' },
-  { value: '2010', label: 'Ab 2010' },
-  { value: '2000', label: 'Ab 2000' },
-  { value: '1990', label: 'Ab 1990' },
+const sortOptions = [
+  { value: 'popularity', label: 'Beliebtheit', sortByMovie: 'popularity.desc', sortByTv: 'popularity.desc' },
+  { value: 'rating', label: 'Bewertung', sortByMovie: 'vote_average.desc', sortByTv: 'vote_average.desc' },
+  { value: 'date', label: 'Erscheinungsdatum', sortByMovie: 'primary_release_date.desc', sortByTv: 'first_air_date.desc' },
 ]
 
 const MAX_RETRIES = 3
+
 
 function Random() {
   useDocumentTitle('Zufallsgenerator')
   const [searchParams, setSearchParams] = useSearchParams()
   const [mediaType, setMediaType] = useState(() => searchParams.get('type') || 'movie')
-  const [genre, setGenre] = useState(() => searchParams.get('genre') || '')
+  const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || 'popularity')
+  const [selectedGenres, setSelectedGenres] = useState(() => {
+    const value = searchParams.get('genres')
+    return value ? value.split(',').map(Number).filter(Boolean) : []
+  })
+  const [year, setYear] = useState(() => searchParams.get('year') || '')
   const [rating, setRating] = useState(() => searchParams.get('rating') || '')
   const [fsk, setFsk] = useState(() => normalizeFskCertification(searchParams.get('fsk')) || '')
   const [fskMode, setFskMode] = useState(() => normalizeFskFilterMode(searchParams.get('fskMode')))
-  const [language, setLanguage] = useState(() => searchParams.get('lang') || 'de|en')
-  const [era, setEra] = useState(() => searchParams.get('era') || '')
   const [selectedProviders, setSelectedProviders] = useState(() => {
     const p = searchParams.get('providers')
     return p ? p.split(',').map(Number).filter(Boolean) : []
   })
 
-  // Sync state to URL params
   useEffect(() => {
     const params = {}
     if (mediaType !== 'movie') params.type = mediaType
-    if (genre) params.genre = genre
+    if (sortBy !== 'popularity') params.sort = sortBy
+    if (selectedGenres.length > 0) params.genres = selectedGenres.join(',')
+    if (year) params.year = year
     if (rating) params.rating = rating
     if (fsk) {
       params.fsk = fsk
       if (fskMode !== 'lte') params.fskMode = fskMode
     }
-    if (language !== 'de|en') params.lang = language
-    if (era) params.era = era
     if (selectedProviders.length > 0) params.providers = selectedProviders.join(',')
     setSearchParams(params, { replace: true })
-  }, [mediaType, genre, rating, fsk, fskMode, language, era, selectedProviders, setSearchParams])
+  }, [mediaType, sortBy, selectedGenres, year, rating, fsk, fskMode, selectedProviders, setSearchParams])
 
   const [result, setResult] = useState(null)
   const [resultFskLabel, setResultFskLabel] = useState(null)
@@ -142,34 +141,38 @@ function Random() {
     }
   }, [result])
 
+  const sortParam = useMemo(() => {
+    const option = sortOptions.find((item) => item.value === sortBy) || sortOptions[0]
+    return mediaType === 'tv' ? option.sortByTv : option.sortByMovie
+  }, [mediaType, sortBy])
+
   const roll = useCallback(async () => {
     setLoading(true)
     setError(null)
 
     try {
-      const params = { sort_by: 'popularity.desc', 'vote_count.gte': 50 }
-      if (genre) params.with_genres = genre
+      const params = { sort_by: sortParam }
+
+      if (sortBy === 'rating') params['vote_count.gte'] = 200
+      else params['vote_count.gte'] = 50
+
+      if (sortBy === 'date') {
+        const today = new Date().toISOString().split('T')[0]
+        if (mediaType === 'movie') params['release_date.lte'] = today
+        else params['first_air_date.lte'] = today
+      }
+
+      if (selectedGenres.length > 0) params.with_genres = selectedGenres.join(',')
+      if (year) {
+        if (mediaType === 'movie') params.primary_release_year = year
+        else params.first_air_date_year = year
+      }
       if (rating) params['vote_average.gte'] = rating
       if (fsk && mediaType === 'movie') setMovieFskFilterParams(params, fsk, fskMode)
-
-      // Language filter - single language goes to API, combined filters client-side
-      const langCodes = language ? language.split('|') : []
-      if (langCodes.length === 1) params.with_original_language = langCodes[0]
-
-      // Era filter
-      if (era) {
-        if (mediaType === 'movie') params['primary_release_date.gte'] = `${era}-01-01`
-        else params['first_air_date.gte'] = `${era}-01-01`
-      }
-
-      // Provider filter
-      if (selectedProviders.length > 0) {
-        params.with_watch_providers = selectedProviders.join('|')
-      }
+      if (selectedProviders.length > 0) params.with_watch_providers = selectedProviders.join('|')
 
       const discover = mediaType === 'tv' ? discoverTv : discoverMovies
 
-      // First request: get total_pages
       const first = await discover({ ...params, page: 1 })
       const maxPage = Math.min(first.total_pages, 500)
 
@@ -180,19 +183,13 @@ function Random() {
         return
       }
 
-      // Retry loop - pick random page, filter results, retry if nothing usable
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         const randomPage = Math.floor(Math.random() * maxPage) + 1
         const page = randomPage === 1 && attempt === 0
           ? first
           : await discover({ ...params, page: randomPage })
 
-        let items = page.results.filter((m) => m.poster_path && m.overview)
-
-        // Client-side language filter for combined "de|en"
-        if (langCodes.length > 1) {
-          items = items.filter((m) => langCodes.includes(m.original_language))
-        }
+        const items = page.results.filter((m) => m.poster_path && m.overview)
 
         if (items.length > 0) {
           const pick = items[Math.floor(Math.random() * items.length)]
@@ -209,43 +206,59 @@ function Random() {
     } finally {
       setLoading(false)
     }
-  }, [mediaType, genre, rating, fsk, fskMode, language, era, selectedProviders])
+  }, [mediaType, sortBy, sortParam, selectedGenres, year, rating, fsk, fskMode, selectedProviders])
 
   function switchMediaType(type) {
     setMediaType(type)
-    setGenre('')
+    setSelectedGenres([])
     setSelectedProviders([])
     setFsk('')
     setFskMode('lte')
   }
 
+  function toggleGenre(id) {
+    setSelectedGenres((prev) =>
+      prev.includes(id) ? prev.filter((genreId) => genreId !== id) : [...prev, id]
+    )
+  }
+
   function toggleProvider(id) {
     setSelectedProviders((prev) =>
-      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((providerId) => providerId !== id) : [...prev, id]
     )
+  }
+
+  function resetFilters() {
+    setSortBy('popularity')
+    setSelectedGenres([])
+    setYear('')
+    setRating('')
+    setFsk('')
+    setFskMode('lte')
+    setSelectedProviders([])
   }
 
   const title = result?.title || result?.name
   const date = result?.release_date || result?.first_air_date
-  const year = date ? new Date(date).getFullYear() : null
+  const releaseYear = date ? new Date(date).getFullYear() : null
   const linkPath = result ? (result.media_type === 'tv' ? `/tv/${result.id}` : `/movie/${result.id}`) : null
 
-  return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-5xl tracking-wide text-surface-100">Zufallsgenerator</h1>
-        <p className="text-surface-400 text-sm mt-2">
-          Keine Ahnung was du schauen sollst? Lass den Zufall entscheiden.
-        </p>
-      </div>
+  const hasFilters = selectedGenres.length > 0 || year || rating || fsk || selectedProviders.length > 0 || sortBy !== 'popularity'
+  const activeFilterCount =
+    selectedGenres.length +
+    (year ? 1 : 0) +
+    (rating ? 1 : 0) +
+    (fsk ? 1 : 0) +
+    selectedProviders.length +
+    (sortBy !== 'popularity' ? 1 : 0)
 
-      {/* Controls */}
-      <div className="space-y-5">
-        {/* Media Type Toggle */}
+  const quickFilters = (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
           {[
-            { type: 'movie', label: 'Film' },
-            { type: 'tv', label: 'Serie' },
+            { type: 'movie', label: 'Filme' },
+            { type: 'tv', label: 'Serien' },
           ].map(({ type, label }) => (
             <button
               key={type}
@@ -262,89 +275,23 @@ function Random() {
           ))}
         </div>
 
-        <div className="flex flex-wrap gap-4">
-          <div>
-            <p className="text-xs font-medium text-surface-400 uppercase tracking-wider mb-2">Genre</p>
-            <Select
-              value={genre}
-              onChange={setGenre}
-              options={[{ value: '', label: 'Alle Genres' }, ...(genres.data?.map((g) => ({ value: String(g.id), label: g.name })) || [])]}
-              placeholder="Alle Genres"
-            />
-          </div>
-
-          <div>
-            <p className="text-xs font-medium text-surface-400 uppercase tracking-wider mb-2">Mindestbewertung</p>
-            <Select
-              value={rating}
-              onChange={setRating}
-              options={ratingOptions}
-              placeholder="Egal"
-            />
-          </div>
-
-          {mediaType === 'movie' && (
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs font-medium text-surface-400 uppercase tracking-wider mb-2">FSK</p>
-                <Select
-                  value={fsk}
-                  onChange={setFsk}
-                  options={fskOptions}
-                  placeholder="Alle"
-                />
-              </div>
-
-              {fsk && (
-                <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
-                  {FSK_FILTER_MODE_OPTIONS.map(({ value, label }) => (
-                    <button
-                      key={value}
-                      onClick={() => setFskMode(value)}
-                      aria-pressed={fskMode === value}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                        fskMode === value
-                          ? 'bg-accent-500 text-black'
-                          : 'text-surface-300 hover:text-surface-100'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          <div>
-            <p className="text-xs font-medium text-surface-400 uppercase tracking-wider mb-2">Sprache</p>
-            <Select
-              value={language}
-              onChange={setLanguage}
-              options={languageOptions}
-              placeholder="Alle Sprachen"
-            />
-          </div>
-
-          <div>
-            <p className="text-xs font-medium text-surface-400 uppercase tracking-wider mb-2">Zeitraum</p>
-            <Select
-              value={era}
-              onChange={setEra}
-              options={eraOptions}
-              placeholder="Egal"
-            />
-          </div>
+        <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
+          {sortOptions.map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => setSortBy(value)}
+              aria-pressed={sortBy === value}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                sortBy === value
+                  ? 'bg-accent-500 text-black'
+                  : 'text-surface-300 hover:text-surface-100'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
-        {/* Provider Logos */}
-        <ProviderFilter
-          providers={providers.data}
-          selected={selectedProviders}
-          onToggle={toggleProvider}
-        />
-
-        {/* Roll Button */}
         <button
           onClick={roll}
           disabled={loading}
@@ -369,13 +316,116 @@ function Random() {
         </button>
       </div>
 
-      {/* Error */}
+      {genres.data && (
+        <div>
+          <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">Genre</p>
+          <div className="flex flex-wrap gap-2">
+            {genres.data.map((genreOption) => (
+              <button
+                key={genreOption.id}
+                onClick={() => toggleGenre(genreOption.id)}
+                aria-pressed={selectedGenres.includes(genreOption.id)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                  selectedGenres.includes(genreOption.id)
+                    ? 'bg-accent-500 text-black shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]'
+                    : 'bg-surface-800 text-surface-200 hover:bg-surface-700'
+                }`}
+              >
+                {genreOption.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-4">
+        <div>
+          <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">Jahr</p>
+          <Select
+            value={year}
+            onChange={setYear}
+            options={[{ value: '', label: 'Alle Jahre' }, ...years.map((itemYear) => ({ value: String(itemYear), label: String(itemYear) }))]}
+            placeholder="Alle Jahre"
+            ariaLabel="Jahr"
+          />
+        </div>
+
+        <div>
+          <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">Bewertung</p>
+          <Select
+            value={rating}
+            onChange={setRating}
+            options={ratingOptions}
+            placeholder="Alle"
+            ariaLabel="Bewertung"
+          />
+        </div>
+
+        {mediaType === 'movie' && (
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">FSK</p>
+              <Select
+                value={fsk}
+                onChange={setFsk}
+                options={fskOptions}
+                placeholder="Alle"
+                ariaLabel="FSK"
+              />
+            </div>
+
+            {fsk && (
+              <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
+                {FSK_FILTER_MODE_OPTIONS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setFskMode(value)}
+                    aria-pressed={fskMode === value}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      fskMode === value
+                        ? 'bg-accent-500 text-black'
+                        : 'text-surface-300 hover:text-surface-100'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="font-display text-5xl tracking-wide text-surface-100">Zufallsgenerator</h1>
+        <p className="text-surface-400 text-sm mt-2">
+          Keine Ahnung was du schauen sollst? Lass den Zufall entscheiden.
+        </p>
+      </div>
+
+      <FilterPanel
+        title="Zufalls-Filter"
+        quickLabel="Schnellfilter"
+        quickContent={quickFilters}
+        defaultOpen={hasFilters}
+        activeCount={activeFilterCount}
+        onReset={hasFilters ? resetFilters : undefined}
+      >
+        <ProviderFilter
+          providers={providers.data}
+          selected={selectedProviders}
+          onToggle={toggleProvider}
+        />
+      </FilterPanel>
+
       {error && <ErrorBox message={error} />}
 
-      {/* Result */}
       {result && !loading && (
         <div className="relative rounded-2xl overflow-hidden bg-surface-900 animate-slide-up">
-          {/* Backdrop */}
           {result.backdrop_path && (
             <div className="absolute inset-0">
               <img
@@ -390,7 +440,6 @@ function Random() {
           )}
 
           <div className="relative flex flex-col sm:flex-row gap-6 sm:gap-8 p-6 sm:p-8">
-            {/* Poster */}
             <div className="flex-shrink-0 mx-auto sm:mx-0">
               <img
                 src={posterUrl(result.poster_path)}
@@ -399,7 +448,6 @@ function Random() {
               />
             </div>
 
-            {/* Info */}
             <div className="flex-1 min-w-0 flex flex-col justify-between gap-4">
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
@@ -410,7 +458,7 @@ function Random() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 text-sm text-surface-300">
-                  {year && <span>{year}</span>}
+                  {releaseYear && <span>{releaseYear}</span>}
                   <span className="px-2 py-0.5 rounded-md bg-surface-800/80 text-accent-400 text-xs font-medium">
                     {result.media_type === 'tv' ? 'Serie' : 'Film'}
                   </span>
@@ -436,7 +484,6 @@ function Random() {
                 )}
               </div>
 
-              {/* Action Buttons */}
               <div className="flex flex-wrap gap-3 pt-2">
                 <button
                   onClick={roll}
@@ -459,7 +506,6 @@ function Random() {
         </div>
       )}
 
-      {/* Initial empty state */}
       {!result && !loading && !error && (
         <div className="text-center py-20">
           <svg className="w-20 h-20 mx-auto text-surface-700 mb-4" viewBox="0 0 24 24" fill="currentColor">
@@ -473,3 +519,5 @@ function Random() {
 }
 
 export default Random
+
+

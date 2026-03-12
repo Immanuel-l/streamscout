@@ -12,6 +12,7 @@ import GridSkeleton from '../components/common/GridSkeleton'
 import ErrorBox from '../components/common/ErrorBox'
 import Select from '../components/common/Select'
 import ProviderFilter from '../components/common/ProviderFilter'
+import FilterPanel from '../components/common/FilterPanel'
 import FilterPresets from '../components/common/FilterPresets'
 import ScrollToTop from '../components/common/ScrollToTop'
 import { t } from '../utils/i18n'
@@ -182,10 +183,8 @@ function Discover() {
       setMovieFskFilterParams(params, fsk, fskMode)
     }
 
-    // Bei Sortierung nach Bewertung: Mindestanzahl Votes um obskure Titel zu vermeiden
     if (sortBy === 'rating') params['vote_count.gte'] = 200
 
-    // Bei Sortierung nach Datum: nur bereits erschienene Titel
     if (sortBy === 'date') {
       const today = new Date().toISOString().split('T')[0]
       if (mediaType === 'movie') params['release_date.lte'] = today
@@ -383,12 +382,16 @@ function Discover() {
   }
 
   const hasFilters = selectedGenres.length > 0 || year || rating || fsk || selectedProviders.length > 0 || sortBy !== 'popularity'
+  const activeFilterCount =
+    selectedGenres.length +
+    (year ? 1 : 0) +
+    (rating ? 1 : 0) +
+    (fsk ? 1 : 0) +
+    selectedProviders.length +
+    (sortBy !== 'popularity' ? 1 : 0)
 
-  return (
-    <div className="space-y-8">
-      <h1 className="font-display text-5xl tracking-wide text-surface-100">{t('discover.title')}</h1>
-
-      {/* Media Type Toggle + Sort */}
+  const quickFilters = (
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
           {[
@@ -428,87 +431,105 @@ function Discover() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="space-y-5">
-        {genres.data && (
-          <div>
-            <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">{t('discover.genre')}</p>
-            <div className="flex flex-wrap gap-2">
-              {genres.data.map((g) => (
-                <button
-                  key={g.id}
-                  onClick={() => toggleGenre(g.id)}
-                  aria-pressed={selectedGenres.includes(g.id)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-                    selectedGenres.includes(g.id)
-                      ? 'bg-accent-500 text-black shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]'
-                      : 'bg-surface-800 text-surface-200 hover:bg-surface-700'
-                  }`}
-                >
-                  {g.name}
-                </button>
-              ))}
+      {genres.data && (
+        <div>
+          <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">{t('discover.genre')}</p>
+          <div className="flex flex-wrap gap-2">
+            {genres.data.map((g) => (
+              <button
+                key={g.id}
+                onClick={() => toggleGenre(g.id)}
+                aria-pressed={selectedGenres.includes(g.id)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                  selectedGenres.includes(g.id)
+                    ? 'bg-accent-500 text-black shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]'
+                    : 'bg-surface-800 text-surface-200 hover:bg-surface-700'
+                }`}
+              >
+                {g.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-4">
+        <div>
+          <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">{t('discover.year')}</p>
+          <Select
+            value={year}
+            onChange={setYear}
+            options={[{ value: '', label: t('discover.allYears') }, ...years.map((y) => ({ value: String(y), label: String(y) }))]}
+            placeholder={t('discover.allYears')}
+            ariaLabel={t('discover.year')}
+          />
+        </div>
+
+        <div>
+          <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">{t('discover.rating')}</p>
+          <Select
+            value={rating}
+            onChange={setRating}
+            options={ratingOptions}
+            placeholder="Alle"
+            ariaLabel={t('discover.rating')}
+          />
+        </div>
+
+        {mediaType === 'movie' && (
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">{t('discover.fsk')}</p>
+              <Select
+                value={fsk}
+                onChange={setFsk}
+                options={fskOptions}
+                placeholder="Alle"
+                ariaLabel={t('discover.fsk')}
+              />
             </div>
+
+            {fsk && (
+              <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
+                {FSK_FILTER_MODE_OPTIONS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setFskMode(value)}
+                    aria-pressed={fskMode === value}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      fskMode === value
+                        ? 'bg-accent-500 text-black'
+                        : 'text-surface-200 hover:text-surface-100'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
+      </div>
+    </div>
+  )
 
-        <div className="flex flex-wrap gap-4">
-          <div>
-            <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">{t('discover.year')}</p>
-            <Select
-              value={year}
-              onChange={setYear}
-              options={[{ value: '', label: t('discover.allYears') }, ...years.map((y) => ({ value: String(y), label: String(y) }))]}
-              placeholder={t('discover.allYears')}
-              ariaLabel={t('discover.year')}
-            />
-          </div>
+  return (
+    <div className="space-y-8">
+      <h1 className="font-display text-5xl tracking-wide text-surface-100">{t('discover.title')}</h1>
 
-          <div>
-            <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">{t('discover.rating')}</p>
-            <Select
-              value={rating}
-              onChange={setRating}
-              options={ratingOptions}
-              placeholder="Alle"
-              ariaLabel={t('discover.rating')}
-            />
-          </div>
-
-          {mediaType === 'movie' && (
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">{t('discover.fsk')}</p>
-                <Select
-                  value={fsk}
-                  onChange={setFsk}
-                  options={fskOptions}
-                  placeholder="Alle"
-                  ariaLabel={t('discover.fsk')}
-                />
-              </div>
-
-              {fsk && (
-                <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
-                  {FSK_FILTER_MODE_OPTIONS.map(({ value, label }) => (
-                    <button
-                      key={value}
-                      onClick={() => setFskMode(value)}
-                      aria-pressed={fskMode === value}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                        fskMode === value
-                          ? 'bg-accent-500 text-black'
-                          : 'text-surface-200 hover:text-surface-100'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+      <FilterPanel
+        title="Entdecken-Filter"
+        quickLabel="Schnellfilter"
+        quickContent={quickFilters}
+        defaultOpen={hasFilters}
+        activeCount={activeFilterCount}
+        onReset={hasFilters ? resetFilters : undefined}
+      >
+        <ProviderFilter
+          providers={providers.data}
+          selected={selectedProviders}
+          onToggle={toggleProvider}
+        />
 
         <FilterPresets
           presets={presets}
@@ -527,22 +548,7 @@ function Discover() {
           onImport={handleImportPresets}
           statusMessage={presetStatus}
         />
-
-        <ProviderFilter
-          providers={providers.data}
-          selected={selectedProviders}
-          onToggle={toggleProvider}
-        />
-
-        {hasFilters && (
-          <button
-            onClick={resetFilters}
-            className="text-sm text-accent-400 hover:text-accent-300 transition-colors"
-          >
-            {t('discover.resetFilters')}
-          </button>
-        )}
-      </div>
+      </FilterPanel>
 
       {/* Results */}
       {error && <ErrorBox message="Ergebnisse konnten nicht geladen werden. Bitte versuch es später nochmal." />}

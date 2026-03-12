@@ -276,6 +276,8 @@ test.describe('Functional Flows', () => {
     await page.goto('/#/discover')
     await expect(page.getByRole('heading', { name: 'Entdecken' })).toBeVisible()
 
+    await page.getByRole('button', { name: 'Weitere Filter anzeigen' }).click()
+
     await page.getByRole('button', { name: 'Bewertung' }).click()
     await page.getByRole('button', { name: 'Komödie' }).click()
 
@@ -310,3 +312,4 @@ test.describe('Functional Flows', () => {
     await expect(page).toHaveURL(/genres=35/)
   })
 })
+

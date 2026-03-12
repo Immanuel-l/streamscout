@@ -5,6 +5,7 @@ import { useWatchlist, SHARE_ITEM_LIMIT } from '../hooks/useWatchlist'
 import { useWatchlistProviders } from '../hooks/useWatchlistProviders'
 import { useToast } from '../components/common/useToast'
 import MediaCard from '../components/common/MediaCard'
+import FilterPanel from '../components/common/FilterPanel'
 import { IMAGE_BASE } from '../api/tmdb'
 import WatchlistRecommendations from '../components/home/WatchlistRecommendations'
 
@@ -50,8 +51,8 @@ function WatchlistCard({ item, index, onRemove, readOnly = false, isSelected = f
           }}
           title={isSelected ? 'Abwählen' : 'Auswählen'}
           className={`absolute top-2 left-2 z-20 w-7 h-7 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full transition-all backdrop-blur-sm cursor-pointer border-2 ${
-            isSelected 
-              ? 'bg-accent-500 border-accent-500 text-black shadow-lg shadow-accent-500/20 scale-110' 
+            isSelected
+              ? 'bg-accent-500 border-accent-500 text-black shadow-lg shadow-accent-500/20 scale-110'
               : 'bg-black/40 border-white/40 text-transparent hover:bg-black/60 hover:border-white/60'
           }`}
         >
@@ -71,7 +72,7 @@ function Watchlist() {
   const navigate = useNavigate()
   const { items, remove, mergeItems, generateShareLink, fetchSharedList } = useWatchlist()
   const toast = useToast()
-  
+
   // Shared List State
   const [sharedItems, setSharedItems] = useState([])
   const [isFetchingShared, setIsFetchingShared] = useState(false)
@@ -94,7 +95,7 @@ function Watchlist() {
     if (isSharedView && shareString && initializedShare.current !== shareString) {
       initializedShare.current = shareString
       setIsFetchingShared(true)
-      
+
       fetchSharedList(shareString).then((res) => {
         if (res.success) {
           setSharedItems(res.items)
@@ -162,7 +163,7 @@ function Watchlist() {
 
   const handleImportShared = () => {
     const itemsToImport = sharedItems.filter((m) => selectedItems.has(`${m.media_type}-${m.id}`))
-    
+
     if (itemsToImport.length === 0) {
       toast('Bitte wähle mindestens einen Eintrag aus.', 'error')
       return
@@ -180,7 +181,6 @@ function Watchlist() {
   const handleCancelShared = () => {
     navigate('/watchlist', { replace: true })
   }
-
 
   const filtered = (activeTab === 'all'
     ? displayedItems
@@ -201,7 +201,7 @@ function Watchlist() {
     if (!selectedProvider) return true
     return providerMap[`movie-${m.id}`]?.has(selectedProvider)
   }).length
-  
+
   const tvCount = displayedItems.filter((m) => {
     if (m.media_type !== 'tv') return false
     if (!selectedProvider) return true
@@ -216,6 +216,60 @@ function Watchlist() {
         ? 'Keine Serien auf der Merkliste.'
         : 'Keine Einträge auf der Merkliste.'
 
+  function resetFilters() {
+    setActiveTab('all')
+    setSortBy('added')
+    setSelectedProvider(null)
+  }
+
+  const hasControlFilters = activeTab !== 'all' || sortBy !== 'added' || selectedProvider !== null
+  const activeFilterCount = (activeTab !== 'all' ? 1 : 0) + (sortBy !== 'added' ? 1 : 0) + (selectedProvider ? 1 : 0)
+
+  const quickFilters = (
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
+        {tabs.map(({ key, label }) => {
+          const count = key === 'all' ? filtered.length : key === 'movie' ? movieCount : tvCount
+          return (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              aria-pressed={activeTab === key}
+              className={`px-4 sm:px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === key
+                  ? 'bg-accent-500 text-black'
+                  : 'text-surface-200 hover:text-surface-100'
+              }`}
+            >
+              {label} ({count})
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
+        {[
+          { value: 'added', label: 'Zuletzt hinzugefügt' },
+          { value: 'rating', label: 'Bewertung' },
+          { value: 'alpha', label: 'A–Z' },
+        ].map(({ value, label }) => (
+          <button
+            key={value}
+            onClick={() => setSortBy(value)}
+            aria-pressed={sortBy === value}
+            className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
+              sortBy === value
+                ? 'bg-accent-500 text-black'
+                : 'text-surface-200 hover:text-surface-100'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -228,7 +282,7 @@ function Watchlist() {
           ) : (
             <h1 className="font-display text-5xl tracking-wide text-surface-100">Merkliste</h1>
           )}
-          
+
           {displayedItems.length > 0 && !isFetchingShared && (
             <p className="text-surface-200 text-sm mt-2">
               {displayedItems.length} {displayedItems.length === 1 ? 'Eintrag' : 'Einträge'}
@@ -238,7 +292,7 @@ function Watchlist() {
             <p role="status" aria-live="polite" className="text-accent-500 text-sm mt-2 animate-pulse">Lade Filmdaten...</p>
           )}
         </div>
-        
+
         {/* Actions Menu (only visible if NOT in shared view) */}
         {!isSharedView && displayedItems.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
@@ -289,94 +343,58 @@ function Watchlist() {
         </div>
       )}
 
-
-      {/* Controls: Tabs, Sort & Provider Filter */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-surface-800/20 p-2 sm:p-0 rounded-xl sm:bg-transparent">
-        {/* Tabs + Sort */}
-        {displayedItems.length > 0 && !isFetchingShared && (
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
-              {tabs.map(({ key, label }) => {
-                const count = key === 'all' ? filtered.length : key === 'movie' ? movieCount : tvCount
-                return (
+      {/* Controls */}
+      {displayedItems.length > 0 && !isFetchingShared && (
+        <FilterPanel
+          title="Listenfilter"
+          quickLabel="Schnellfilter"
+          quickContent={quickFilters}
+          defaultOpen={hasControlFilters}
+          activeCount={activeFilterCount}
+          onReset={hasControlFilters ? resetFilters : undefined}
+          className="bg-surface-800/20"
+        >
+          {availableProviders.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-surface-200 text-xs uppercase tracking-wider font-medium max-sm:hidden">
+                Anbieter
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {availableProviders.map((p) => (
                   <button
-                    key={key}
-                    onClick={() => setActiveTab(key)}
-                    aria-pressed={activeTab === key}
-                    className={`px-4 sm:px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      activeTab === key
-                        ? 'bg-accent-500 text-black'
-                        : 'text-surface-200 hover:text-surface-100'
+                    key={p.provider_id}
+                    onClick={() => setSelectedProvider((prev) => prev === p.provider_id ? null : p.provider_id)}
+                    title={p.provider_name}
+                    className={`relative rounded-lg overflow-hidden transition-all duration-300 cursor-pointer ${
+                      selectedProvider === p.provider_id
+                        ? 'ring-2 ring-accent-400 scale-110 shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]'
+                        : selectedProvider
+                          ? 'opacity-40 hover:opacity-100 hover:scale-105'
+                          : 'opacity-80 hover:opacity-100 hover:scale-105'
                     }`}
                   >
-                    {label} ({count})
+                    <img
+                      src={`${IMAGE_BASE}/w92${p.logo_path}`}
+                      alt={p.provider_name}
+                      className="w-10 h-10 sm:w-11 sm:h-11 object-cover"
+                    />
                   </button>
-                )
-              })}
-            </div>
-
-            <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
-              {[
-                { value: 'added', label: 'Zuletzt hinzugefügt' },
-                { value: 'rating', label: 'Bewertung' },
-                { value: 'alpha', label: 'A–Z' },
-              ].map(({ value, label }) => (
-                <button
-                  key={value}
-                  onClick={() => setSortBy(value)}
-                  aria-pressed={sortBy === value}
-                  className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
-                    sortBy === value
-                      ? 'bg-accent-500 text-black'
-                      : 'text-surface-200 hover:text-surface-100'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Provider Filter */}
-        {availableProviders.length > 0 && !isFetchingShared && (
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-surface-200 text-xs uppercase tracking-wider font-medium max-sm:hidden">
-              Anbieter
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {availableProviders.map(p => (
-                <button
-                  key={p.provider_id}
-                  onClick={() => setSelectedProvider(prev => prev === p.provider_id ? null : p.provider_id)}
-                  title={p.provider_name}
-                  className={`relative rounded-lg overflow-hidden transition-all duration-300 cursor-pointer ${
-                    selectedProvider === p.provider_id
-                      ? 'ring-2 ring-accent-400 scale-110 shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]'
-                      : selectedProvider 
-                        ? 'opacity-40 hover:opacity-100 hover:scale-105' 
-                        : 'opacity-80 hover:opacity-100 hover:scale-105'
-                  }`}
-                >
-                  <img
-                    src={`${IMAGE_BASE}/w92${p.logo_path}`}
-                    alt={p.provider_name}
-                    className="w-10 h-10 sm:w-11 sm:h-11 object-cover"
-                  />
-                </button>
-              ))}
-            </div>
-            {providersLoading && (
-              <div className="text-surface-200">
-                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
+                ))}
               </div>
-            )}
-          </div>
-        )}
-      </div>
+              {providersLoading && (
+                <div className="text-surface-200">
+                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-surface-300">Noch keine Anbieter-Filter für die aktuelle Auswahl verfügbar.</p>
+          )}
+        </FilterPanel>
+      )}
 
       {/* Grid */}
       {isFetchingShared ? (
@@ -442,4 +460,3 @@ function Watchlist() {
 }
 
 export default Watchlist
-
