@@ -19,7 +19,20 @@ const hookNames = [
   'prepare-commit-msg',
 ]
 
-const wrapperContent = `#!/usr/bin/node
+function resolveNodeShebang() {
+  const candidates = [
+    'C:/PROGRA~1/nodejs/node.exe',
+    'C:/Program Files/nodejs/node.exe',
+    '/usr/bin/node',
+  ]
+
+  const found = candidates.find((candidate) => fs.existsSync(candidate))
+  return `#!${found || '/usr/bin/node'}`
+}
+
+const shebang = resolveNodeShebang()
+
+const wrapperContent = `${shebang}
 import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
@@ -40,25 +53,54 @@ if (!command) {
 }
 
 const args = process.argv.slice(2)
-const quote = (value) => {
-  if (!value || !/[\\s"]/u.test(value)) return value
-  return '"' + value.replace(/"/g, '\\"') + '"'
+const env = {
+  ...process.env,
+  PATH: [path.resolve('node_modules', '.bin'), process.env.PATH || '']
+    .filter(Boolean)
+    .join(path.delimiter),
 }
 
-const commandWithArgs = args.length > 0
-  ? command + ' ' + args.map(quote).join(' ')
-  : command
+function resolveNpmCliPath() {
+  const candidates = [
+    process.env.npm_execpath,
+    path.resolve(path.dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+    'C:/Program Files/nodejs/node_modules/npm/bin/npm-cli.js',
+    'C:/PROGRA~1/nodejs/node_modules/npm/bin/npm-cli.js',
+  ].filter(Boolean)
 
-const result = spawnSync(commandWithArgs, {
-  stdio: 'inherit',
-  shell: true,
-  env: {
-    ...process.env,
-    PATH: [path.resolve('node_modules', '.bin'), process.env.PATH || '']
-      .filter(Boolean)
-      .join(path.delimiter),
-  },
-})
+  return candidates.find((candidate) => fs.existsSync(candidate))
+}
+
+let result
+const npmMatch = command.match(/^npm\\s+run\\s+([\\w:-]+)$/u)
+
+if (npmMatch) {
+  const npmCliPath = resolveNpmCliPath()
+
+  if (npmCliPath) {
+    result = spawnSync(process.execPath, [npmCliPath, 'run', npmMatch[1], ...args], {
+      stdio: 'inherit',
+      env,
+    })
+  }
+}
+
+if (!result) {
+  const quote = (value) => {
+    if (!value || !/[\\s"]/u.test(value)) return value
+    return '"' + value.replace(/"/g, '\\"') + '"'
+  }
+
+  const commandWithArgs = args.length > 0
+    ? command + ' ' + args.map(quote).join(' ')
+    : command
+
+  result = spawnSync(commandWithArgs, {
+    stdio: 'inherit',
+    shell: true,
+    env,
+  })
+}
 
 if (typeof result.status === 'number') {
   process.exit(result.status)
