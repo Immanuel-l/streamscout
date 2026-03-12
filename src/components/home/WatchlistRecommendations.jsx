@@ -35,7 +35,7 @@ function WatchlistRecommendations({ count = 2 }) {
             error={error}
           />
           {unknownCount > 0 && (
-            <p className="text-xs text-surface-300 px-1">
+            <p role="status" aria-live="polite" className="text-xs text-surface-300 px-1">
               Bei {unknownCount} Empfehlungen konnte die Streambarkeit nicht geprüft werden.
             </p>
           )}
@@ -46,3 +46,4 @@ function WatchlistRecommendations({ count = 2 }) {
 }
 
 export default WatchlistRecommendations
+

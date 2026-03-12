@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
-import { useWatchlist } from '../hooks/useWatchlist'
+import { useWatchlist, SHARE_ITEM_LIMIT } from '../hooks/useWatchlist'
 import { useWatchlistProviders } from '../hooks/useWatchlistProviders'
 import { useToast } from '../components/common/useToast'
 import MediaCard from '../components/common/MediaCard'
@@ -109,7 +109,7 @@ function Watchlist() {
             warnings.push(`${res.invalidCount} Link-Einträge waren ungültig und wurden übersprungen.`)
           }
           if (res.truncatedCount > 0) {
-            warnings.push(`${res.truncatedCount} Einträge wurden wegen des Limits von 100 nicht importiert.`)
+            warnings.push(`${res.truncatedCount} Einträge wurden wegen des Limits von ${SHARE_ITEM_LIMIT} nicht importiert.`)
           }
 
           if (warnings.length > 0) {
@@ -224,7 +224,7 @@ function Watchlist() {
             </p>
           )}
           {isFetchingShared && (
-            <p className="text-accent-500 text-sm mt-2 animate-pulse">Lade Filmdaten...</p>
+            <p role="status" aria-live="polite" className="text-accent-500 text-sm mt-2 animate-pulse">Lade Filmdaten...</p>
           )}
         </div>
         
@@ -433,7 +433,4 @@ function Watchlist() {
 }
 
 export default Watchlist
-
-
-
 

@@ -15,6 +15,7 @@ vi.mock('../hooks/useDocumentTitle', () => ({
 }))
 
 vi.mock('../hooks/useWatchlist', () => ({
+  SHARE_ITEM_LIMIT: 100,
   useWatchlist: vi.fn(() => ({
     items: [],
     remove: mockRemove,
@@ -236,3 +237,4 @@ describe('Watchlist Page', () => {
     expect(warningMessage).toContain('3 Einträge wurden wegen des Limits von 100 nicht importiert.')
   })
 })
+

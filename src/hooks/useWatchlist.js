@@ -4,7 +4,7 @@ import { getTvDetails } from '../api/tv'
 
 const STORAGE_KEY = 'streamscout_watchlist'
 const SYNC_EVENT = 'watchlist-sync'
-const SHARE_ITEM_LIMIT = 100
+export const SHARE_ITEM_LIMIT = 100
 const SHARE_TOKEN_PATTERN = /^([mt])(\d+)$/
 
 function readWatchlist() {
@@ -231,3 +231,4 @@ export function useWatchlist() {
     fetchSharedList,
   }
 }
+

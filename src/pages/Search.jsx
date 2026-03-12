@@ -347,12 +347,12 @@ function Search() {
           )}
 
           {providersChecking && (
-            <p className="text-surface-200 text-sm text-center py-4 animate-pulse">Streaming-Verfügbarkeit wird geprüft…</p>
+            <p role="status" aria-live="polite" className="text-surface-200 text-sm text-center py-4 animate-pulse">Streaming-Verfügbarkeit wird geprüft…</p>
           )}
 
 
           {streamableLimitReached && (
-            <p className="text-surface-300 text-xs text-center py-2">
+            <p role="status" aria-live="polite" className="text-surface-300 text-xs text-center py-2">
               Aktuell werden die ersten {providerCheckItems.length} Treffer auf Streambarkeit geprüft. Beim Weiter-Scrollen werden weitere geprüft.
             </p>
           )}
@@ -364,7 +364,7 @@ function Search() {
       )}
 
       {streamableUnknownCount > 0 && (
-        <p className="text-amber-300 text-sm text-center py-2">
+        <p role="status" aria-live="polite" className="text-amber-300 text-sm text-center py-2">
           Bei {streamableUnknownCount} Treffern konnte die Streaming-Verfügbarkeit nicht geprüft werden.
         </p>
       )}
@@ -405,6 +405,4 @@ function Search() {
 }
 
 export default Search
-
-
 
