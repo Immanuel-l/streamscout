@@ -74,16 +74,16 @@
 - useDocumentTitle (Dynamischer Seitentitel)
 - useIsTouch (Touch-Device-Erkennung)
 
-### Komponenten (28)
+### Komponenten (29)
 - Layout: Header (Skip-to-Content, Mobile-Menü), Footer (TMDB/JustWatch-Attribution), Layout
-- Common: MediaCard, MediaRow, SearchBar, ProviderFilter, Select, WatchlistButton, ErrorBox, ErrorBoundary, Toast, PageLoader, GridSkeleton, ScrollToTop
+- Common: MediaCard, MediaRow, SearchBar, ProviderFilter, Select, FilterPresets, WatchlistButton, ErrorBox, ErrorBoundary, Toast, PageLoader, GridSkeleton, ScrollToTop
 - Detail: RatingRing, CastList, TrailerSection, ProviderList, DetailSkeleton
 - Search: SearchBar, PersonCard
 - Home: WatchlistRecommendations
 
 ### Testing
-- Stand 12.03.2026 nach dem Qualitaetssprint: 58 Unit-Test-Dateien mit 393 Tests (vor dem Sprint: 366 Tests)
-- 14 E2E Smoke/A11y/Flow-Tests (Playwright)
+- Stand 12.03.2026: 59 Unit-Test-Dateien mit 401 Tests (vor dem Qualitaetssprint: 366 Tests)
+- 15 E2E Smoke/A11y/Flow-Tests (Playwright)
 - Coverage-Reports (v8, HTML-Output)
 
 ### Infrastruktur
@@ -97,6 +97,7 @@
 ## Offen
 
 - Keine offenen Aufgaben
+
 
 
 

@@ -6,11 +6,13 @@ import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
 import { useGenres, useWatchProviders } from '../hooks/useProviders'
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll'
+import { useFilterPresets } from '../hooks/useFilterPresets'
 import MediaCard from '../components/common/MediaCard'
 import GridSkeleton from '../components/common/GridSkeleton'
 import ErrorBox from '../components/common/ErrorBox'
 import Select from '../components/common/Select'
 import ProviderFilter from '../components/common/ProviderFilter'
+import FilterPresets from '../components/common/FilterPresets'
 import ScrollToTop from '../components/common/ScrollToTop'
 import { t } from '../utils/i18n'
 import {
@@ -23,6 +25,7 @@ import {
 
 const currentYear = new Date().getFullYear()
 const years = Array.from({ length: 50 }, (_, i) => currentYear - i)
+const presetStorageKey = 'streamscout-discover-presets'
 
 const ratingOptions = [
   { value: '', label: 'Alle' },
@@ -44,6 +47,17 @@ const sortOptions = [
   { value: 'date', label: 'Erscheinungsdatum', sortBy: 'primary_release_date.desc' },
 ]
 
+function parseNumberList(values) {
+  if (!Array.isArray(values)) return []
+  return values
+    .map((id) => Number(id))
+    .filter((id) => Number.isInteger(id) && id > 0)
+}
+
+function normalizeSortOption(value) {
+  return sortOptions.some((option) => option.value === value) ? value : 'popularity'
+}
+
 function Discover() {
   useDocumentTitle('Entdecken')
   const [searchParams, setSearchParams] = useSearchParams()
@@ -61,6 +75,13 @@ function Discover() {
   })
   const [fsk, setFsk] = useState(() => normalizeFskCertification(searchParams.get('fsk')) || '')
   const [fskMode, setFskMode] = useState(() => normalizeFskFilterMode(searchParams.get('fskMode')))
+
+  const { presets, savePreset, getPresetById, deletePreset } = useFilterPresets(presetStorageKey)
+  const [presetName, setPresetName] = useState('')
+  const [selectedPresetId, setSelectedPresetId] = useState('')
+  const [presetStatus, setPresetStatus] = useState('')
+  const activePresetId = presets.some((preset) => preset.id === selectedPresetId) ? selectedPresetId : ''
+
 
   // Sync state to URL params
   useEffect(() => {
@@ -114,6 +135,76 @@ function Discover() {
 
     return params
   }, [mediaType, selectedGenres, year, rating, selectedProviders, fsk, fskMode, sortBy])
+
+  const currentPresetValues = useMemo(
+    () => ({
+      mediaType,
+      sortBy,
+      selectedGenres,
+      year,
+      rating,
+      selectedProviders,
+      fsk,
+      fskMode,
+    }),
+    [mediaType, sortBy, selectedGenres, year, rating, selectedProviders, fsk, fskMode]
+  )
+
+  function applyPresetValues(values) {
+    const nextMediaType = values?.mediaType === 'tv' ? 'tv' : 'movie'
+
+    setMediaType(nextMediaType)
+    setSortBy(normalizeSortOption(values?.sortBy))
+    setSelectedGenres(parseNumberList(values?.selectedGenres))
+    setYear(typeof values?.year === 'string' ? values.year : '')
+    setRating(typeof values?.rating === 'string' ? values.rating : '')
+    setSelectedProviders(parseNumberList(values?.selectedProviders))
+
+    if (nextMediaType === 'movie') {
+      setFsk(normalizeFskCertification(values?.fsk) || '')
+      setFskMode(normalizeFskFilterMode(values?.fskMode))
+      return
+    }
+
+    setFsk('')
+    setFskMode('lte')
+  }
+
+  function handleSavePreset() {
+    const result = savePreset(presetName, currentPresetValues)
+    if (!result.success) {
+      setPresetStatus(result.error)
+      return
+    }
+
+    setSelectedPresetId(result.id)
+    setPresetName('')
+    setPresetStatus(result.replaced ? 'Preset aktualisiert.' : 'Preset gespeichert.')
+  }
+
+  function handleLoadPreset() {
+    if (!activePresetId) return
+    const preset = getPresetById(activePresetId)
+    if (!preset) {
+      setPresetStatus('Preset nicht gefunden.')
+      return
+    }
+
+    applyPresetValues(preset.values)
+    setPresetStatus('Preset geladen.')
+  }
+
+  function handleDeletePreset() {
+    if (!activePresetId) return
+    const deleted = deletePreset(activePresetId)
+    if (!deleted) {
+      setPresetStatus('Preset nicht gefunden.')
+      return
+    }
+
+    setSelectedPresetId('')
+    setPresetStatus('Preset gelöscht.')
+  }
 
   const {
     data,
@@ -306,6 +397,18 @@ function Discover() {
           )}
         </div>
 
+        <FilterPresets
+          presets={presets}
+          presetName={presetName}
+          selectedPresetId={activePresetId}
+          onPresetNameChange={setPresetName}
+          onSelectedPresetChange={setSelectedPresetId}
+          onSave={handleSavePreset}
+          onLoad={handleLoadPreset}
+          onDelete={handleDeletePreset}
+          statusMessage={presetStatus}
+        />
+
         <ProviderFilter
           providers={providers.data}
           selected={selectedProviders}
@@ -380,3 +483,4 @@ function Discover() {
 }
 
 export default Discover
+

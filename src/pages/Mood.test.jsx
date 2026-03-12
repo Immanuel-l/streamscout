@@ -81,6 +81,7 @@ describe('Mood Page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mediaCardCalls.length = 0
+    localStorage.clear()
     mockUseInfiniteQuery.mockReturnValue(buildInfiniteState())
   })
 
@@ -128,6 +129,7 @@ describe('Mood Page', () => {
       'certification.gte': '16',
     }))
   })
+
   it('wechselt auf tv + date und nutzt discoverTv mit erstem Air-Date-Sort', async () => {
     renderMood()
 
@@ -149,6 +151,37 @@ describe('Mood Page', () => {
       sort_by: 'first_air_date.desc',
       page: 2,
     }))
+  })
+
+  it('speichert und laedt Mood-Presets', async () => {
+    renderMood()
+
+    fireEvent.click(screen.getByText('Serien'))
+    fireEvent.click(screen.getByText('Neueste zuerst'))
+
+    fireEvent.change(screen.getByLabelText('Preset-Name'), { target: { value: 'TV Neu' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Preset speichern' }))
+
+    expect(screen.getByRole('status')).toHaveTextContent('Preset gespeichert.')
+
+    fireEvent.click(screen.getByText('Filme'))
+    expect(screen.getByText('Filme')).toHaveAttribute('aria-pressed', 'true')
+
+    const option = screen.getByRole('option', { name: 'TV Neu' })
+    fireEvent.change(screen.getByLabelText('Preset auswählen'), {
+      target: { value: option.getAttribute('value') },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Preset laden' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Serien')).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByText('Neueste zuerst')).toHaveAttribute('aria-pressed', 'true')
+    })
+
+    await waitFor(() => {
+      const latestConfig = mockUseInfiniteQuery.mock.calls.at(-1)[0]
+      expect(latestConfig.queryKey).toEqual(['mood', 'leichte-kost', 'tv', 'date', '', 'lte', 1])
+    })
   })
 
   it('zeigt Loading und Fehlerzustand', () => {
@@ -278,7 +311,5 @@ describe('Mood Page', () => {
     })
   })
 })
-
-
 
 

@@ -135,21 +135,21 @@ src/
                   useDocumentTitle, useIsTouch
   utils/        – Helpers, Constants, Mood-Mappings (10 Stimmungen)
   test/         – Test-Setup (Vitest + Testing Library)
-e2e/            – Playwright Smoke Tests (14 Tests)
+e2e/            – Playwright Smoke Tests (15 Tests)
 public/         – PWA-Manifest, Icons, Social-Preview-Bilder
 .github/        – CI/CD Workflows (Lint, Test, Build, Deploy)
 ```
 
 ## 🧪 Testing
 
-**Unit Tests** (Vitest + Testing Library): Stand 12.03.2026 nach dem Qualitätssprint: 58 Test-Dateien mit 393 Tests (vor dem Sprint: 366 Tests).
+**Unit Tests** (Vitest + Testing Library): Stand 12.03.2026: 59 Test-Dateien mit 401 Tests (vor dem Qualitätssprint: 366 Tests).
 
 ```bash
 npm test                 # Tests einmalig ausführen
 npm run test:coverage    # Mit Coverage-Report
 ```
 
-**E2E Tests** (Playwright): Stand 12.03.2026: 14 Smoke/A11y-/Flow-Tests für Navigation, Suche, Discover und Watchlist.
+**E2E Tests** (Playwright): Stand 12.03.2026: 15 Smoke/A11y-/Flow-Tests fuer Navigation, Suche, Discover, Presets und Watchlist.
 
 ```bash
 npm run test:e2e         # Playwright Tests (startet Preview-Server automatisch)
@@ -171,6 +171,7 @@ Für das Deployment wird der `VITE_TMDB_ACCESS_TOKEN` als GitHub Secret benötig
 ## 📄 Lizenz & Attribution
 
 Dieses Projekt nutzt Daten von [The Movie Database (TMDB)](https://www.themoviedb.org/) und [JustWatch](https://www.justwatch.com/) (Streaming-Verfügbarkeit). TMDB und JustWatch sind nicht verantwortlich für die Inhalte dieser App.
+
 
 
 

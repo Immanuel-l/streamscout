@@ -268,4 +268,27 @@ test.describe('Functional Flows', () => {
     await page.getByRole('button', { name: 'Link teilen' }).click()
     await expect(page.getByText('Link kopiert! Du kannst ihn jetzt teilen.')).toBeVisible()
   })
+
+  test('Discover -> Preset speichern und laden', async ({ page }) => {
+    await page.goto('/#/discover')
+    await expect(page.getByRole('heading', { name: 'Entdecken' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Bewertung' }).click()
+    await page.getByRole('button', { name: 'Komödie' }).click()
+
+    await page.getByLabel('Preset-Name').fill('Komoedie Rating')
+    await page.getByRole('button', { name: 'Preset speichern' }).click()
+    await expect(page.getByRole('status')).toContainText('Preset gespeichert.')
+
+    await page.getByRole('button', { name: 'Filter zurücksetzen' }).click()
+    await expect(page.getByRole('button', { name: 'Komödie' })).toHaveAttribute('aria-pressed', 'false')
+
+    await page.getByLabel('Preset auswählen').selectOption({ label: 'Komoedie Rating' })
+    await page.getByRole('button', { name: 'Preset laden' }).click()
+
+    await expect(page.getByRole('button', { name: 'Komödie' })).toHaveAttribute('aria-pressed', 'true')
+    await expect(page).toHaveURL(/sort=rating/)
+    await expect(page).toHaveURL(/genres=35/)
+  })
 })
+

@@ -6,11 +6,13 @@ import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
 import { getMoodBySlug } from '../utils/moods'
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll'
+import { useFilterPresets } from '../hooks/useFilterPresets'
 import MediaCard from '../components/common/MediaCard'
 import GridSkeleton from '../components/common/GridSkeleton'
 import ErrorBox from '../components/common/ErrorBox'
 import ScrollToTop from '../components/common/ScrollToTop'
 import Select from '../components/common/Select'
+import FilterPresets from '../components/common/FilterPresets'
 import {
   FSK_VALUES,
   FSK_FILTER_MODE_OPTIONS,
@@ -30,6 +32,10 @@ const fskOptions = [
   ...FSK_VALUES.map((value) => ({ value, label: `FSK ${value}` })),
 ]
 
+function normalizeSortValue(value) {
+  return sortOptions.some((option) => option.value === value) ? value : 'popularity'
+}
+
 function Mood() {
   const { slug } = useParams()
   const mood = getMoodBySlug(slug)
@@ -40,6 +46,76 @@ function Mood() {
   const [fsk, setFsk] = useState(() => normalizeFskCertification(searchParams.get('fsk')) || '')
   const [fskMode, setFskMode] = useState(() => normalizeFskFilterMode(searchParams.get('fskMode')))
   const [startPage, setStartPage] = useState(1)
+
+  const presetStorageKey = `streamscout-mood-presets:${slug || 'unknown'}`
+  const { presets, savePreset, getPresetById, deletePreset } = useFilterPresets(presetStorageKey)
+  const [presetName, setPresetName] = useState('')
+  const [selectedPresetId, setSelectedPresetId] = useState('')
+  const [presetStatus, setPresetStatus] = useState('')
+  const activePresetId = presets.some((preset) => preset.id === selectedPresetId) ? selectedPresetId : ''
+
+
+  const currentPresetValues = useMemo(
+    () => ({
+      mediaType,
+      sortValue,
+      fsk,
+      fskMode,
+    }),
+    [mediaType, sortValue, fsk, fskMode]
+  )
+
+  function applyPresetValues(values) {
+    const nextMediaType = values?.mediaType === 'tv' ? 'tv' : 'movie'
+
+    setMediaType(nextMediaType)
+    setSortValue(normalizeSortValue(values?.sortValue))
+
+    if (nextMediaType === 'movie') {
+      setFsk(normalizeFskCertification(values?.fsk) || '')
+      setFskMode(normalizeFskFilterMode(values?.fskMode))
+      return
+    }
+
+    setFsk('')
+    setFskMode('lte')
+  }
+
+  function handleSavePreset() {
+    const result = savePreset(presetName, currentPresetValues)
+    if (!result.success) {
+      setPresetStatus(result.error)
+      return
+    }
+
+    setSelectedPresetId(result.id)
+    setPresetName('')
+    setPresetStatus(result.replaced ? 'Preset aktualisiert.' : 'Preset gespeichert.')
+  }
+
+  function handleLoadPreset() {
+    if (!activePresetId) return
+    const preset = getPresetById(activePresetId)
+    if (!preset) {
+      setPresetStatus('Preset nicht gefunden.')
+      return
+    }
+
+    applyPresetValues(preset.values)
+    setPresetStatus('Preset geladen.')
+  }
+
+  function handleDeletePreset() {
+    if (!activePresetId) return
+    const deleted = deletePreset(activePresetId)
+    if (!deleted) {
+      setPresetStatus('Preset nicht gefunden.')
+      return
+    }
+
+    setSelectedPresetId('')
+    setPresetStatus('Preset gelöscht.')
+  }
 
   // Sync state to URL params
   useEffect(() => {
@@ -142,83 +218,98 @@ function Mood() {
       </div>
 
       {/* Controls: Media Type Toggle + Sort + Shuffle */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
-          {[
-            { type: 'movie', label: 'Filme' },
-            { type: 'tv', label: 'Serien' },
-          ].map(({ type, label }) => (
-            <button
-              key={type}
-              onClick={() => switchMediaType(type)}
-              aria-pressed={mediaType === type}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                mediaType === type
-                  ? 'bg-accent-500 text-black'
-                  : 'text-surface-300 hover:text-surface-100'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
-          {sortOptions.map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => setSortValue(value)}
-              aria-pressed={sortValue === value}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                sortValue === value
-                  ? 'bg-accent-500 text-black'
-                  : 'text-surface-300 hover:text-surface-100'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {mediaType === 'movie' && (
-          <div className="space-y-2">
-            <Select
-              value={fsk}
-              onChange={setFsk}
-              options={fskOptions}
-              placeholder="FSK"
-            />
-
-            {fsk && (
-              <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
-                {FSK_FILTER_MODE_OPTIONS.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => setFskMode(value)}
-                    aria-pressed={fskMode === value}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                      fskMode === value
-                        ? 'bg-accent-500 text-black'
-                        : 'text-surface-300 hover:text-surface-100'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
+            {[
+              { type: 'movie', label: 'Filme' },
+              { type: 'tv', label: 'Serien' },
+            ].map(({ type, label }) => (
+              <button
+                key={type}
+                onClick={() => switchMediaType(type)}
+                aria-pressed={mediaType === type}
+                className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  mediaType === type
+                    ? 'bg-accent-500 text-black'
+                    : 'text-surface-300 hover:text-surface-100'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-        )}
 
-        <button
-          onClick={shuffle}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-800 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-colors text-sm font-medium"
-        >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
-          </svg>
-          Mischen
-        </button>
+          <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
+            {sortOptions.map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setSortValue(value)}
+                aria-pressed={sortValue === value}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  sortValue === value
+                    ? 'bg-accent-500 text-black'
+                    : 'text-surface-300 hover:text-surface-100'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {mediaType === 'movie' && (
+            <div className="space-y-2">
+              <Select
+                value={fsk}
+                onChange={setFsk}
+                options={fskOptions}
+                placeholder="FSK"
+              />
+
+              {fsk && (
+                <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
+                  {FSK_FILTER_MODE_OPTIONS.map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => setFskMode(value)}
+                      aria-pressed={fskMode === value}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                        fskMode === value
+                          ? 'bg-accent-500 text-black'
+                          : 'text-surface-300 hover:text-surface-100'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <button
+            onClick={shuffle}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-800 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-colors text-sm font-medium"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
+            </svg>
+            Mischen
+          </button>
+        </div>
+
+        <FilterPresets
+          presets={presets}
+          presetName={presetName}
+          selectedPresetId={activePresetId}
+          onPresetNameChange={setPresetName}
+          onSelectedPresetChange={setSelectedPresetId}
+          onSave={handleSavePreset}
+          onLoad={handleLoadPreset}
+          onDelete={handleDeletePreset}
+          statusMessage={presetStatus}
+          emptyMessage="Noch keine Presets fuer diese Stimmung gespeichert."
+        />
       </div>
 
       {/* Results */}

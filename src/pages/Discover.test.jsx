@@ -95,6 +95,7 @@ function renderDiscover(initialEntries) {
 describe('Discover Page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorage.clear()
   })
 
   it('zeigt die Überschrift "Entdecken"', () => {
@@ -190,6 +191,47 @@ describe('Discover Page', () => {
     expect(screen.getByText('Action')).toHaveAttribute('aria-pressed', 'false')
   })
 
+  it('speichert und laedt ein Filter-Preset', () => {
+    renderDiscover()
+
+    fireEvent.click(screen.getByText('Action'))
+    fireEvent.click(screen.getByText('Bewertung'))
+
+    fireEvent.change(screen.getByLabelText('Preset-Name'), { target: { value: 'Action-Rating' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Preset speichern' }))
+
+    expect(screen.getByRole('status')).toHaveTextContent('Preset gespeichert.')
+
+    fireEvent.click(screen.getByText('Filter zurücksetzen'))
+    expect(screen.getByText('Action')).toHaveAttribute('aria-pressed', 'false')
+
+    const savedOption = screen.getByRole('option', { name: 'Action-Rating' })
+    fireEvent.change(screen.getByLabelText('Preset auswählen'), {
+      target: { value: savedOption.getAttribute('value') },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Preset laden' }))
+
+    expect(screen.getByText('Action')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Bewertung')).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('loescht ein gespeichertes Preset', () => {
+    renderDiscover()
+
+    fireEvent.change(screen.getByLabelText('Preset-Name'), { target: { value: 'Temp' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Preset speichern' }))
+
+    const savedOption = screen.getByRole('option', { name: 'Temp' })
+    fireEvent.change(screen.getByLabelText('Preset auswählen'), {
+      target: { value: savedOption.getAttribute('value') },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Preset löschen' }))
+
+    expect(screen.getByRole('status')).toHaveTextContent('Preset gelöscht.')
+    expect(screen.queryByRole('option', { name: 'Temp' })).not.toBeInTheDocument()
+  })
+
   it('initialisiert Medientyp aus URL-Parametern', () => {
     renderDiscover(['/discover?type=tv'])
     expect(screen.getByText('Serien')).toHaveAttribute('aria-pressed', 'true')
@@ -200,3 +242,4 @@ describe('Discover Page', () => {
     expect(screen.getByText('Bewertung')).toHaveAttribute('aria-pressed', 'true')
   })
 })
+

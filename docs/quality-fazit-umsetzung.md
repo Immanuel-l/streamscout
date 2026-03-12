@@ -62,9 +62,10 @@ Dieses Dokument haelt das Projekt-Fazit, den Verbesserungs-Backlog und den laufe
 - `2026-03-12` Qualitaetssprint umgesetzt: Testausbau fuer `SearchBar` (Keyboard/History/Navigation), `Layout` (globaler `/`-Shortcut inkl. Guard-Faelle) und `Kino` (FSK-Filtermodi, Teilfehler, URL-Sync, Schnellwechsel).
 - `2026-03-12` CI-Qualitaetslauf verschaerft: `check:ci` nutzt nun `lint + test:coverage + build + audit + e2e` (lokales `check` bleibt unveraendert).
 - `2026-03-12` Coverage-Gate eingefuehrt: Vitest-Schwellen auf `Statements 84`, `Branches 78`, `Functions 83`, `Lines 85` gesetzt.
-- `2026-03-12` Verifizierung nach Umsetzung: erweiterte Hotspot-Tests gruen (`34/34`); voller `check:ci`-Lauf gruen (`58` Testdateien / `393` Tests, Coverage 90.57/84.92/87.27/92.49, Audit ohne Findings, E2E `14/14`).
+- `2026-03-12` Verifizierung nach Umsetzung: erweiterte Hotspot-Tests gruen (`35/35`); voller `check:ci`-Lauf gruen (`59` Testdateien / `401` Tests, Coverage 89.87/83.97/87.80/91.77, Audit ohne Findings, E2E `15/15`).
 ## Naechste Schritte
 1. Coverage-Gate in spaeteren Sprints schrittweise anheben (zuerst Branches, dann Statements/Lines).
 2. Test-Metriken in der Doku als datumsgestuetzte Baseline plus Command-Quelle (`npm test`, `npm run test:e2e`) weiterfuehren, um Drift zu vermeiden.
+
 
 
