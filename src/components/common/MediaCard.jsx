@@ -22,6 +22,7 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
 
   useEffect(() => {
     if (isNearViewport || !cardRef.current) return
+    if (typeof IntersectionObserver === 'undefined') return
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -226,4 +227,6 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
 }
 
 export default memo(MediaCard)
+
+
 
