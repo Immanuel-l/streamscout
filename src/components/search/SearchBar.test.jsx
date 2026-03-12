@@ -1,7 +1,18 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import SearchBar from './SearchBar'
+
+const suggestionsFixture = [
+  { id: 1, media_type: 'movie', title: 'Matrix', release_date: '1999-03-31', poster_path: null },
+  { id: 2, media_type: 'tv', name: 'Dark', first_air_date: '2017-12-01', poster_path: null },
+  { id: 3, media_type: 'person', name: 'Keanu Reeves', profile_path: null },
+]
+
+function LocationDisplay() {
+  const location = useLocation()
+  return <p data-testid="location">{location.pathname}</p>
+}
 
 function renderSearchBar(props = {}) {
   const defaultProps = {
@@ -12,8 +23,18 @@ function renderSearchBar(props = {}) {
     ...props,
   }
   return render(
-    <MemoryRouter>
-      <SearchBar {...defaultProps} />
+    <MemoryRouter initialEntries={['/search']}>
+      <Routes>
+        <Route
+          path="*"
+          element={(
+            <>
+              <SearchBar {...defaultProps} />
+              <LocationDisplay />
+            </>
+          )}
+        />
+      </Routes>
     </MemoryRouter>
   )
 }
@@ -37,7 +58,7 @@ describe('SearchBar', () => {
     expect(onChange).toHaveBeenCalledWith('Test')
   })
 
-  it('leert das Feld und öffnet History beim Clear-Button', () => {
+  it('leert das Feld und offnet History beim Clear-Button', () => {
     const onChange = vi.fn()
     renderSearchBar({ value: 'test', onChange, history: ['Matrix'] })
 
@@ -53,14 +74,6 @@ describe('SearchBar', () => {
   it('zeigt keinen Leeren-Button wenn das Feld leer ist', () => {
     renderSearchBar({ value: '' })
     expect(screen.queryByLabelText('Suche leeren')).not.toBeInTheDocument()
-  })
-
-  it('leert das Suchfeld beim Klick auf den Leeren-Button', () => {
-    const onChange = vi.fn()
-    renderSearchBar({ value: 'test', onChange })
-
-    fireEvent.click(screen.getByLabelText('Suche leeren'))
-    expect(onChange).toHaveBeenCalledWith('')
   })
 
   it('hat role="combobox" mit aria-Attributen', () => {
@@ -110,5 +123,77 @@ describe('SearchBar', () => {
     fireEvent.click(screen.getByLabelText('"Test" aus Verlauf entfernen'))
 
     expect(onHistoryRemove).toHaveBeenCalledWith('Test')
+  })
+
+  it('navigiert bei Enter durch Suggestions-Keyboard-Navigation', () => {
+    renderSearchBar({ suggestions: suggestionsFixture })
+    const input = screen.getByRole('combobox')
+
+    fireEvent.keyDown(input, { key: 'ArrowDown' })
+    let options = screen.getAllByRole('option')
+    expect(options[0]).toHaveAttribute('aria-selected', 'true')
+
+    fireEvent.keyDown(input, { key: 'ArrowDown' })
+    options = screen.getAllByRole('option')
+    expect(options[1]).toHaveAttribute('aria-selected', 'true')
+
+    fireEvent.keyDown(input, { key: 'ArrowUp' })
+    options = screen.getAllByRole('option')
+    expect(options[0]).toHaveAttribute('aria-selected', 'true')
+
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(screen.getByTestId('location')).toHaveTextContent('/movie/1')
+  })
+
+  it('schliesst Suggestion-Dropdown per Escape', () => {
+    renderSearchBar({ suggestions: suggestionsFixture })
+    const input = screen.getByRole('combobox')
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+
+    fireEvent.keyDown(input, { key: 'Escape' })
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+  })
+
+  it.each([
+    ['Movie', suggestionsFixture[0], '/movie/1'],
+    ['TV', suggestionsFixture[1], '/tv/2'],
+    ['Person', suggestionsFixture[2], '/person/3'],
+  ])('navigiert per Klick zur %s-Detailseite', (_label, suggestion, expectedPath) => {
+    renderSearchBar({ suggestions: [suggestion] })
+    fireEvent.click(screen.getByText(suggestion.title || suggestion.name))
+    expect(screen.getByTestId('location')).toHaveTextContent(expectedPath)
+  })
+
+  it('navigiert Suchverlauf per Keyboard und schliesst mit Escape', () => {
+    const onHistorySelect = vi.fn()
+    renderSearchBar({
+      value: '',
+      history: ['Matrix', 'Inception'],
+      onHistorySelect,
+    })
+
+    const input = screen.getByRole('combobox')
+    fireEvent.focus(input)
+    fireEvent.keyDown(input, { key: 'ArrowDown' })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(onHistorySelect).toHaveBeenCalledWith('Matrix')
+
+    fireEvent.focus(input)
+    fireEvent.keyDown(input, { key: 'Escape' })
+    expect(screen.queryByText('Zuletzt gesucht')).not.toBeInTheDocument()
+  })
+
+  it('schliesst offene Dropdowns bei Klick ausserhalb', () => {
+    renderSearchBar({
+      value: '',
+      history: ['Matrix'],
+    })
+
+    const input = screen.getByRole('combobox')
+    fireEvent.focus(input)
+    expect(screen.getByText('Zuletzt gesucht')).toBeInTheDocument()
+
+    fireEvent.mouseDown(document.body)
+    expect(screen.queryByText('Zuletzt gesucht')).not.toBeInTheDocument()
   })
 })

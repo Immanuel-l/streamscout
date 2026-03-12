@@ -1,6 +1,6 @@
 # StreamScout Quality Fazit und Umsetzungsplan
 
-Stand: 2026-03-11
+Stand: 2026-03-12
 
 ## Ziel
 Dieses Dokument haelt das Projekt-Fazit, den Verbesserungs-Backlog und den laufenden Umsetzungsfortschritt fest, damit wir bei spaeteren Sessions nahtlos weitermachen koennen.
@@ -59,13 +59,11 @@ Dieses Dokument haelt das Projekt-Fazit, den Verbesserungs-Backlog und den laufe
 - 2026-03-11 Coverage-Ausbau Runde 11: PersonCard-Tests um fehlende Branches erweitert und Coverage-Scope in vite.config.js auf den voll abgesicherten Qualitaetskern fokussiert (api/common, ErrorBox, Detail-Komponenten, PersonCard, utils/*).
 - 2026-03-11 Coverage-Re-Run (Runde 11): 261 Tests gruen, Coverage im fokussierten Scope bei 100.00% (Statements, Branches, Functions, Lines).
 
+- `2026-03-12` Qualitaetssprint umgesetzt: Testausbau fuer `SearchBar` (Keyboard/History/Navigation), `Layout` (globaler `/`-Shortcut inkl. Guard-Faelle) und `Kino` (FSK-Filtermodi, Teilfehler, URL-Sync, Schnellwechsel).
+- `2026-03-12` CI-Qualitaetslauf verschaerft: `check:ci` nutzt nun `lint + test:coverage + build + audit + e2e` (lokales `check` bleibt unveraendert).
+- `2026-03-12` Coverage-Gate eingefuehrt: Vitest-Schwellen auf `Statements 84`, `Branches 78`, `Functions 83`, `Lines 85` gesetzt.
+- `2026-03-12` Verifizierung nach Umsetzung: erweiterte Hotspot-Tests gruen (`34/34`); voller `check:ci`-Lauf gruen (`57` Testdateien / `380` Tests, Coverage 88.92/83.47/86.32/90.72, Audit ohne Findings, E2E `14/14`).
 ## Naechste Schritte
-1. Fuer 100% auf Gesamtprojekt-Ebene Coverage-Scope wieder auf src/**/*.{js,jsx} erweitern und Restbereiche abdecken (z. B. components/home/WatchlistRecommendations, components/layout/*, components/common/ProviderFilter, components/common/ScrollToTop, App.jsx, api/movies.js, api/tv.js, api/tmdb.js).
-
-
-
-
-
-
-
+1. Coverage-Gate in spaeteren Sprints schrittweise anheben (zuerst Branches, dann Statements/Lines).
+2. Test-Metriken in der Doku als datumsgestuetzte Baseline plus Command-Quelle (`npm test`, `npm run test:e2e`) weiterfuehren, um Drift zu vermeiden.
 

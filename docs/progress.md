@@ -82,13 +82,13 @@
 - Home: WatchlistRecommendations
 
 ### Testing
-- 57 Unit-Test-Dateien mit 361 Tests (Vitest + Testing Library)
+- Stand 12.03.2026 nach dem Qualitaetssprint: 57 Unit-Test-Dateien mit 380 Tests (vor dem Sprint: 366 Tests)
 - 14 E2E Smoke/A11y/Flow-Tests (Playwright)
 - Coverage-Reports (v8, HTML-Output)
 
 ### Infrastruktur
 - CI/CD: GitHub Actions (Lint → Test → Build → Deploy auf GitHub Pages)
-- Git Hooks: Husky (Pre-commit: Lint, Pre-push: `npm run check:ci`)
+- Git Hooks: Husky (Pre-commit: Lint, Pre-push: `npm run check:ci` mit Coverage-Gate)
 - PWA: Manifest, Icons (192px, 512px maskable), Social-Preview-Bilder
 - Accessibility: Skip-to-Content, ARIA-Labels, Keyboard-Shortcuts ("/", Escape)
 - Code Splitting: Lazy-Loading aller Seiten
@@ -97,3 +97,5 @@
 ## Offen
 
 - Keine offenen Aufgaben
+
+

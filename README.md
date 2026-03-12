@@ -113,7 +113,7 @@ Die App läuft dann unter [http://localhost:5173](http://localhost:5173).
 | `npm run test:coverage`| Unit Tests mit Coverage-Report (HTML)         |
 | `npm run test:e2e`     | E2E Smoke Tests ausführen (Playwright)        |
 | `npm run check`        | Lint + Tests + Build (schneller lokaler Check) |
-| `npm run check:ci`     | Node-Version + Lint + Tests + Build + Audit + E2E |
+| `npm run check:ci`     | Node-Version + Lint + Coverage + Build + Audit + E2E |
 | `npm audit`            | Dependency Security Check                     |
 
 ## 📁 Projektstruktur
@@ -142,14 +142,14 @@ public/         – PWA-Manifest, Icons, Social-Preview-Bilder
 
 ## 🧪 Testing
 
-**Unit Tests** (Vitest + Testing Library): Aktuell 57 Test-Dateien mit 361 Tests für Hooks, Komponenten und Seiten.
+**Unit Tests** (Vitest + Testing Library): Stand 12.03.2026 nach dem Qualitätssprint: 57 Test-Dateien mit 380 Tests (vor dem Sprint: 366 Tests).
 
 ```bash
 npm test                 # Tests einmalig ausführen
 npm run test:coverage    # Mit Coverage-Report
 ```
 
-**E2E Tests** (Playwright): Aktuell 14 Smoke/A11y-/Flow-Tests für Navigation, Suche, Discover und Watchlist.
+**E2E Tests** (Playwright): Stand 12.03.2026: 14 Smoke/A11y-/Flow-Tests für Navigation, Suche, Discover und Watchlist.
 
 ```bash
 npm run test:e2e         # Playwright Tests (startet Preview-Server automatisch)
@@ -157,7 +157,7 @@ npm run test:e2e         # Playwright Tests (startet Preview-Server automatisch)
 
 ## 🔒 Code-Qualität
 
-- **Husky Git Hooks**: Pre-commit (Lint), Pre-push (`npm run check:ci` mit Node-Version, Lint, Unit, Build, Audit, E2E)
+- **Husky Git Hooks**: Pre-commit (Lint), Pre-push (`npm run check:ci` mit Node-Version, Lint, Coverage-Gate, Build, Audit, E2E)
 - **ESLint 9**: React Hooks und React Refresh Plugins
 - **CI Pipeline**: Automatische Prüfung bei jedem Push und PR auf `master`
 - `npm run check:ci` für denselben Gate-Flow wie in GitHub Actions
@@ -171,5 +171,7 @@ Für das Deployment wird der `VITE_TMDB_ACCESS_TOKEN` als GitHub Secret benötig
 ## 📄 Lizenz & Attribution
 
 Dieses Projekt nutzt Daten von [The Movie Database (TMDB)](https://www.themoviedb.org/) und [JustWatch](https://www.justwatch.com/) (Streaming-Verfügbarkeit). TMDB und JustWatch sind nicht verantwortlich für die Inhalte dieser App.
+
+
 
 
