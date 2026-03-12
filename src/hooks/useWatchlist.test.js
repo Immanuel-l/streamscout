@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useWatchlist } from './useWatchlist'
+import { useWatchlist, SHARE_ITEM_LIMIT } from './useWatchlist'
 import * as moviesApi from '../api/movies'
 import * as tvApi from '../api/tv'
 
@@ -177,6 +177,30 @@ describe('useWatchlist', () => {
     expect(decodedShare).toContain('t1')
   })
 
+  it('begrenzt den Share-Link auf 100 Einträge', () => {
+    const { result } = renderHook(() => useWatchlist())
+
+    act(() => {
+      for (let i = 1; i <= SHARE_ITEM_LIMIT + 1; i += 1) {
+        result.current.add({
+          id: i,
+          media_type: 'movie',
+          title: `Film ${i}`,
+          poster_path: `/f-${i}.jpg`,
+        })
+      }
+    })
+
+    const link = result.current.generateShareLink()
+    const encodedShare = link.split('share=')[1]
+    const decodedShare = decodeURIComponent(encodedShare)
+    const tokens = decodedShare.split(',').filter(Boolean)
+
+    expect(tokens).toHaveLength(SHARE_ITEM_LIMIT)
+    expect(tokens).toContain(`m${SHARE_ITEM_LIMIT + 1}`)
+    expect(tokens).not.toContain('m1')
+  })
+
   it('fetchSharedList liefert false bei leerem Share-String', async () => {
     const { result } = renderHook(() => useWatchlist())
     const response = await result.current.fetchSharedList('')
@@ -298,3 +322,4 @@ describe('useWatchlist', () => {
     expect(response.items[0].id).toBe(2)
   })
 })
+

@@ -61,6 +61,7 @@ vi.mock('../api/tmdb', () => ({
 
 // Import the mock to change return values in individual tests
 import { useWatchlist } from '../hooks/useWatchlist'
+import { useWatchlistProviders } from '../hooks/useWatchlistProviders'
 
 const sampleItems = [
   { id: 1, media_type: 'movie', title: 'Testfilm', poster_path: '/p1.jpg', vote_average: 8.0, release_date: '2024-01-01' },
@@ -85,6 +86,11 @@ describe('Watchlist Page', () => {
       mergeItems: mockMergeItems,
       generateShareLink: mockGenerateShareLink,
       fetchSharedList: mockFetchSharedList,
+    })
+    useWatchlistProviders.mockReturnValue({
+      isLoading: false,
+      providerMap: {},
+      availableProviders: [],
     })
   })
 
@@ -144,6 +150,27 @@ describe('Watchlist Page', () => {
     expect(screen.getAllByTestId('media-card')).toHaveLength(1)
   })
 
+  it('zeigt im All-Tab bei Anbieterfilter einen neutralen Empty-Text', () => {
+    useWatchlist.mockReturnValue({
+      items: sampleItems,
+      remove: mockRemove,
+      mergeItems: mockMergeItems,
+      generateShareLink: mockGenerateShareLink,
+      fetchSharedList: mockFetchSharedList,
+    })
+    useWatchlistProviders.mockReturnValue({
+      isLoading: false,
+      providerMap: {},
+      availableProviders: [{ provider_id: 8, provider_name: 'Netflix', logo_path: '/n.png' }],
+    })
+
+    renderWatchlist()
+    fireEvent.click(screen.getByTitle('Netflix'))
+
+    expect(screen.getByText('Keine Einträge für den ausgewählten Anbieter.')).toBeInTheDocument()
+    expect(screen.queryByText(/Keine Serien auf der Merkliste/)).not.toBeInTheDocument()
+  })
+
   it('zeigt Sortier-Optionen', () => {
     useWatchlist.mockReturnValue({
       items: sampleItems,
@@ -168,6 +195,41 @@ describe('Watchlist Page', () => {
     })
     renderWatchlist()
     expect(screen.getByText('Link teilen')).toBeInTheDocument()
+  })
+
+  it('zeigt beim Teilen einen Hinweis wenn mehr als 100 Einträge vorhanden sind', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+
+    const manyItems = Array.from({ length: 101 }, (_, i) => ({
+      id: i + 1,
+      media_type: 'movie',
+      title: `Film ${i + 1}`,
+      poster_path: '/p.jpg',
+    }))
+
+    useWatchlist.mockReturnValue({
+      items: manyItems,
+      remove: mockRemove,
+      mergeItems: mockMergeItems,
+      generateShareLink: mockGenerateShareLink,
+      fetchSharedList: mockFetchSharedList,
+    })
+
+    renderWatchlist()
+    fireEvent.click(screen.getByText('Link teilen'))
+
+    await waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith('Link kopiert! Du kannst ihn jetzt teilen.', 'success')
+    })
+
+    expect(mockToast).toHaveBeenCalledWith(
+      'Hinweis: Im Link wurden nur die ersten 100 Einträge berücksichtigt.',
+      'warning'
+    )
   })
 
   it('zeigt Empfehlungen bei gefüllter Liste', () => {

@@ -128,6 +128,9 @@ function Watchlist() {
     const link = generateShareLink()
     navigator.clipboard.writeText(link).then(() => {
       toast('Link kopiert! Du kannst ihn jetzt teilen.', 'success')
+      if (items.length > SHARE_ITEM_LIMIT) {
+        toast(`Hinweis: Im Link wurden nur die ersten ${SHARE_ITEM_LIMIT} Einträge berücksichtigt.`, 'warning')
+      }
     }).catch(() => {
       toast('Fehler beim Kopieren des Links', 'error')
     })
@@ -204,6 +207,14 @@ function Watchlist() {
     if (!selectedProvider) return true
     return providerMap[`tv-${m.id}`]?.has(selectedProvider)
   }).length
+
+  const emptyFilteredMessage = selectedProvider
+    ? 'Keine Einträge für den ausgewählten Anbieter.'
+    : activeTab === 'movie'
+      ? 'Keine Filme auf der Merkliste.'
+      : activeTab === 'tv'
+        ? 'Keine Serien auf der Merkliste.'
+        : 'Keine Einträge auf der Merkliste.'
 
   return (
     <div className="space-y-8">
@@ -394,9 +405,7 @@ function Watchlist() {
         </div>
       ) : displayedItems.length > 0 ? (
         <div className="text-center py-20">
-          <p className="text-surface-200 text-lg">
-            Keine {activeTab === 'movie' ? 'Filme' : 'Serien'} auf der Merkliste.
-          </p>
+          <p className="text-surface-200 text-lg">{emptyFilteredMessage}</p>
         </div>
       ) : (
         <div className="text-center py-20">

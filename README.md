@@ -77,12 +77,12 @@ cd streamscout
 npm install
 ```
 
-### 3. TMDB API Keys besorgen
+### 3. TMDB API-Zugang (Read Access Token) besorgen
 
 1. Erstelle einen kostenlosen Account auf [themoviedb.org](https://www.themoviedb.org/signup)
 2. Gehe zu den [API-Einstellungen](https://www.themoviedb.org/settings/api)
-3. Beantrage einen API-Key (unter „API" im Menü)
-4. Kopiere den **API Read Access Token** und den **API Key**
+3. Erzeuge den **API Read Access Token** (v4)
+4. Kopiere den **API Read Access Token**
 
 ### 4. Umgebungsvariablen anlegen
 
@@ -90,7 +90,6 @@ Erstelle eine `.env` Datei im Projektverzeichnis:
 
 ```bash
 VITE_TMDB_ACCESS_TOKEN=dein_api_read_access_token_hier
-VITE_TMDB_API_KEY=dein_api_key_hier
 ```
 
 ### 5. Entwicklungsserver starten
@@ -172,4 +171,5 @@ Für das Deployment wird der `VITE_TMDB_ACCESS_TOKEN` als GitHub Secret benötig
 ## 📄 Lizenz & Attribution
 
 Dieses Projekt nutzt Daten von [The Movie Database (TMDB)](https://www.themoviedb.org/) und [JustWatch](https://www.justwatch.com/) (Streaming-Verfügbarkeit). TMDB und JustWatch sind nicht verantwortlich für die Inhalte dieser App.
+
 

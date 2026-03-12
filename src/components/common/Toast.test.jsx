@@ -49,4 +49,31 @@ describe('ToastProvider', () => {
     })
     expect(screen.getByText('Fehler!')).toBeInTheDocument()
   })
+
+  it('zeigt Success-Icon bei type=success', () => {
+    render(
+      <ToastProvider>
+        <TestTrigger message="Gespeichert" type="success" />
+      </ToastProvider>
+    )
+    act(() => {
+      screen.getByText('Trigger').click()
+    })
+    const alert = screen.getByRole('alert')
+    expect(alert.querySelector('svg.text-emerald-400')).not.toBeNull()
+  })
+
+  it('zeigt Warning-Icon bei type=warning', () => {
+    render(
+      <ToastProvider>
+        <TestTrigger message="Hinweis" type="warning" />
+      </ToastProvider>
+    )
+    act(() => {
+      screen.getByText('Trigger').click()
+    })
+    const alert = screen.getByRole('alert')
+    expect(alert.querySelector('svg.text-amber-300')).not.toBeNull()
+  })
 })
+
