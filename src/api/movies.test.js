@@ -42,12 +42,12 @@ describe('api/movies', () => {
     expect(result).toEqual({ flatrate: [{ provider_id: 8 }] })
   })
 
-  it('getMovieProviders liefert undefined wenn kein DE-Eintrag vorhanden', async () => {
+  it('getMovieProviders liefert null wenn kein DE-Eintrag vorhanden', async () => {
     tmdb.get.mockResolvedValue({ data: { results: {} } })
 
     const result = await getMovieProviders(7)
 
-    expect(result).toBeUndefined()
+    expect(result).toBeNull()
   })
 
   it('getMovieSimilar nutzt default page=1 und optionale Page', async () => {

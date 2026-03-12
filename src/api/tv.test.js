@@ -43,12 +43,12 @@ describe('api/tv', () => {
     expect(result).toEqual({ flatrate: [{ provider_id: 337 }] })
   })
 
-  it('getTvProviders liefert undefined wenn kein DE-Eintrag vorhanden', async () => {
+  it('getTvProviders liefert null wenn kein DE-Eintrag vorhanden', async () => {
     tmdb.get.mockResolvedValue({ data: { results: {} } })
 
     const result = await getTvProviders(5)
 
-    expect(result).toBeUndefined()
+    expect(result).toBeNull()
   })
 
   it('getTvContentRatings liefert results-Array zurueck', async () => {
@@ -99,12 +99,12 @@ describe('api/tv', () => {
     expect(result).toEqual({ flatrate: [{ provider_id: 9 }] })
   })
 
-  it('getTvSeasonProviders liefert undefined wenn kein DE-Eintrag vorhanden', async () => {
+  it('getTvSeasonProviders liefert null wenn kein DE-Eintrag vorhanden', async () => {
     tmdb.get.mockResolvedValue({ data: { results: {} } })
 
     const result = await getTvSeasonProviders(15, 1)
 
-    expect(result).toBeUndefined()
+    expect(result).toBeNull()
   })
 
   it('discoverTv sendet Standard-Parameter und merged benutzerdefinierte', async () => {
@@ -145,4 +145,3 @@ describe('api/tv', () => {
     expect(tmdb.get).toHaveBeenNthCalledWith(2, '/trending/tv/day')
   })
 })
-

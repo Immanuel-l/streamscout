@@ -5,7 +5,7 @@ export const getMovieDetails = (id) =>
   tmdb.get(`/movie/${id}`, { params: { append_to_response: 'keywords,release_dates,credits,videos', include_video_language: 'de,en,null' } }).then((res) => res.data)
 
 export const getMovieProviders = (id) =>
-  tmdb.get(`/movie/${id}/watch/providers`).then((res) => res.data.results?.DE)
+  tmdb.get(`/movie/${id}/watch/providers`).then((res) => res.data.results?.DE ?? null)
 
 export const getMovieSimilar = (id, page = 1) =>
   tmdb.get(`/movie/${id}/similar`, { params: { page } }).then((res) => res.data)
