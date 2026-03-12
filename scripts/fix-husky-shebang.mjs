@@ -78,7 +78,7 @@ if (npmMatch) {
   const npmCliPath = resolveNpmCliPath()
 
   if (npmCliPath) {
-    result = spawnSync(process.execPath, [npmCliPath, 'run', npmMatch[1], ...args], {
+    result = spawnSync(process.execPath, [npmCliPath, 'run', npmMatch[1]], {
       stdio: 'inherit',
       env,
     })
@@ -91,7 +91,8 @@ if (!result) {
     return '"' + value.replace(/"/g, '\\"') + '"'
   }
 
-  const commandWithArgs = args.length > 0
+  const shouldForwardArgs = !npmMatch && args.length > 0
+  const commandWithArgs = shouldForwardArgs
     ? command + ' ' + args.map(quote).join(' ')
     : command
 
@@ -130,3 +131,5 @@ for (const hookName of hookNames) {
 if (changedFiles > 0) {
   console.log(`Husky-Hook-Fix angewendet (${changedFiles} Dateien).`)
 }
+
+
