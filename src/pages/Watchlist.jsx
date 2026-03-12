@@ -100,8 +100,20 @@ function Watchlist() {
           setSharedItems(res.items)
           // Pre-select all items by default
           setSelectedItems(new Set(res.items.map((m) => `${m.media_type}-${m.id}`)))
+
+          const warnings = []
           if (res.failedCount > 0) {
-            toast(`${res.items.length} von ${res.items.length + res.failedCount} Einträgen geladen. Einige konnten nicht abgerufen werden.`, 'warning')
+            warnings.push(`${res.items.length} von ${res.items.length + res.failedCount} Einträgen geladen. Einige konnten nicht abgerufen werden.`)
+          }
+          if (res.invalidCount > 0) {
+            warnings.push(`${res.invalidCount} Link-Einträge waren ungültig und wurden übersprungen.`)
+          }
+          if (res.truncatedCount > 0) {
+            warnings.push(`${res.truncatedCount} Einträge wurden wegen des Limits von 100 nicht importiert.`)
+          }
+
+          if (warnings.length > 0) {
+            toast(warnings.join(' '), 'warning')
           }
         } else {
           toast(res.error || 'Fehler beim Laden der geteilten Liste', 'error')
@@ -421,6 +433,7 @@ function Watchlist() {
 }
 
 export default Watchlist
+
 
 
 

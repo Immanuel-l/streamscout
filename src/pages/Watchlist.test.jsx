@@ -212,5 +212,27 @@ describe('Watchlist Page', () => {
     expect(screen.getByText('Geteilte Merkliste')).toBeInTheDocument()
     await waitFor(() => expect(mockFetchSharedList).toHaveBeenCalledWith('m1,t2'))
   })
-})
 
+  it('zeigt Warnungen für ungültige oder abgeschnittene Share-Einträge', async () => {
+    mockFetchSharedList.mockResolvedValueOnce({
+      success: true,
+      items: [{ id: 1, media_type: 'movie', title: 'Testfilm', poster_path: '/p.jpg' }],
+      failedCount: 1,
+      invalidCount: 2,
+      truncatedCount: 3,
+    })
+
+    renderWatchlist(['/watchlist?share=m1,m2'])
+
+    await waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith(
+        expect.stringContaining('Einige konnten nicht abgerufen werden.'),
+        'warning'
+      )
+    })
+
+    const warningMessage = mockToast.mock.calls[0][0]
+    expect(warningMessage).toContain('2 Link-Einträge waren ungültig')
+    expect(warningMessage).toContain('3 Einträge wurden wegen des Limits von 100 nicht importiert.')
+  })
+})

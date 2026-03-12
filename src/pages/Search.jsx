@@ -1,13 +1,14 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useInfiniteQuery, useQueries } from '@tanstack/react-query'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { searchMulti, searchMovies, searchTv, searchPerson } from '../api/common'
-import { getMovieProviders } from '../api/movies'
-import { getTvProviders } from '../api/tv'
 import { useDebounce } from '../hooks/useDebounce'
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll'
-import { ALLOWED_PROVIDER_SET } from '../utils/providers'
+import {
+  getProviderAvailabilityQueryOptions,
+  STREAMABLE_CHECK_STEP,
+} from '../utils/providerAvailability'
 import SearchBar from '../components/search/SearchBar'
 import MediaCard from '../components/common/MediaCard'
 import PersonCard from '../components/search/PersonCard'
@@ -41,6 +42,7 @@ function Search() {
   const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || 'relevance')
   const [onlyStreamable, setOnlyStreamable] = useState(() => searchParams.get('streamable') === 'true')
   const [searchHistory, setSearchHistory] = useState(getSearchHistory)
+  const [streamableCheckLimit, setStreamableCheckLimit] = useState(STREAMABLE_CHECK_STEP)
   const debouncedQuery = useDebounce(query, 300)
 
   const isPersonSearch = mediaType === 'person'
@@ -63,6 +65,13 @@ function Search() {
     if (onlyStreamable) params.streamable = 'true'
     setSearchParams(params, { replace: true })
   }, [debouncedQuery, mediaType, sortBy, onlyStreamable, setSearchParams])
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  // Start each new streamable check with an initial work window
+  useEffect(() => {
+    setStreamableCheckLimit(STREAMABLE_CHECK_STEP)
+  }, [debouncedQuery, mediaType, sortBy, onlyStreamable])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const {
     data,
@@ -106,12 +115,17 @@ function Search() {
       )
     }
     return data.pages.flatMap((page) => {
-      let results = mediaType === 'all'
+      const results = mediaType === 'all'
         ? page.results.filter((r) => r.media_type === 'movie' || r.media_type === 'tv')
         : page.results.map((r) => ({ ...r, media_type: mediaType }))
       return results.filter((r) => r.poster_path && r.overview)
     })
   }, [data, mediaType, isPersonSearch])
+
+  const providerCheckItems = useMemo(
+    () => (isPersonSearch ? [] : rawResults.slice(0, streamableCheckLimit)),
+    [isPersonSearch, rawResults, streamableCheckLimit]
+  )
 
   // Suggestions for autocomplete (first 5 from first page)
   const suggestions = useMemo(() => {
@@ -129,34 +143,26 @@ function Search() {
     return items.slice(0, 5)
   }, [data, mediaType, isPersonSearch])
 
-  // Fetch providers only when streamable filter is active (not for person search)
   const providerQueries = useQueries({
-    queries: (isPersonSearch ? [] : rawResults || []).map((media) => ({
-      queryKey: [media.media_type, media.id, 'providers'],
-      queryFn: () => media.media_type === 'tv' ? getTvProviders(media.id) : getMovieProviders(media.id),
-      staleTime: 24 * 60 * 60 * 1000,
-      enabled: onlyStreamable,
-    })),
+    queries: (onlyStreamable && !isPersonSearch ? providerCheckItems : []).map((media) =>
+      getProviderAvailabilityQueryOptions(media.media_type, media.id, true)
+    ),
   })
 
-  // Progressive provider loading — don't block the whole grid
-  const providersChecking = onlyStreamable && !isPersonSearch && rawResults.length > 0 && providerQueries.some((q) => q.isLoading)
-  const noProviderResolved = onlyStreamable && !isPersonSearch && rawResults.length > 0 && !providerQueries.some((q) => q.isSuccess || q.isError)
+  const providersChecking = onlyStreamable && !isPersonSearch && providerQueries.some((q) => q.isLoading)
+  const streamableUnknownCount = onlyStreamable && !isPersonSearch
+    ? providerQueries.filter((q) => q.data?.state === 'unknown').length
+    : 0
+  const streamableLimitReached = onlyStreamable && !isPersonSearch && rawResults.length > providerCheckItems.length
+  const noProviderResolved = onlyStreamable && !isPersonSearch && providerCheckItems.length > 0 && providerQueries.every((q) => q.isLoading)
 
   const results = useMemo(() => {
     if (!rawResults.length) return []
     if (isPersonSearch) return rawResults
 
-    let filtered = [...rawResults]
-
-    // Streamable filter (flatrate only)
-    if (onlyStreamable) {
-      filtered = filtered.filter((_, i) => {
-        const q = providerQueries[i]
-        if (!q?.isSuccess) return false
-        return q.data?.flatrate?.some((p) => ALLOWED_PROVIDER_SET.has(p.provider_id))
-      })
-    }
+    let filtered = onlyStreamable
+      ? providerCheckItems.filter((_, i) => providerQueries[i]?.data?.state === 'streamable')
+      : [...rawResults]
 
     // Sort
     if (sortBy === 'rating') {
@@ -167,9 +173,16 @@ function Search() {
     }
 
     return filtered
-  }, [rawResults, sortBy, onlyStreamable, providerQueries, isPersonSearch])
+  }, [rawResults, providerCheckItems, providerQueries, sortBy, onlyStreamable, isPersonSearch])
 
-  const sentinelRef = useInfiniteScroll({ fetchNextPage, hasNextPage, isFetchingNextPage })
+  const fetchNextWithProviderWindow = useCallback(() => {
+    if (onlyStreamable && !isPersonSearch) {
+      setStreamableCheckLimit((prev) => prev + STREAMABLE_CHECK_STEP)
+    }
+    return fetchNextPage()
+  }, [fetchNextPage, onlyStreamable, isPersonSearch])
+
+  const sentinelRef = useInfiniteScroll({ fetchNextPage: fetchNextWithProviderWindow, hasNextPage, isFetchingNextPage })
 
   // Search history handlers
   function handleHistorySelect(q) {
@@ -329,18 +342,31 @@ function Search() {
           {/* Error on page load — show retry */}
           {error && rawResults.length > 0 && !isFetchingNextPage && (
             <div className="py-8 max-w-md mx-auto">
-              <ErrorBox message="Fehler beim Laden weiterer Ergebnisse." onRetry={() => fetchNextPage()} />
+              <ErrorBox message="Fehler beim Laden weiterer Ergebnisse." onRetry={() => fetchNextWithProviderWindow()} />
             </div>
           )}
 
           {providersChecking && (
-            <p className="text-surface-200 text-sm text-center py-4 animate-pulse">Provider werden geprüft…</p>
+            <p className="text-surface-200 text-sm text-center py-4 animate-pulse">Streaming-Verfügbarkeit wird geprüft…</p>
+          )}
+
+
+          {streamableLimitReached && (
+            <p className="text-surface-300 text-xs text-center py-2">
+              Aktuell werden die ersten {providerCheckItems.length} Treffer auf Streambarkeit geprüft. Beim Weiter-Scrollen werden weitere geprüft.
+            </p>
           )}
 
           {!hasNextPage && results.length > 20 && (
             <p className="text-surface-200 text-sm text-center py-8">Keine weiteren Ergebnisse.</p>
           )}
         </>
+      )}
+
+      {streamableUnknownCount > 0 && (
+        <p className="text-amber-300 text-sm text-center py-2">
+          Bei {streamableUnknownCount} Treffern konnte die Streaming-Verfügbarkeit nicht geprüft werden.
+        </p>
       )}
 
       {noResults && (
@@ -379,4 +405,6 @@ function Search() {
 }
 
 export default Search
+
+
 

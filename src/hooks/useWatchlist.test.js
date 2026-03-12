@@ -180,16 +180,57 @@ describe('useWatchlist', () => {
   it('fetchSharedList liefert false bei leerem Share-String', async () => {
     const { result } = renderHook(() => useWatchlist())
     const response = await result.current.fetchSharedList('')
-    expect(response).toEqual({ success: false, items: [] })
+
+    expect(response).toEqual({
+      success: false,
+      items: [],
+      failedCount: 0,
+      invalidCount: 0,
+      truncatedCount: 0,
+    })
   })
 
-  it('fetchSharedList ueberspringt ungueltige Tokens', async () => {
+  it('fetchSharedList liefert Fehler bei nicht-string Input', async () => {
+    const { result } = renderHook(() => useWatchlist())
+    const response = await result.current.fetchSharedList({ kaputt: true })
+
+    expect(response.success).toBe(false)
+    expect(response.error).toBe('Ungültiger Teilen-Link')
+    expect(response.invalidCount).toBe(0)
+    expect(response.truncatedCount).toBe(0)
+  })
+
+  it('fetchSharedList zählt ungültige Tokens', async () => {
     const { result } = renderHook(() => useWatchlist())
     const response = await result.current.fetchSharedList('abc,t,mx,mNaN,')
 
-    expect(response).toEqual({ success: true, items: [] })
+    expect(response).toEqual({
+      success: true,
+      items: [],
+      failedCount: 0,
+      invalidCount: 4,
+      truncatedCount: 0,
+    })
     expect(moviesApi.getMovieDetails).not.toHaveBeenCalled()
     expect(tvApi.getTvDetails).not.toHaveBeenCalled()
+  })
+
+  it('fetchSharedList dedupliziert Tokens und begrenzt auf 100 Einträge', async () => {
+    moviesApi.getMovieDetails.mockImplementation(async (id) => ({
+      title: `Film ${id}`,
+      poster_path: `/m-${id}.jpg`,
+      vote_average: 6.5,
+      release_date: '2025-01-01',
+    }))
+
+    const uniquePart = Array.from({ length: 101 }, (_, i) => `m${i + 1}`).join(',')
+    const response = await renderHook(() => useWatchlist()).result.current.fetchSharedList(`${uniquePart},m1,m2`)
+
+    expect(response.success).toBe(true)
+    expect(response.items).toHaveLength(100)
+    expect(response.truncatedCount).toBe(1)
+    expect(response.invalidCount).toBe(0)
+    expect(moviesApi.getMovieDetails).toHaveBeenCalledTimes(100)
   })
 
   it('fetchSharedList hydriert Film- und Seriendaten', async () => {
@@ -211,6 +252,9 @@ describe('useWatchlist', () => {
 
     expect(response.success).toBe(true)
     expect(response.items).toHaveLength(2)
+    expect(response.failedCount).toBe(0)
+    expect(response.invalidCount).toBe(0)
+    expect(response.truncatedCount).toBe(0)
     expect(response.items[0]).toMatchObject({ id: 1, media_type: 'movie', title: 'Hydrierter Film' })
     expect(response.items[1]).toMatchObject({ id: 2, media_type: 'tv', title: 'Hydrierte Serie' })
     expect(moviesApi.getMovieDetails).toHaveBeenCalledWith(1)
@@ -231,6 +275,7 @@ describe('useWatchlist', () => {
 
     expect(response.success).toBe(true)
     expect(response.items).toHaveLength(11)
+    expect(response.failedCount).toBe(0)
     expect(moviesApi.getMovieDetails).toHaveBeenCalledTimes(11)
   })
 
@@ -249,14 +294,7 @@ describe('useWatchlist', () => {
 
     expect(response.success).toBe(true)
     expect(response.items).toHaveLength(1)
+    expect(response.failedCount).toBe(1)
     expect(response.items[0].id).toBe(2)
-  })
-
-  it('fetchSharedList liefert Fehlerobjekt bei unerwartetem Crash', async () => {
-    const { result } = renderHook(() => useWatchlist())
-    const response = await result.current.fetchSharedList({ kaputt: true })
-
-    expect(response.success).toBe(false)
-    expect(response.error).toBe('Abruf fehlgeschlagen')
   })
 })

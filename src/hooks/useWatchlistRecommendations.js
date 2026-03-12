@@ -1,11 +1,16 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useWatchlist } from './useWatchlist'
-import { getMovieRecommendations, getMovieProviders } from '../api/movies'
-import { getTvRecommendations, getTvProviders } from '../api/tv'
-import { ALLOWED_PROVIDER_SET } from '../utils/providers'
+import { getMovieRecommendations } from '../api/movies'
+import { getTvRecommendations } from '../api/tv'
+import { resolveProviderAvailability } from '../utils/providerAvailability'
+
+const RECOMMENDATIONS_PER_SOURCE = 12
+const MAX_CANDIDATES_PER_SOURCE = 40
+const PROVIDER_CHECK_CHUNK_SIZE = 5
 
 export function useWatchlistRecommendations(count = 2) {
   const { items } = useWatchlist()
+  const queryClient = useQueryClient()
 
   // Random selection + fetching happens inside queryFn (not during render)
   // Query key includes watchlist signature so recommendations refresh after list changes
@@ -19,42 +24,49 @@ export function useWatchlistRecommendations(count = 2) {
       const promises = selectedItems.map(async (item) => {
         try {
           const fetcher = item.media_type === 'tv' ? getTvRecommendations : getMovieRecommendations
-          const providerFetcher = item.media_type === 'tv' ? getTvProviders : getMovieProviders
           const res = await fetcher(item.id)
-          const allRecs = res.results?.filter(m => m.poster_path && m.overview) || []
+          const allRecs = (res.results || [])
+            .filter((media) => media.poster_path && media.overview)
+            .slice(0, MAX_CANDIDATES_PER_SOURCE)
 
           const streamableRecs = []
-          const chunkSize = 5
-          for (let i = 0; i < allRecs.length; i += chunkSize) {
-            if (streamableRecs.length >= 12) break
+          let unknownCount = 0
+          let checkedCount = 0
 
-            const chunk = allRecs.slice(i, i + chunkSize)
+          for (let i = 0; i < allRecs.length; i += PROVIDER_CHECK_CHUNK_SIZE) {
+            if (streamableRecs.length >= RECOMMENDATIONS_PER_SOURCE) break
+
+            const chunk = allRecs.slice(i, i + PROVIDER_CHECK_CHUNK_SIZE)
             const chunkResults = await Promise.all(
               chunk.map(async (rec) => {
-                try {
-                  const providers = await providerFetcher(rec.id)
-                  const isStreamable = providers?.flatrate?.some(p => ALLOWED_PROVIDER_SET.has(p.provider_id))
-                  return isStreamable ? { ...rec, media_type: item.media_type } : null
-                } catch {
+                const availability = await resolveProviderAvailability(queryClient, item.media_type, rec.id)
+                if (availability.state === 'unknown') {
+                  unknownCount += 1
+                  checkedCount += 1
                   return null
                 }
+
+                checkedCount += 1
+                return availability.isStreamable ? { ...rec, media_type: item.media_type } : null
               })
             )
+
             streamableRecs.push(...chunkResults.filter(Boolean))
           }
 
           return {
             sourceItem: item,
-            recommendations: streamableRecs.slice(0, 12)
+            recommendations: streamableRecs.slice(0, RECOMMENDATIONS_PER_SOURCE),
+            unknownCount,
+            checkedCount,
           }
-        } catch (error) {
-          console.error(`Failed to fetch recommendations for ${item.title || item.name}`, error)
+        } catch {
           return null
         }
       })
 
       const results = await Promise.all(promises)
-      return results.filter(r => r !== null && r.recommendations.length > 0)
+      return results.filter((entry) => entry !== null && entry.recommendations.length > 0)
     },
     enabled: items.length > 0,
     staleTime: 60 * 60 * 1000, // Cache for 1 hour
@@ -64,7 +76,6 @@ export function useWatchlistRecommendations(count = 2) {
     data: recommendationsQuery.data || [],
     isLoading: recommendationsQuery.isLoading,
     error: recommendationsQuery.error,
-    refresh: () => recommendationsQuery.refetch()
+    refresh: () => recommendationsQuery.refetch(),
   }
 }
-

@@ -4,6 +4,8 @@ import { getTvDetails } from '../api/tv'
 
 const STORAGE_KEY = 'streamscout_watchlist'
 const SYNC_EVENT = 'watchlist-sync'
+const SHARE_ITEM_LIMIT = 100
+const SHARE_TOKEN_PATTERN = /^([mt])(\d+)$/
 
 function readWatchlist() {
   try {
@@ -77,10 +79,10 @@ export function useWatchlist() {
 
   const mergeItems = useCallback((newItemsArray) => {
     if (!Array.isArray(newItemsArray) || newItemsArray.length === 0) return { success: true, count: 0 }
-    
+
     const current = readWatchlist()
-    const currentMap = new Set(current.map(m => `${m.media_type}-${m.id}`))
-    
+    const currentMap = new Set(current.map((m) => `${m.media_type}-${m.id}`))
+
     const added = []
     for (const item of newItemsArray) {
       if (!item.id || !item.media_type) continue
@@ -97,7 +99,7 @@ export function useWatchlist() {
         currentMap.add(key)
       }
     }
-    
+
     if (added.length > 0) {
       writeWatchlist([...added, ...current])
     }
@@ -113,32 +115,73 @@ export function useWatchlist() {
   }, [])
 
   const fetchSharedList = useCallback(async (shareString) => {
+    let invalidCount = 0
+    let truncatedCount = 0
+
     try {
-      if (!shareString) return { success: false, items: [] }
-      
-      const tokens = shareString.split(',').filter(Boolean)
-      const newEntries = []
-      
-      for (const token of tokens) {
-        const typeChar = token.charAt(0)
-        const id = parseInt(token.substring(1), 10)
-        if (isNaN(id) || !['m', 't'].includes(typeChar)) continue
-        
-        const media_type = typeChar === 't' ? 'tv' : 'movie'
-        newEntries.push({ id, media_type })
+      if (!shareString) {
+        return { success: false, items: [], failedCount: 0, invalidCount: 0, truncatedCount: 0 }
       }
 
-      if (newEntries.length === 0) return { success: true, items: [] }
+      if (typeof shareString !== 'string') {
+        return {
+          success: false,
+          items: [],
+          failedCount: 0,
+          invalidCount: 0,
+          truncatedCount: 0,
+          error: 'Ungültiger Teilen-Link',
+        }
+      }
+
+      const tokens = shareString
+        .split(',')
+        .map((token) => token.trim())
+        .filter(Boolean)
+
+      const deduped = new Set()
+      const newEntries = []
+
+      for (const token of tokens) {
+        const match = SHARE_TOKEN_PATTERN.exec(token)
+        if (!match) {
+          invalidCount += 1
+          continue
+        }
+
+        const [, typeChar, idRaw] = match
+        const dedupeKey = `${typeChar}${idRaw}`
+        if (deduped.has(dedupeKey)) continue
+
+        deduped.add(dedupeKey)
+        newEntries.push({
+          id: Number(idRaw),
+          media_type: typeChar === 't' ? 'tv' : 'movie',
+        })
+      }
+
+      const limitedEntries = newEntries.slice(0, SHARE_ITEM_LIMIT)
+      truncatedCount = Math.max(newEntries.length - limitedEntries.length, 0)
+
+      if (limitedEntries.length === 0) {
+        return {
+          success: true,
+          items: [],
+          failedCount: 0,
+          invalidCount,
+          truncatedCount,
+        }
+      }
 
       // Fetch metadata in chunks of 10 to avoid TMDB rate limits
       const hydrated = []
       const chunkSize = 10
-      for (let i = 0; i < newEntries.length; i += chunkSize) {
-        const chunk = newEntries.slice(i, i + chunkSize)
+      for (let i = 0; i < limitedEntries.length; i += chunkSize) {
+        const chunk = limitedEntries.slice(i, i + chunkSize)
         const promises = chunk.map(async (entry) => {
           try {
-            const data = entry.media_type === 'tv' 
-              ? await getTvDetails(entry.id) 
+            const data = entry.media_type === 'tv'
+              ? await getTvDetails(entry.id)
               : await getMovieDetails(entry.id)
             return {
               id: entry.id,
@@ -157,22 +200,34 @@ export function useWatchlist() {
         hydrated.push(...results.filter(Boolean))
       }
 
-      return { success: true, items: hydrated, failedCount: newEntries.length - hydrated.length }
+      return {
+        success: true,
+        items: hydrated,
+        failedCount: limitedEntries.length - hydrated.length,
+        invalidCount,
+        truncatedCount,
+      }
     } catch (e) {
       console.error('Share fetch error:', e)
-      return { success: false, error: 'Abruf fehlgeschlagen' }
+      return {
+        success: false,
+        items: [],
+        failedCount: 0,
+        invalidCount,
+        truncatedCount,
+        error: 'Abruf fehlgeschlagen',
+      }
     }
   }, [])
 
-  return { 
-    items, 
-    add, 
-    remove, 
-    toggle, 
-    isInWatchlist, 
-    mergeItems, 
-    generateShareLink, 
-    fetchSharedList 
+  return {
+    items,
+    add,
+    remove,
+    toggle,
+    isInWatchlist,
+    mergeItems,
+    generateShareLink,
+    fetchSharedList,
   }
 }
-

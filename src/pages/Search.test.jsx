@@ -12,8 +12,6 @@ const mockSearchMovies = vi.fn()
 const mockSearchTv = vi.fn()
 const mockSearchPerson = vi.fn()
 
-const mockGetMovieProviders = vi.fn()
-const mockGetTvProviders = vi.fn()
 
 const mockUseInfiniteQuery = vi.fn()
 const mockUseQueries = vi.fn()
@@ -37,13 +35,6 @@ vi.mock('../api/common', () => ({
   searchPerson: (...args) => mockSearchPerson(...args),
 }))
 
-vi.mock('../api/movies', () => ({
-  getMovieProviders: (...args) => mockGetMovieProviders(...args),
-}))
-
-vi.mock('../api/tv', () => ({
-  getTvProviders: (...args) => mockGetTvProviders(...args),
-}))
 
 vi.mock('@tanstack/react-query', () => ({
   useInfiniteQuery: (...args) => mockUseInfiniteQuery(...args),
@@ -176,8 +167,7 @@ describe('Search Page', () => {
     expect(screen.getByTestId('suggestion-count')).toHaveTextContent('3')
 
     const queryConfig = mockUseQueries.mock.calls[0][0]
-    expect(queryConfig.queries).toHaveLength(2)
-    expect(queryConfig.queries[0].enabled).toBe(false)
+    expect(queryConfig.queries).toHaveLength(0)
   })
 
   it('wechselt auf Personen-Suche und blendet Medienfilter aus', () => {
@@ -246,13 +236,13 @@ describe('Search Page', () => {
       },
     }))
     mockUseQueries.mockReturnValue([
-      { isLoading: false, isSuccess: true, isError: false, data: { flatrate: [{ provider_id: 8 }] } },
+      { isLoading: false, isSuccess: true, isError: false, data: { state: 'streamable', isStreamable: true } },
       { isLoading: true, isSuccess: false, isError: false },
     ])
 
     renderSearch(['/search?q=test&streamable=true'])
 
-    expect(screen.getByText('Provider werden geprüft…')).toBeInTheDocument()
+    expect(screen.getByText('Streaming-Verfügbarkeit wird geprüft…')).toBeInTheDocument()
     expect(screen.getAllByTestId('media-card')).toHaveLength(1)
   })
 
@@ -271,7 +261,7 @@ describe('Search Page', () => {
       },
     }))
     mockUseQueries.mockReturnValue([
-      { isLoading: false, isSuccess: true, isError: false, data: { flatrate: [{ provider_id: 9999 }] } },
+      { isLoading: false, isSuccess: true, isError: false, data: { state: 'not_streamable', isStreamable: false } },
     ])
 
     renderSearch(['/search?q=test&streamable=true'])
@@ -391,5 +381,69 @@ describe('Search Page', () => {
     fireEvent.click(screen.getByText('history-clear'))
     expect(localStorage.getItem('streamscout-search-history')).toBeNull()
   })
+
+  it('zeigt Hinweis bei unbekannter Streambarkeit', () => {
+    mockUseInfiniteQuery.mockReturnValue(buildInfiniteState({
+      data: {
+        pages: [
+          {
+            page: 1,
+            total_pages: 1,
+            results: [
+              { id: 1, media_type: 'movie', title: 'Film A', poster_path: '/a.jpg', overview: 'ok' },
+            ],
+          },
+        ],
+      },
+    }))
+
+    mockUseQueries.mockReturnValue([
+      { isLoading: false, isSuccess: true, isError: false, data: { state: 'unknown', isStreamable: null } },
+    ])
+
+    renderSearch(['/search?q=test&streamable=true'])
+
+    expect(screen.getByText('Bei 1 Treffern konnte die Streaming-Verfügbarkeit nicht geprüft werden.')).toBeInTheDocument()
+    expect(screen.getByText('Keine streambare Ergebnisse')).toBeInTheDocument()
+  })
+
+  it('prüft bei "Nur Streambar" initial nur das erste Arbeitsfenster', () => {
+    const manyResults = Array.from({ length: 80 }, (_, i) => ({
+      id: i + 1,
+      media_type: 'movie',
+      title: `Film ${i + 1}`,
+      poster_path: `/p-${i + 1}.jpg`,
+      overview: 'ok',
+    }))
+
+    mockUseInfiniteQuery.mockReturnValue(buildInfiniteState({
+      data: {
+        pages: [
+          {
+            page: 1,
+            total_pages: 1,
+            results: manyResults,
+          },
+        ],
+      },
+    }))
+
+    mockUseQueries.mockReturnValue(
+      Array.from({ length: 60 }, () => ({
+        isLoading: false,
+        isSuccess: true,
+        isError: false,
+        data: { state: 'streamable', isStreamable: true },
+      }))
+    )
+
+    renderSearch(['/search?q=test&streamable=true'])
+
+    const queryConfig = mockUseQueries.mock.calls[0][0]
+    expect(queryConfig.queries).toHaveLength(60)
+    expect(screen.getByText('Aktuell werden die ersten 60 Treffer auf Streambarkeit geprüft. Beim Weiter-Scrollen werden weitere geprüft.')).toBeInTheDocument()
+  })
 })
+
+
 
