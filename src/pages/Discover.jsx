@@ -58,6 +58,57 @@ function normalizeSortOption(value) {
   return sortOptions.some((option) => option.value === value) ? value : 'popularity'
 }
 
+function normalizeDiscoverPresetValues(values) {
+  const mediaType = values?.mediaType === 'tv' ? 'tv' : 'movie'
+  const sortBy = normalizeSortOption(values?.sortBy)
+  const selectedGenres = parseNumberList(values?.selectedGenres)
+  const selectedProviders = parseNumberList(values?.selectedProviders)
+  const year = typeof values?.year === 'string' ? values.year : ''
+  const rating = typeof values?.rating === 'string' ? values.rating : ''
+
+  if (mediaType === 'movie') {
+    return {
+      mediaType,
+      sortBy,
+      selectedGenres,
+      year,
+      rating,
+      selectedProviders,
+      fsk: normalizeFskCertification(values?.fsk) || '',
+      fskMode: normalizeFskFilterMode(values?.fskMode),
+    }
+  }
+
+  return {
+    mediaType,
+    sortBy,
+    selectedGenres,
+    year,
+    rating,
+    selectedProviders,
+    fsk: '',
+    fskMode: 'lte',
+  }
+}
+
+function buildDiscoverSearchParams(values) {
+  const normalized = normalizeDiscoverPresetValues(values)
+  const params = {}
+
+  if (normalized.mediaType !== 'movie') params.type = normalized.mediaType
+  if (normalized.sortBy !== 'popularity') params.sort = normalized.sortBy
+  if (normalized.selectedGenres.length > 0) params.genres = normalized.selectedGenres.join(',')
+  if (normalized.year) params.year = normalized.year
+  if (normalized.rating) params.rating = normalized.rating
+  if (normalized.selectedProviders.length > 0) params.providers = normalized.selectedProviders.join(',')
+  if (normalized.fsk) {
+    params.fsk = normalized.fsk
+    if (normalized.fskMode !== 'lte') params.fskMode = normalized.fskMode
+  }
+
+  return params
+}
+
 function Discover() {
   useDocumentTitle('Entdecken')
   const [searchParams, setSearchParams] = useSearchParams()
@@ -76,12 +127,20 @@ function Discover() {
   const [fsk, setFsk] = useState(() => normalizeFskCertification(searchParams.get('fsk')) || '')
   const [fskMode, setFskMode] = useState(() => normalizeFskFilterMode(searchParams.get('fskMode')))
 
-  const { presets, savePreset, getPresetById, deletePreset } = useFilterPresets(presetStorageKey)
+  const {
+    presets,
+    savePreset,
+    renamePreset,
+    getPresetById,
+    deletePreset,
+    exportPresets,
+    importPresets,
+  } = useFilterPresets(presetStorageKey)
   const [presetName, setPresetName] = useState('')
   const [selectedPresetId, setSelectedPresetId] = useState('')
   const [presetStatus, setPresetStatus] = useState('')
+  const [presetTransfer, setPresetTransfer] = useState('')
   const activePresetId = presets.some((preset) => preset.id === selectedPresetId) ? selectedPresetId : ''
-
 
   // Sync state to URL params
   useEffect(() => {
@@ -151,23 +210,16 @@ function Discover() {
   )
 
   function applyPresetValues(values) {
-    const nextMediaType = values?.mediaType === 'tv' ? 'tv' : 'movie'
+    const normalized = normalizeDiscoverPresetValues(values)
 
-    setMediaType(nextMediaType)
-    setSortBy(normalizeSortOption(values?.sortBy))
-    setSelectedGenres(parseNumberList(values?.selectedGenres))
-    setYear(typeof values?.year === 'string' ? values.year : '')
-    setRating(typeof values?.rating === 'string' ? values.rating : '')
-    setSelectedProviders(parseNumberList(values?.selectedProviders))
-
-    if (nextMediaType === 'movie') {
-      setFsk(normalizeFskCertification(values?.fsk) || '')
-      setFskMode(normalizeFskFilterMode(values?.fskMode))
-      return
-    }
-
-    setFsk('')
-    setFskMode('lte')
+    setMediaType(normalized.mediaType)
+    setSortBy(normalized.sortBy)
+    setSelectedGenres(normalized.selectedGenres)
+    setYear(normalized.year)
+    setRating(normalized.rating)
+    setSelectedProviders(normalized.selectedProviders)
+    setFsk(normalized.fsk)
+    setFskMode(normalized.fskMode)
   }
 
   function handleSavePreset() {
@@ -180,6 +232,67 @@ function Discover() {
     setSelectedPresetId(result.id)
     setPresetName('')
     setPresetStatus(result.replaced ? 'Preset aktualisiert.' : 'Preset gespeichert.')
+  }
+
+  function handleRenamePreset() {
+    if (!activePresetId) {
+      setPresetStatus('Bitte wähle ein Preset aus.')
+      return
+    }
+
+    const result = renamePreset(activePresetId, presetName)
+    if (!result.success) {
+      setPresetStatus(result.error)
+      return
+    }
+
+    setPresetName('')
+    setPresetStatus('Preset umbenannt.')
+  }
+
+  function handleExportPresets() {
+    setPresetTransfer(exportPresets())
+    setPresetStatus('Preset-Daten exportiert.')
+  }
+
+  function handleImportPresets() {
+    const result = importPresets(presetTransfer)
+    if (!result.success) {
+      setPresetStatus(result.error)
+      return
+    }
+
+    setPresetStatus(`${result.importedCount} Presets importiert, ${result.replacedCount} aktualisiert.`)
+  }
+
+  async function handleCopyPresetLink() {
+    if (!activePresetId) {
+      setPresetStatus('Bitte wähle ein Preset aus.')
+      return
+    }
+
+    const preset = getPresetById(activePresetId)
+    if (!preset) {
+      setPresetStatus('Preset nicht gefunden.')
+      return
+    }
+
+    const hashPath = window.location.hash.split('?')[0] || '#/discover'
+    const params = new URLSearchParams(buildDiscoverSearchParams(preset.values))
+    const targetUrl = new URL(window.location.href)
+    targetUrl.hash = params.size > 0 ? `${hashPath}?${params.toString()}` : hashPath
+
+    if (!navigator.clipboard?.writeText) {
+      setPresetStatus('Clipboard ist nicht verfügbar.')
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(targetUrl.toString())
+      setPresetStatus('Preset-Link kopiert.')
+    } catch {
+      setPresetStatus('Preset-Link konnte nicht kopiert werden.')
+    }
   }
 
   function handleLoadPreset() {
@@ -401,11 +514,17 @@ function Discover() {
           presets={presets}
           presetName={presetName}
           selectedPresetId={activePresetId}
+          transferValue={presetTransfer}
           onPresetNameChange={setPresetName}
           onSelectedPresetChange={setSelectedPresetId}
+          onTransferChange={setPresetTransfer}
           onSave={handleSavePreset}
+          onRename={handleRenamePreset}
           onLoad={handleLoadPreset}
           onDelete={handleDeletePreset}
+          onCopyShareLink={handleCopyPresetLink}
+          onExport={handleExportPresets}
+          onImport={handleImportPresets}
           statusMessage={presetStatus}
         />
 
@@ -483,4 +602,3 @@ function Discover() {
 }
 
 export default Discover
-

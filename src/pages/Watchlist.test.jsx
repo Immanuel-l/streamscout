@@ -298,5 +298,40 @@ describe('Watchlist Page', () => {
     expect(warningMessage).toContain('2 Link-Einträge waren ungültig')
     expect(warningMessage).toContain('3 Einträge wurden wegen des Limits von 100 nicht importiert.')
   })
+  it('zeigt Fehler-Toast wenn Link-Kopieren scheitert', async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error('clipboard blocked'))
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+
+    useWatchlist.mockReturnValue({
+      items: sampleItems,
+      remove: mockRemove,
+      mergeItems: mockMergeItems,
+      generateShareLink: mockGenerateShareLink,
+      fetchSharedList: mockFetchSharedList,
+    })
+
+    renderWatchlist()
+    fireEvent.click(screen.getByText('Link teilen'))
+
+    await waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith('Fehler beim Kopieren des Links', 'error')
+    })
+  })
+
+  it('zeigt Fehler-Toast wenn eine geteilte Liste nicht geladen werden kann', async () => {
+    mockFetchSharedList.mockResolvedValueOnce({
+      success: false,
+      error: 'Geteilte Liste konnte nicht geladen werden.',
+    })
+
+    renderWatchlist(['/watchlist?share=m1'])
+
+    await waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith('Geteilte Liste konnte nicht geladen werden.', 'error')
+    })
+  })
 })
 

@@ -21,10 +21,11 @@ export default defineConfig({
       exclude: ['src/test/**', 'src/main.jsx'],
       thresholds: {
         statements: 84,
-        branches: 78,
+        branches: 80,
         functions: 83,
         lines: 85,
       },
     },
   },
 })
+

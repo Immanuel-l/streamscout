@@ -117,7 +117,6 @@ describe('Mood Page', () => {
     }))
   })
 
-
   it('uebergibt FSK-Filterparameter fuer Filme', async () => {
     renderMood(['/mood/leichte-kost?fsk=16&fskMode=gte'])
 
@@ -182,6 +181,53 @@ describe('Mood Page', () => {
       const latestConfig = mockUseInfiniteQuery.mock.calls.at(-1)[0]
       expect(latestConfig.queryKey).toEqual(['mood', 'leichte-kost', 'tv', 'date', '', 'lte', 1])
     })
+  })
+
+  it('benennt Presets um, exportiert/importiert und kopiert den Preset-Link', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+
+    renderMood()
+
+    fireEvent.click(screen.getByText('Serien'))
+    fireEvent.click(screen.getByText('Neueste zuerst'))
+
+    fireEvent.change(screen.getByLabelText('Preset-Name'), { target: { value: 'TV Neu' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Preset speichern' }))
+
+    const option = screen.getByRole('option', { name: 'TV Neu' })
+    fireEvent.change(screen.getByLabelText('Preset auswählen'), {
+      target: { value: option.getAttribute('value') },
+    })
+
+    fireEvent.change(screen.getByLabelText('Preset-Name'), { target: { value: 'TV Prime' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Preset umbenennen' }))
+
+    expect(screen.getByRole('status')).toHaveTextContent('Preset umbenannt.')
+    expect(screen.getByRole('option', { name: 'TV Prime' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Presets exportieren' }))
+    expect(screen.getByLabelText('Preset-Daten').value).toContain('TV Prime')
+
+    fireEvent.change(screen.getByLabelText('Preset-Daten'), {
+      target: { value: '[{"name":"Film Mix","values":{"mediaType":"movie","sortValue":"rating"}}]' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Presets importieren' }))
+    expect(screen.getByRole('status')).toHaveTextContent('1 Presets importiert, 0 aktualisiert.')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Preset-Link kopieren' }))
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledTimes(1)
+    })
+
+    const copiedLink = writeText.mock.calls[0][0]
+    expect(copiedLink).toContain('#/mood/leichte-kost')
+    expect(copiedLink).toContain('type=tv')
+    expect(copiedLink).toContain('sort=date')
   })
 
   it('zeigt Loading und Fehlerzustand', () => {
@@ -311,5 +357,4 @@ describe('Mood Page', () => {
     })
   })
 })
-
 

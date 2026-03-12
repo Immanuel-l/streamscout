@@ -2,11 +2,17 @@ function FilterPresets({
   presets,
   presetName,
   selectedPresetId,
+  transferValue,
   onPresetNameChange,
   onSelectedPresetChange,
+  onTransferChange,
   onSave,
+  onRename,
   onLoad,
   onDelete,
+  onCopyShareLink,
+  onExport,
+  onImport,
   statusMessage = '',
   emptyMessage = 'Noch keine Presets gespeichert.',
 }) {
@@ -28,6 +34,14 @@ function FilterPresets({
           className="px-3 py-2 rounded-lg text-sm font-medium bg-accent-500 text-black hover:bg-accent-400 transition-colors"
         >
           Preset speichern
+        </button>
+        <button
+          type="button"
+          onClick={onRename}
+          disabled={!selectedPresetId}
+          className="px-3 py-2 rounded-lg text-sm font-medium bg-surface-700 text-surface-100 hover:bg-surface-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Preset umbenennen
         </button>
       </div>
 
@@ -61,6 +75,42 @@ function FilterPresets({
         >
           Preset löschen
         </button>
+        <button
+          type="button"
+          onClick={onCopyShareLink}
+          disabled={!selectedPresetId}
+          className="px-3 py-2 rounded-lg text-sm font-medium bg-surface-800 text-surface-200 border border-surface-600 hover:text-surface-100 hover:border-surface-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Preset-Link kopieren
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={onExport}
+            className="px-3 py-2 rounded-lg text-sm font-medium bg-surface-800 text-surface-200 border border-surface-600 hover:text-surface-100 hover:border-surface-500 transition-colors"
+          >
+            Presets exportieren
+          </button>
+          <button
+            type="button"
+            onClick={onImport}
+            className="px-3 py-2 rounded-lg text-sm font-medium bg-surface-700 text-surface-100 hover:bg-surface-600 transition-colors"
+          >
+            Presets importieren
+          </button>
+        </div>
+
+        <textarea
+          value={transferValue}
+          onChange={(event) => onTransferChange(event.target.value)}
+          aria-label="Preset-Daten"
+          placeholder="Preset-JSON für Export/Import"
+          rows={4}
+          className="w-full bg-surface-800 border border-surface-700 rounded-lg px-3 py-2 text-xs text-surface-100 placeholder:text-surface-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50"
+        />
       </div>
 
       {statusMessage && (

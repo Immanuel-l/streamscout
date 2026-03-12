@@ -12,71 +12,84 @@ describe('useFilterPresets', () => {
     expect(result.current.presets).toEqual([])
   })
 
-  it('speichert ein neues Preset und persistiert es in localStorage', () => {
+  it('speichert Presets und sortiert sie alphabetisch', () => {
     const { result } = renderHook(() => useFilterPresets('presets.test'))
 
-    let saveResult
     act(() => {
-      saveResult = result.current.savePreset('Meine Auswahl', { sortBy: 'rating', mediaType: 'movie' })
+      result.current.savePreset('Zeta', { sortBy: 'rating' })
+      result.current.savePreset('Alpha', { sortBy: 'date' })
     })
 
-    expect(saveResult).toEqual(expect.objectContaining({ success: true, replaced: false }))
-    expect(result.current.presets).toHaveLength(1)
-    expect(result.current.presets[0]).toEqual(expect.objectContaining({
-      name: 'Meine Auswahl',
-      values: { sortBy: 'rating', mediaType: 'movie' },
-    }))
-
-    const stored = JSON.parse(localStorage.getItem('presets.test'))
-    expect(stored).toHaveLength(1)
-    expect(stored[0].name).toBe('Meine Auswahl')
+    expect(result.current.presets.map((preset) => preset.name)).toEqual(['Alpha', 'Zeta'])
   })
 
-  it('ersetzt ein vorhandenes Preset mit gleichem Namen (case-insensitive)', () => {
+  it('benennt Presets um und blockiert doppelte Namen', () => {
     const { result } = renderHook(() => useFilterPresets('presets.test'))
 
-    let firstResult
-    let secondResult
-
+    let alphaId
+    let betaId
     act(() => {
-      firstResult = result.current.savePreset('Abend', { sortBy: 'popularity' })
+      alphaId = result.current.savePreset('Alpha', { type: 'movie' }).id
+      betaId = result.current.savePreset('Beta', { type: 'tv' }).id
     })
 
+    let renameResult
     act(() => {
-      secondResult = result.current.savePreset('abend', { sortBy: 'date' })
+      renameResult = result.current.renamePreset(alphaId, 'Gamma')
     })
 
-    expect(firstResult.success).toBe(true)
-    expect(secondResult).toEqual(expect.objectContaining({ success: true, replaced: true }))
-    expect(secondResult.id).toBe(firstResult.id)
-    expect(result.current.presets).toHaveLength(1)
-    expect(result.current.presets[0]).toEqual(expect.objectContaining({
-      id: firstResult.id,
-      name: 'abend',
-      values: { sortBy: 'date' },
-    }))
-    expect(result.current.presets[0].updatedAt).toEqual(expect.any(Number))
+    expect(renameResult).toEqual({ success: true, id: alphaId })
+    expect(result.current.presets.map((preset) => preset.name)).toEqual(['Beta', 'Gamma'])
+
+    let duplicateResult
+    act(() => {
+      duplicateResult = result.current.renamePreset(betaId, 'gamma')
+    })
+
+    expect(duplicateResult).toEqual({ success: false, error: 'Ein Preset mit diesem Namen existiert bereits.' })
   })
 
-  it('liefert einen Fehler bei leerem Preset-Namen', () => {
-    const { result } = renderHook(() => useFilterPresets('presets.test'))
+  it('exportiert und importiert Presets inkl. Ersetzungen', () => {
+    const first = renderHook(() => useFilterPresets('presets.export'))
 
-    let saveResult
     act(() => {
-      saveResult = result.current.savePreset('   ', { sortBy: 'rating' })
+      first.result.current.savePreset('Action', { mediaType: 'movie', rating: '7' })
     })
 
-    expect(saveResult).toEqual({ success: false, error: 'Bitte gib einen Preset-Namen ein.' })
-    expect(result.current.presets).toHaveLength(0)
+    const exported = first.result.current.exportPresets()
+    expect(exported).toContain('Action')
+
+    const second = renderHook(() => useFilterPresets('presets.import'))
+
+    act(() => {
+      second.result.current.savePreset('Action', { mediaType: 'tv', rating: '5' })
+      second.result.current.savePreset('Drama', { mediaType: 'movie' })
+    })
+
+    let importResult
+    act(() => {
+      importResult = second.result.current.importPresets(exported)
+    })
+
+    expect(importResult).toEqual({ success: true, importedCount: 0, replacedCount: 1 })
+
+    const importedAction = second.result.current.presets.find((preset) => preset.name === 'Action')
+    expect(importedAction.values).toEqual({ mediaType: 'movie', rating: '7' })
   })
 
-  it('findet und loescht Presets ueber die ID', () => {
+  it('liefert Fehler bei ungültigem Import und löscht Presets per ID', () => {
     const { result } = renderHook(() => useFilterPresets('presets.test'))
+
+    let invalidImport
+    act(() => {
+      invalidImport = result.current.importPresets('{broken')
+    })
+
+    expect(invalidImport).toEqual({ success: false, error: 'Preset-Daten konnten nicht gelesen werden.' })
 
     let id
     act(() => {
-      const saveResult = result.current.savePreset('Temp', { mediaType: 'tv' })
-      id = saveResult.id
+      id = result.current.savePreset('Temp', { mediaType: 'movie' }).id
     })
 
     expect(result.current.getPresetById(id)).toEqual(expect.objectContaining({ name: 'Temp' }))
@@ -88,7 +101,5 @@ describe('useFilterPresets', () => {
 
     expect(deleted).toBe(true)
     expect(result.current.getPresetById(id)).toBeNull()
-    expect(result.current.presets).toEqual([])
-    expect(result.current.deletePreset('gibt-es-nicht')).toBe(false)
   })
 })

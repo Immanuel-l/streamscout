@@ -1,8 +1,10 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Discover from './Discover'
+import { discoverMovies } from '../api/movies'
+import { discoverTv } from '../api/tv'
 
 // Mock hooks
 vi.mock('../hooks/useDocumentTitle', () => ({
@@ -96,6 +98,8 @@ describe('Discover Page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
+    discoverMovies.mockResolvedValue({ page: 1, total_pages: 1, results: [] })
+    discoverTv.mockResolvedValue({ page: 1, total_pages: 1, results: [] })
   })
 
   it('zeigt die Überschrift "Entdecken"', () => {
@@ -171,7 +175,6 @@ describe('Discover Page', () => {
 
   it('zeigt "Filter zurücksetzen" wenn Filter aktiv sind', () => {
     renderDiscover()
-    // Click a genre to activate filters
     fireEvent.click(screen.getByText('Action'))
     expect(screen.getByText('Filter zurücksetzen')).toBeInTheDocument()
   })
@@ -183,10 +186,8 @@ describe('Discover Page', () => {
 
   it('setzt Filter per "Filter zurücksetzen" zurück', () => {
     renderDiscover()
-    // Activate a genre filter
     fireEvent.click(screen.getByText('Action'))
     expect(screen.getByText('Action')).toHaveAttribute('aria-pressed', 'true')
-    // Reset
     fireEvent.click(screen.getByText('Filter zurücksetzen'))
     expect(screen.getByText('Action')).toHaveAttribute('aria-pressed', 'false')
   })
@@ -213,6 +214,65 @@ describe('Discover Page', () => {
 
     expect(screen.getByText('Action')).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByText('Bewertung')).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('benennt ein Preset um und exportiert/importiert Daten', () => {
+    renderDiscover()
+
+    fireEvent.change(screen.getByLabelText('Preset-Name'), { target: { value: 'Temp' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Preset speichern' }))
+
+    const savedOption = screen.getByRole('option', { name: 'Temp' })
+    fireEvent.change(screen.getByLabelText('Preset auswählen'), {
+      target: { value: savedOption.getAttribute('value') },
+    })
+
+    fireEvent.change(screen.getByLabelText('Preset-Name'), { target: { value: 'Neu' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Preset umbenennen' }))
+
+    expect(screen.getByRole('status')).toHaveTextContent('Preset umbenannt.')
+    expect(screen.getByRole('option', { name: 'Neu' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Presets exportieren' }))
+    expect(screen.getByLabelText('Preset-Daten').value).toContain('Neu')
+
+    fireEvent.change(screen.getByLabelText('Preset-Daten'), {
+      target: { value: '[{"name":"Importiert","values":{"sortBy":"rating","mediaType":"movie"}}]' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Presets importieren' }))
+
+    expect(screen.getByRole('status')).toHaveTextContent('1 Presets importiert, 0 aktualisiert.')
+    expect(screen.getByRole('option', { name: 'Importiert' })).toBeInTheDocument()
+  })
+
+  it('kopiert einen Preset-Link in die Zwischenablage', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+
+    renderDiscover()
+
+    fireEvent.click(screen.getByText('Bewertung'))
+    fireEvent.change(screen.getByLabelText('Preset-Name'), { target: { value: 'Share' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Preset speichern' }))
+
+    const option = screen.getByRole('option', { name: 'Share' })
+    fireEvent.change(screen.getByLabelText('Preset auswählen'), {
+      target: { value: option.getAttribute('value') },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Preset-Link kopieren' }))
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledTimes(1)
+    })
+
+    const copiedLink = writeText.mock.calls[0][0]
+    expect(copiedLink).toContain('#/discover')
+    expect(copiedLink).toContain('sort=rating')
+    expect(screen.getByRole('status')).toHaveTextContent('Preset-Link kopiert.')
   })
 
   it('loescht ein gespeichertes Preset', () => {

@@ -36,6 +36,41 @@ function normalizeSortValue(value) {
   return sortOptions.some((option) => option.value === value) ? value : 'popularity'
 }
 
+function normalizeMoodPresetValues(values) {
+  const mediaType = values?.mediaType === 'tv' ? 'tv' : 'movie'
+  const sortValue = normalizeSortValue(values?.sortValue)
+
+  if (mediaType === 'movie') {
+    return {
+      mediaType,
+      sortValue,
+      fsk: normalizeFskCertification(values?.fsk) || '',
+      fskMode: normalizeFskFilterMode(values?.fskMode),
+    }
+  }
+
+  return {
+    mediaType,
+    sortValue,
+    fsk: '',
+    fskMode: 'lte',
+  }
+}
+
+function buildMoodSearchParams(values) {
+  const normalized = normalizeMoodPresetValues(values)
+  const params = {}
+
+  if (normalized.mediaType !== 'movie') params.type = normalized.mediaType
+  if (normalized.sortValue !== 'popularity') params.sort = normalized.sortValue
+  if (normalized.fsk) {
+    params.fsk = normalized.fsk
+    if (normalized.fskMode !== 'lte') params.fskMode = normalized.fskMode
+  }
+
+  return params
+}
+
 function Mood() {
   const { slug } = useParams()
   const mood = getMoodBySlug(slug)
@@ -48,12 +83,20 @@ function Mood() {
   const [startPage, setStartPage] = useState(1)
 
   const presetStorageKey = `streamscout-mood-presets:${slug || 'unknown'}`
-  const { presets, savePreset, getPresetById, deletePreset } = useFilterPresets(presetStorageKey)
+  const {
+    presets,
+    savePreset,
+    renamePreset,
+    getPresetById,
+    deletePreset,
+    exportPresets,
+    importPresets,
+  } = useFilterPresets(presetStorageKey)
   const [presetName, setPresetName] = useState('')
   const [selectedPresetId, setSelectedPresetId] = useState('')
   const [presetStatus, setPresetStatus] = useState('')
+  const [presetTransfer, setPresetTransfer] = useState('')
   const activePresetId = presets.some((preset) => preset.id === selectedPresetId) ? selectedPresetId : ''
-
 
   const currentPresetValues = useMemo(
     () => ({
@@ -66,19 +109,12 @@ function Mood() {
   )
 
   function applyPresetValues(values) {
-    const nextMediaType = values?.mediaType === 'tv' ? 'tv' : 'movie'
+    const normalized = normalizeMoodPresetValues(values)
 
-    setMediaType(nextMediaType)
-    setSortValue(normalizeSortValue(values?.sortValue))
-
-    if (nextMediaType === 'movie') {
-      setFsk(normalizeFskCertification(values?.fsk) || '')
-      setFskMode(normalizeFskFilterMode(values?.fskMode))
-      return
-    }
-
-    setFsk('')
-    setFskMode('lte')
+    setMediaType(normalized.mediaType)
+    setSortValue(normalized.sortValue)
+    setFsk(normalized.fsk)
+    setFskMode(normalized.fskMode)
   }
 
   function handleSavePreset() {
@@ -91,6 +127,67 @@ function Mood() {
     setSelectedPresetId(result.id)
     setPresetName('')
     setPresetStatus(result.replaced ? 'Preset aktualisiert.' : 'Preset gespeichert.')
+  }
+
+  function handleRenamePreset() {
+    if (!activePresetId) {
+      setPresetStatus('Bitte wähle ein Preset aus.')
+      return
+    }
+
+    const result = renamePreset(activePresetId, presetName)
+    if (!result.success) {
+      setPresetStatus(result.error)
+      return
+    }
+
+    setPresetName('')
+    setPresetStatus('Preset umbenannt.')
+  }
+
+  function handleExportPresets() {
+    setPresetTransfer(exportPresets())
+    setPresetStatus('Preset-Daten exportiert.')
+  }
+
+  function handleImportPresets() {
+    const result = importPresets(presetTransfer)
+    if (!result.success) {
+      setPresetStatus(result.error)
+      return
+    }
+
+    setPresetStatus(`${result.importedCount} Presets importiert, ${result.replacedCount} aktualisiert.`)
+  }
+
+  async function handleCopyPresetLink() {
+    if (!activePresetId) {
+      setPresetStatus('Bitte wähle ein Preset aus.')
+      return
+    }
+
+    const preset = getPresetById(activePresetId)
+    if (!preset) {
+      setPresetStatus('Preset nicht gefunden.')
+      return
+    }
+
+    const hashPath = window.location.hash.split('?')[0] || `#/mood/${slug || ''}`
+    const params = new URLSearchParams(buildMoodSearchParams(preset.values))
+    const targetUrl = new URL(window.location.href)
+    targetUrl.hash = params.size > 0 ? `${hashPath}?${params.toString()}` : hashPath
+
+    if (!navigator.clipboard?.writeText) {
+      setPresetStatus('Clipboard ist nicht verfügbar.')
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(targetUrl.toString())
+      setPresetStatus('Preset-Link kopiert.')
+    } catch {
+      setPresetStatus('Preset-Link konnte nicht kopiert werden.')
+    }
   }
 
   function handleLoadPreset() {
@@ -302,13 +399,19 @@ function Mood() {
           presets={presets}
           presetName={presetName}
           selectedPresetId={activePresetId}
+          transferValue={presetTransfer}
           onPresetNameChange={setPresetName}
           onSelectedPresetChange={setSelectedPresetId}
+          onTransferChange={setPresetTransfer}
           onSave={handleSavePreset}
+          onRename={handleRenamePreset}
           onLoad={handleLoadPreset}
           onDelete={handleDeletePreset}
+          onCopyShareLink={handleCopyPresetLink}
+          onExport={handleExportPresets}
+          onImport={handleImportPresets}
           statusMessage={presetStatus}
-          emptyMessage="Noch keine Presets fuer diese Stimmung gespeichert."
+          emptyMessage="Noch keine Presets für diese Stimmung gespeichert."
         />
       </div>
 
@@ -368,4 +471,3 @@ function Mood() {
 }
 
 export default Mood
-
