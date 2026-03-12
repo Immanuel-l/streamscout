@@ -78,12 +78,19 @@ Denke an die Ästhetik von Netflix, MUBI oder Apple TV+ — nicht an ein Admin-P
 - Chips/Tags für aktive Filter
 - Visuell klar welche Filter aktiv sind (Akzentfarbe, nicht nur Bold)
 - Smooth Transitions beim Aktivieren/Deaktivieren
+- Bei "Nur streambar" sichtbaren Prüfstatus und Hinweise für nicht prüfbare Verfügbarkeit anzeigen (kein stilles Wegfiltern)
 
 ### Detail Hero
 - Full-Width Backdrop mit mehrstufigem Gradient
 - Wichtigste Infos darüber (Titel, Jahr, Bewertung, Genres, Provider)
 - Poster-Overlap für Tiefenwirkung
 - Ausreichend Breathing Room zwischen den Info-Elementen
+
+### Status-Feedback (Pflicht)
+- Laufende Hintergrundprüfungen klar kennzeichnen (z.B. "Streaming-Verfügbarkeit wird geprüft …")
+- Unklare Ergebnisse sichtbar machen (z.B. "konnte nicht geprüft werden")
+- Share-Import muss Teilfehler transparent kommunizieren (ungültige Tokens, abgeschnittene Einträge, Abruf-Fehler)
+- Keine stillen Fehlerzustände: User immer über reduzierte Datenlage informieren
 
 ## Verbotene Muster
 

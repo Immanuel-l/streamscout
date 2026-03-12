@@ -4,7 +4,8 @@
 Trending Filme und Serien der Woche als horizontale Scroll-Reihen.
 
 ## 2. Suche
-Kombinierte Film- und Seriensuche (/search/multi) mit Debounced Input und Autocomplete-Dropdown mit Poster-Thumbnails.
+Kombinierte Film- und Seriensuche (/search/multi) mit Debounced Input, Autocomplete-Dropdown mit Poster-Thumbnails und Suchverlauf.
+Zusätzlich optionaler Filter "Nur streambar" mit progressiver Provider-Prüfung (initiales Arbeitsfenster, Erweiterung beim Scrollen) und transparenten Statushinweisen bei laufender oder unklarer Verfügbarkeit.
 
 ## 3. Discover
 Filter nach Genre, Jahr, Bewertung, Streaming-Anbieter. Toggle für Filme/Serien. Nutzt /discover/movie und /discover/tv. Infinity Scroll via IntersectionObserver.
@@ -28,6 +29,10 @@ Genre wählen, Film oder Serie, optional Mindestbewertung, Button drücken, zuf�
 
 ## 9. Watchlist
 Filme und Serien merken (localStorage). Getrennt oder kombiniert anzeigbar. Einfaches Hinzufügen/Entfernen über Icon auf der MediaCard.
+Teilen/Importieren per Link ist enthalten: Import dedupliziert Tokens, validiert strikt (`m|t` + numerische ID) und begrenzt auf maximal 100 Einträge. Ungültige, abgeschnittene oder nicht abrufbare Einträge werden als Hinweis in der UI kommuniziert.
 
 ## 10. Streaming-Provider Filterung
 Ergebnisse auf ausgewählte Provider eingegrenzt: Netflix, Amazon Prime Video, Disney+, WOW, Apple TV+, Paramount+, RTL+. Gilt für Home, Suche, Discover, Mood und Zufall.
+
+## 11. Watchlist-Empfehlungen
+Personalisierte Empfehlungen basierend auf Watchlist-Einträgen. Provider-Prüfungen sind gedeckelt (Kandidatenlimit pro Quell-Eintrag) und stoppen früh, sobald genug passende Treffer gefunden wurden. Nicht prüfbare Verfügbarkeiten werden als eigener Hinweis angezeigt.

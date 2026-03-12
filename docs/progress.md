@@ -82,13 +82,13 @@
 - Home: WatchlistRecommendations
 
 ### Testing
-- 16 Unit-Test-Dateien (Vitest + Testing Library)
-- 8 E2E Smoke Tests (Playwright)
+- 57 Unit-Test-Dateien mit 361 Tests (Vitest + Testing Library)
+- 14 E2E Smoke/A11y/Flow-Tests (Playwright)
 - Coverage-Reports (v8, HTML-Output)
 
 ### Infrastruktur
 - CI/CD: GitHub Actions (Lint → Test → Build → Deploy auf GitHub Pages)
-- Git Hooks: Husky (Pre-commit: Lint, Pre-push: Lint + Tests + Build)
+- Git Hooks: Husky (Pre-commit: Lint, Pre-push: `npm run check:ci`)
 - PWA: Manifest, Icons (192px, 512px maskable), Social-Preview-Bilder
 - Accessibility: Skip-to-Content, ARIA-Labels, Keyboard-Shortcuts ("/", Escape)
 - Code Splitting: Lazy-Loading aller Seiten

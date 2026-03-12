@@ -60,3 +60,11 @@ Hinweis: TMDB Read Access Token ist im Frontend sichtbar, das ist bei TMDB akzep
 
 - Error Responses fangen, keine technischen Details an den User
 - Rate Limiting beachten (TMDB: ~40 Requests/10 Sekunden)
+
+### 7. API-Last & Rate-Limit Schutz
+
+- Provider-Verfügbarkeit zentral über Queue mit begrenzter Parallelität (4) prüfen
+- Bei 429/Netzwerkfehlern kurze Retry-Backoff-Strategie anwenden
+- Streambar-Prüfung in der Suche progressiv ausführen (Arbeitsfenster statt Vollscan)
+- Watchlist-Empfehlungen durch Kandidatenlimit und frühes Stoppen begrenzen
+- Share-Import strikt validieren (`m|t` + Zahl), deduplizieren und auf 100 Einträge deckeln
