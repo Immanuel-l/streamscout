@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -19,13 +19,6 @@ function renderWithProviders(ui) {
   )
 }
 
-beforeAll(() => {
-  globalThis.ResizeObserver = class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  }
-})
 
 describe('WatchlistRecommendations', () => {
   it('rendert nichts wenn keine Daten und nicht loading', () => {
@@ -57,3 +50,4 @@ describe('WatchlistRecommendations', () => {
     expect(screen.getByText(/Inception/)).toBeInTheDocument()
   })
 })
+
