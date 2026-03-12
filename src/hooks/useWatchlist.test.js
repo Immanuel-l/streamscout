@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, beforeAll, afterAll, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useWatchlist, SHARE_ITEM_LIMIT } from './useWatchlist'
 import * as moviesApi from '../api/movies'
@@ -15,8 +15,19 @@ vi.mock('../api/tv', () => ({
 const movieA = { id: 1, media_type: 'movie', title: 'Film A', poster_path: '/a.jpg' }
 const movieB = { id: 2, media_type: 'movie', title: 'Film B', poster_path: '/b.jpg' }
 const tvA = { id: 1, media_type: 'tv', name: 'Serie A', poster_path: '/c.jpg' }
+let warnSpy
+let errorSpy
 
 describe('useWatchlist', () => {
+  beforeAll(() => {
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+
+  afterAll(() => {
+    warnSpy.mockRestore()
+    errorSpy.mockRestore()
+  })
   beforeEach(() => {
     localStorage.clear()
     vi.clearAllMocks()
@@ -322,4 +333,5 @@ describe('useWatchlist', () => {
     expect(response.items[0].id).toBe(2)
   })
 })
+
 

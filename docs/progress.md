@@ -82,7 +82,7 @@
 - Home: WatchlistRecommendations
 
 ### Testing
-- Stand 12.03.2026 nach dem Qualitaetssprint: 57 Unit-Test-Dateien mit 380 Tests (vor dem Sprint: 366 Tests)
+- Stand 12.03.2026 nach dem Qualitaetssprint: 58 Unit-Test-Dateien mit 393 Tests (vor dem Sprint: 366 Tests)
 - 14 E2E Smoke/A11y/Flow-Tests (Playwright)
 - Coverage-Reports (v8, HTML-Output)
 
@@ -97,5 +97,6 @@
 ## Offen
 
 - Keine offenen Aufgaben
+
 
 

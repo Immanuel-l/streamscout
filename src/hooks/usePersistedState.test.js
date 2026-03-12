@@ -1,8 +1,18 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, beforeAll, afterAll, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { usePersistedState } from './usePersistedState'
 
+
+let warnSpy
+
 describe('usePersistedState', () => {
+  beforeAll(() => {
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+
+  afterAll(() => {
+    warnSpy.mockRestore()
+  })
   beforeEach(() => {
     sessionStorage.clear()
   })
@@ -54,3 +64,4 @@ describe('usePersistedState', () => {
     expect(result.current[0]).toEqual([1, 2, 3])
   })
 })
+

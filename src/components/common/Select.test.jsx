@@ -33,6 +33,16 @@ describe('Select', () => {
     expect(screen.getAllByRole('option')).toHaveLength(3)
   })
 
+  it('schließt bei Klick außerhalb', () => {
+    render(<Select value="" onChange={() => {}} options={options} />)
+
+    fireEvent.click(screen.getByRole('combobox'))
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+
+    fireEvent.mouseDown(document.body)
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+  })
+
   it('ruft onChange beim Auswählen einer Option', () => {
     const onChange = vi.fn()
     render(<Select value="" onChange={onChange} options={options} />)
@@ -63,22 +73,67 @@ describe('Select', () => {
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
   })
 
-  it('navigiert mit Pfeiltasten und wählt mit Enter', () => {
+  it('öffnet mit ArrowUp/ArrowDown und wrappt die Navigation', () => {
     const onChange = vi.fn()
     render(<Select value="" onChange={onChange} options={options} />)
 
     const combobox = screen.getByRole('combobox')
 
-    // Open with ArrowDown
-    fireEvent.keyDown(combobox, { key: 'ArrowDown' })
+    fireEvent.keyDown(combobox, { key: 'ArrowUp' })
     expect(screen.getByRole('listbox')).toBeInTheDocument()
 
-    // Navigate down
+    fireEvent.keyDown(combobox, { key: 'ArrowUp' })
+    fireEvent.keyDown(combobox, { key: 'Enter' })
+    expect(onChange).toHaveBeenCalledWith('c')
+
+    fireEvent.keyDown(combobox, { key: 'ArrowDown' })
+    fireEvent.keyDown(combobox, { key: 'ArrowDown' })
+    fireEvent.keyDown(combobox, { key: 'ArrowDown' })
+    fireEvent.keyDown(combobox, { key: 'ArrowDown' })
+    fireEvent.keyDown(combobox, { key: 'Enter' })
+    expect(onChange).toHaveBeenCalledWith('a')
+  })
+
+  it('öffnet mit Leertaste wenn geschlossen', () => {
+    render(<Select value="" onChange={() => {}} options={options} />)
+
+    const combobox = screen.getByRole('combobox')
+    fireEvent.keyDown(combobox, { key: ' ' })
+
+    expect(screen.getByRole('listbox')).toBeInTheDocument()
+  })
+
+  it('nutzt Home/End zur Zielauswahl', () => {
+    const onChange = vi.fn()
+    render(<Select value="b" onChange={onChange} options={options} />)
+
+    const combobox = screen.getByRole('combobox')
     fireEvent.keyDown(combobox, { key: 'ArrowDown' })
 
-    // Select with Enter
+    fireEvent.keyDown(combobox, { key: 'End' })
     fireEvent.keyDown(combobox, { key: 'Enter' })
-    expect(onChange).toHaveBeenCalledWith('b')
+    expect(onChange).toHaveBeenCalledWith('c')
+
+    fireEvent.keyDown(combobox, { key: 'ArrowDown' })
+    fireEvent.keyDown(combobox, { key: 'Home' })
+    fireEvent.keyDown(combobox, { key: 'Enter' })
+    expect(onChange).toHaveBeenCalledWith('a')
+  })
+
+  it('aktualisiert Highlight per MouseEnter', () => {
+    const onChange = vi.fn()
+    render(<Select value="" onChange={onChange} options={options} />)
+
+    fireEvent.click(screen.getByRole('combobox'))
+    fireEvent.mouseEnter(screen.getByRole('option', { name: 'Option C' }))
+    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'Enter' })
+
+    expect(onChange).toHaveBeenCalledWith('c')
+  })
+
+  it('nutzt ariaLabel statt Placeholder wenn gesetzt', () => {
+    render(<Select value="" onChange={() => {}} options={options} placeholder="Bitte wählen" ariaLabel="Genre Filter" />)
+    expect(screen.getByRole('combobox')).toHaveAttribute('aria-label', 'Genre Filter')
   })
 
   it('setzt aria-expanded korrekt', () => {

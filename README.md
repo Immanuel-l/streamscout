@@ -142,7 +142,7 @@ public/         – PWA-Manifest, Icons, Social-Preview-Bilder
 
 ## 🧪 Testing
 
-**Unit Tests** (Vitest + Testing Library): Stand 12.03.2026 nach dem Qualitätssprint: 57 Test-Dateien mit 380 Tests (vor dem Sprint: 366 Tests).
+**Unit Tests** (Vitest + Testing Library): Stand 12.03.2026 nach dem Qualitätssprint: 58 Test-Dateien mit 393 Tests (vor dem Sprint: 366 Tests).
 
 ```bash
 npm test                 # Tests einmalig ausführen
@@ -171,6 +171,7 @@ Für das Deployment wird der `VITE_TMDB_ACCESS_TOKEN` als GitHub Secret benötig
 ## 📄 Lizenz & Attribution
 
 Dieses Projekt nutzt Daten von [The Movie Database (TMDB)](https://www.themoviedb.org/) und [JustWatch](https://www.justwatch.com/) (Streaming-Verfügbarkeit). TMDB und JustWatch sind nicht verantwortlich für die Inhalte dieser App.
+
 
 
 
