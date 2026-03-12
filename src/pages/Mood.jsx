@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useParams, useSearchParams, Navigate, Link, useNavigate } from 'react-router-dom'
+import { useParams, useSearchParams, Navigate, useNavigate } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { discoverMovies } from '../api/movies'
@@ -10,11 +10,24 @@ import MediaCard from '../components/common/MediaCard'
 import GridSkeleton from '../components/common/GridSkeleton'
 import ErrorBox from '../components/common/ErrorBox'
 import ScrollToTop from '../components/common/ScrollToTop'
+import Select from '../components/common/Select'
+import {
+  FSK_VALUES,
+  FSK_FILTER_MODE_OPTIONS,
+  normalizeFskCertification,
+  normalizeFskFilterMode,
+  setMovieFskFilterParams,
+} from '../utils/fsk'
 
 const sortOptions = [
   { value: 'popularity', label: 'Beliebtheit', sortBy: 'popularity.desc' },
   { value: 'date', label: 'Neueste zuerst', sortByMovie: 'primary_release_date.desc', sortByTv: 'first_air_date.desc' },
   { value: 'rating', label: 'Bewertung', sortBy: 'vote_average.desc' },
+]
+
+const fskOptions = [
+  { value: '', label: 'Alle' },
+  ...FSK_VALUES.map((value) => ({ value, label: `FSK ${value}` })),
 ]
 
 function Mood() {
@@ -24,6 +37,8 @@ function Mood() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [mediaType, setMediaType] = useState(() => searchParams.get('type') || 'movie')
   const [sortValue, setSortValue] = useState(() => searchParams.get('sort') || 'popularity')
+  const [fsk, setFsk] = useState(() => normalizeFskCertification(searchParams.get('fsk')) || '')
+  const [fskMode, setFskMode] = useState(() => normalizeFskFilterMode(searchParams.get('fskMode')))
   const [startPage, setStartPage] = useState(1)
 
   // Sync state to URL params
@@ -31,10 +46,14 @@ function Mood() {
     const params = {}
     if (mediaType !== 'movie') params.type = mediaType
     if (sortValue !== 'popularity') params.sort = sortValue
+    if (fsk) {
+      params.fsk = fsk
+      if (fskMode !== 'lte') params.fskMode = fskMode
+    }
     setSearchParams(params, { replace: true })
-  }, [mediaType, sortValue, setSearchParams])
+  }, [mediaType, sortValue, fsk, fskMode, setSearchParams])
 
-  const params = mood?.[mediaType] || {}
+  const moodParams = mood?.[mediaType] || {}
   const sortOption = sortOptions.find((o) => o.value === sortValue) || sortOptions[0]
   const apiSortBy = sortOption.sortBy || (mediaType === 'tv' ? sortOption.sortByTv : sortOption.sortByMovie)
 
@@ -46,9 +65,10 @@ function Mood() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['mood', slug, mediaType, sortValue, startPage],
+    queryKey: ['mood', slug, mediaType, sortValue, fsk, fskMode, startPage],
     queryFn: ({ pageParam }) => {
-      const discoverParams = { ...params, sort_by: apiSortBy, page: pageParam }
+      const discoverParams = { ...moodParams, sort_by: apiSortBy, page: pageParam }
+      if (fsk && mediaType === 'movie') setMovieFskFilterParams(discoverParams, fsk, fskMode)
       return mediaType === 'tv' ? discoverTv(discoverParams) : discoverMovies(discoverParams)
     },
     initialPageParam: startPage,
@@ -76,6 +96,12 @@ function Mood() {
 
   function shuffle() {
     setStartPage(Math.floor(Math.random() * 5) + 1)
+  }
+
+  function switchMediaType(type) {
+    setMediaType(type)
+    setFsk('')
+    setFskMode('lte')
   }
 
   const navigate = useNavigate()
@@ -124,7 +150,7 @@ function Mood() {
           ].map(({ type, label }) => (
             <button
               key={type}
-              onClick={() => setMediaType(type)}
+              onClick={() => switchMediaType(type)}
               aria-pressed={mediaType === type}
               className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
                 mediaType === type
@@ -154,6 +180,36 @@ function Mood() {
           ))}
         </div>
 
+        {mediaType === 'movie' && (
+          <div className="space-y-2">
+            <Select
+              value={fsk}
+              onChange={setFsk}
+              options={fskOptions}
+              placeholder="FSK"
+            />
+
+            {fsk && (
+              <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
+                {FSK_FILTER_MODE_OPTIONS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setFskMode(value)}
+                    aria-pressed={fskMode === value}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      fskMode === value
+                        ? 'bg-accent-500 text-black'
+                        : 'text-surface-300 hover:text-surface-100'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <button
           onClick={shuffle}
           className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-800 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-colors text-sm font-medium"
@@ -177,7 +233,7 @@ function Mood() {
               <MediaCard key={`${media.id}-${i}`} media={media} index={i} eager animate={i < firstPageCount} />
             ))}
 
-            {/* Sentinel inside grid, before skeletons — prevents oscillation */}
+            {/* Sentinel inside grid, before skeletons - prevents oscillation */}
             {hasNextPage && (
               <div ref={sentinelRef} className="col-span-full h-px" />
             )}
@@ -194,7 +250,7 @@ function Mood() {
             ))}
           </div>
 
-          {/* Error on page load — show retry */}
+          {/* Error on page load - show retry */}
           {error && allResults.length > 0 && !isFetchingNextPage && (
             <div className="py-8 max-w-md mx-auto">
               <ErrorBox message="Fehler beim Laden weiterer Ergebnisse." onRetry={() => fetchNextPage()} />
@@ -221,3 +277,4 @@ function Mood() {
 }
 
 export default Mood
+

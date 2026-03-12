@@ -13,6 +13,13 @@ import Select from '../components/common/Select'
 import ProviderFilter from '../components/common/ProviderFilter'
 import ScrollToTop from '../components/common/ScrollToTop'
 import { t } from '../utils/i18n'
+import {
+  FSK_VALUES,
+  FSK_FILTER_MODE_OPTIONS,
+  normalizeFskCertification,
+  normalizeFskFilterMode,
+  setMovieFskFilterParams,
+} from '../utils/fsk'
 
 const currentYear = new Date().getFullYear()
 const years = Array.from({ length: 50 }, (_, i) => currentYear - i)
@@ -28,11 +35,7 @@ const ratingOptions = [
 
 const fskOptions = [
   { value: '', label: 'Alle' },
-  { value: 'FSK 0', label: 'FSK 0' },
-  { value: 'FSK 6', label: 'FSK 6' },
-  { value: 'FSK 12', label: 'FSK 12' },
-  { value: 'FSK 16', label: 'FSK 16' },
-  { value: 'FSK 18', label: 'FSK 18' },
+  ...FSK_VALUES.map((value) => ({ value, label: `FSK ${value}` })),
 ]
 
 const sortOptions = [
@@ -56,7 +59,8 @@ function Discover() {
     const p = searchParams.get('providers')
     return p ? p.split(',').map(Number).filter(Boolean) : []
   })
-  const [fsk, setFsk] = useState(() => searchParams.get('fsk') || '')
+  const [fsk, setFsk] = useState(() => normalizeFskCertification(searchParams.get('fsk')) || '')
+  const [fskMode, setFskMode] = useState(() => normalizeFskFilterMode(searchParams.get('fskMode')))
 
   // Sync state to URL params
   useEffect(() => {
@@ -67,9 +71,12 @@ function Discover() {
     if (year) params.year = year
     if (rating) params.rating = rating
     if (selectedProviders.length > 0) params.providers = selectedProviders.join(',')
-    if (fsk) params.fsk = fsk
+    if (fsk) {
+      params.fsk = fsk
+      if (fskMode !== 'lte') params.fskMode = fskMode
+    }
     setSearchParams(params, { replace: true })
-  }, [mediaType, sortBy, selectedGenres, year, rating, selectedProviders, fsk, setSearchParams])
+  }, [mediaType, sortBy, selectedGenres, year, rating, selectedProviders, fsk, fskMode, setSearchParams])
 
   const genres = useGenres(mediaType)
   const providers = useWatchProviders(mediaType)
@@ -78,28 +85,35 @@ function Discover() {
     const sort = sortOptions.find((s) => s.value === sortBy) || sortOptions[0]
     let sortParam = sort.sortBy
     if (sortBy === 'date' && mediaType === 'tv') sortParam = 'first_air_date.desc'
+
     const params = { sort_by: sortParam }
+
     if (selectedGenres.length > 0) params.with_genres = selectedGenres.join(',')
+
     if (year) {
       if (mediaType === 'movie') params.primary_release_year = year
       else params.first_air_date_year = year
     }
+
     if (rating) params['vote_average.gte'] = rating
     if (selectedProviders.length > 0) params.with_watch_providers = selectedProviders.join('|')
+
     if (fsk && mediaType === 'movie') {
-      params.certification_country = 'DE'
-      params['certification.lte'] = fsk
+      setMovieFskFilterParams(params, fsk, fskMode)
     }
+
     // Bei Sortierung nach Bewertung: Mindestanzahl Votes um obskure Titel zu vermeiden
     if (sortBy === 'rating') params['vote_count.gte'] = 200
+
     // Bei Sortierung nach Datum: nur bereits erschienene Titel
     if (sortBy === 'date') {
       const today = new Date().toISOString().split('T')[0]
       if (mediaType === 'movie') params['release_date.lte'] = today
       else params['first_air_date.lte'] = today
     }
+
     return params
-  }, [mediaType, selectedGenres, year, rating, selectedProviders, fsk, sortBy])
+  }, [mediaType, selectedGenres, year, rating, selectedProviders, fsk, fskMode, sortBy])
 
   const {
     data,
@@ -140,6 +154,7 @@ function Discover() {
     setYear('')
     setRating('')
     setFsk('')
+    setFskMode('lte')
     setSelectedProviders([])
   }
 
@@ -148,6 +163,7 @@ function Discover() {
     setSelectedGenres([])
     setSelectedProviders([])
     setFsk('')
+    setFskMode('lte')
   }
 
   function toggleGenre(id) {
@@ -256,15 +272,36 @@ function Discover() {
           </div>
 
           {mediaType === 'movie' && (
-            <div>
-              <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">{t('discover.fsk')}</p>
-              <Select
-                value={fsk}
-                onChange={setFsk}
-                options={fskOptions}
-                placeholder="Alle"
-                ariaLabel={t('discover.fsk')}
-              />
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">{t('discover.fsk')}</p>
+                <Select
+                  value={fsk}
+                  onChange={setFsk}
+                  options={fskOptions}
+                  placeholder="Alle"
+                  ariaLabel={t('discover.fsk')}
+                />
+              </div>
+
+              {fsk && (
+                <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
+                  {FSK_FILTER_MODE_OPTIONS.map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => setFskMode(value)}
+                      aria-pressed={fskMode === value}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                        fskMode === value
+                          ? 'bg-accent-500 text-black'
+                          : 'text-surface-200 hover:text-surface-100'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -297,7 +334,7 @@ function Discover() {
               <MediaCard key={`${media.media_type}-${media.id}-p${media._pageIndex}`} media={media} index={i} eager animate={i < firstPageCount} />
             ))}
 
-            {/* Sentinel inside grid, before skeletons — prevents oscillation */}
+            {/* Sentinel inside grid, before skeletons - prevents oscillation */}
             {hasNextPage && (
               <div ref={sentinelRef} className="col-span-full h-px" />
             )}
@@ -314,7 +351,7 @@ function Discover() {
             ))}
           </div>
 
-          {/* Error on page load — show retry */}
+          {/* Error on page load - show retry */}
           {error && allResults.length > 0 && !isFetchingNextPage && (
             <div className="py-8 max-w-md mx-auto">
               <ErrorBox message="Fehler beim Laden weiterer Ergebnisse." onRetry={() => fetchNextPage()} />
@@ -343,9 +380,3 @@ function Discover() {
 }
 
 export default Discover
-
-
-
-
-
-

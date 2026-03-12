@@ -2,12 +2,13 @@ import { useEffect, useRef, useState, memo } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { posterUrl, IMAGE_BASE } from '../../api/tmdb'
-import { getMovieProviders } from '../../api/movies'
-import { getTvProviders } from '../../api/tv'
+import { getMovieProviders, getMovieReleaseDates } from '../../api/movies'
+import { getTvProviders, getTvContentRatings } from '../../api/tv'
 import { ALLOWED_PROVIDER_SET } from '../../utils/providers'
 import { ANIMATION_DELAY_MODULO, ANIMATION_DELAY_MS, CARD_NEAR_VIEWPORT_MARGIN } from '../../utils/constants'
 import { useNowPlaying } from '../../hooks/useMovies'
 import { useIsTouch } from '../../hooks/useIsTouch'
+import { getMovieFskLabelFromReleaseDates, getTvFskLabelFromContentRatings } from '../../utils/fsk'
 import WatchlistButton from './WatchlistButton'
 
 const typeLabels = { movie: 'Film', tv: 'Serie' }
@@ -20,7 +21,7 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
   const [isNearViewport, setIsNearViewport] = useState(false)
 
   useEffect(() => {
-    if (!isTouch || isNearViewport || !cardRef.current) return
+    if (isNearViewport || !cardRef.current) return
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -34,7 +35,7 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
 
     observer.observe(cardRef.current)
     return () => observer.disconnect()
-  }, [isTouch, isNearViewport])
+  }, [isNearViewport])
 
   const title = media.title || media.name
   const date = media.release_date || media.first_air_date
@@ -50,11 +51,16 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
         ? 'bg-amber-500/90 text-black'
         : 'bg-red-500/90 text-black'
 
-  // "Im Kino" — based on TMDB now_playing endpoint via cached React Query
+  // "Im Kino" - based on TMDB now_playing endpoint via cached React Query
   const { data: nowPlayingData } = useNowPlaying()
   const isInCinema = type === 'movie' && nowPlayingData?.ids?.has(media.id)
 
   const shouldFetchProviders = hovered || (isTouch && isNearViewport && index < 12)
+
+  const initialFskLabel = type === 'tv'
+    ? getTvFskLabelFromContentRatings(media.content_ratings?.results)
+    : getMovieFskLabelFromReleaseDates(media.release_dates?.results)
+  const shouldFetchFsk = !initialFskLabel && (hovered || isNearViewport)
 
   // Fetch providers lazily; on touch only for near-viewport cards.
   const { data: providerData, isSuccess: providersLoaded, isError: providersErrored } = useQuery({
@@ -63,6 +69,22 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
     enabled: shouldFetchProviders,
     staleTime: 24 * 60 * 60 * 1000,
   })
+
+  const { data: fetchedFskLabel } = useQuery({
+    queryKey: [type, media.id, 'fsk'],
+    queryFn: async () => {
+      if (type === 'tv') {
+        const ratings = await getTvContentRatings(media.id)
+        return getTvFskLabelFromContentRatings(ratings)
+      }
+      const releaseDates = await getMovieReleaseDates(media.id)
+      return getMovieFskLabelFromReleaseDates(releaseDates)
+    },
+    enabled: shouldFetchFsk,
+    staleTime: 7 * 24 * 60 * 60 * 1000,
+  })
+
+  const fskLabel = initialFskLabel || fetchedFskLabel || null
 
   const providers =
     providerData?.flatrate
@@ -87,7 +109,7 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
           <img
             src={poster}
             alt={title}
-            loading={eager ? "eager" : "lazy"}
+            loading={eager ? 'eager' : 'lazy'}
             onError={() => setImgError(true)}
             className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.08]"
           />
@@ -99,7 +121,7 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
           </div>
         )}
 
-        {/* Rating badge — visible by default, hides on hover. Shifts down when an overlay button occupies top-right */}
+        {/* Rating badge - visible by default, hides on hover. Shifts down when an overlay button occupies top-right */}
         {score && (
           <span
             className={`absolute ${hideWatchlistButton || (isTouch && !hideWatchlistButton) ? 'top-12' : 'top-2'} right-2 z-10 text-xs font-bold px-2 py-0.5 rounded-md backdrop-blur-sm transition-opacity duration-300 group-hover:opacity-0 ${scoreColor}`}
@@ -108,7 +130,7 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
           </span>
         )}
 
-        {/* Type badge — shows "Im Kino" for current theatrical releases */}
+        {/* Type badge - shows "Im Kino" for current theatrical releases */}
         {isInCinema ? (
           <span className="absolute top-2 left-2 z-10 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-accent-500/90 text-black backdrop-blur-sm flex items-center gap-1">
             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
@@ -117,7 +139,7 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
             Im Kino
           </span>
         ) : typeLabels[type] ? (
-          <span className="absolute top-2 left-2 z-10 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-surface-900/80 text-accent-400 backdrop-blur-sm">
+          <span className="absolute top-2 left-2 z-10 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-accent-500/90 text-black backdrop-blur-sm">
             {typeLabels[type]}
           </span>
         ) : null}
@@ -143,7 +165,7 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
           </div>
         )}
 
-        {/* Hover Overlay — cinematic spotlight (desktop only) */}
+        {/* Hover Overlay - cinematic spotlight (desktop only) */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-between p-3 sm:p-4 pointer-events-none group-hover:pointer-events-auto">
           {/* Top: Watchlist button (if not hidden, desktop only) */}
           <div className="flex justify-end">
@@ -160,9 +182,15 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
 
             <div className="flex items-center gap-2 text-xs text-surface-200">
               {year && <span className="font-medium">{year}</span>}
+              {fskLabel && (
+                <>
+                  {year && <span className="text-surface-500">·</span>}
+                  <span className="font-medium">{fskLabel}</span>
+                </>
+              )}
               {score && (
                 <>
-                  <span className="text-surface-500">·</span>
+                  {(year || fskLabel) && <span className="text-surface-500">·</span>}
                   <span className={`font-bold px-1.5 py-0.5 rounded ${scoreColor}`}>{score}%</span>
                 </>
               )}
@@ -188,10 +216,10 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
         </div>
       </div>
 
-      {/* Title below card — fades out on hover */}
+      {/* Title below card - fades out on hover */}
       <div className="mt-2 px-1 group-hover:opacity-0 transition-opacity duration-300">
         <p className="text-surface-200 text-sm font-medium leading-tight line-clamp-1">{title}</p>
-        {year && <p className="text-surface-200 text-xs mt-0.5">{year}</p>}
+        {(year || fskLabel) && <p className="text-surface-200 text-xs mt-0.5">{[year, fskLabel].filter(Boolean).join(' · ')}</p>}
       </div>
     </Link>
   )

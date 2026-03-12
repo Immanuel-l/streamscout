@@ -92,7 +92,7 @@ describe('Anime Page', () => {
     renderAnime()
 
     const config = mockUseInfiniteQuery.mock.calls[0][0]
-    expect(config.queryKey).toEqual(['anime', 'tv', 1])
+    expect(config.queryKey).toEqual(['anime', 'tv', '', 'lte', 1])
     expect(config.initialPageParam).toBe(1)
     expect(config.retry).toBe(1)
     expect(config.getNextPageParam({ page: 1, total_pages: 2 })).toBe(2)
@@ -107,6 +107,18 @@ describe('Anime Page', () => {
     }))
   })
 
+
+  it('uebergibt FSK-Filterparameter fuer Anime-Filme', async () => {
+    renderAnime(['/anime?type=movie&fsk=12&fskMode=eq'])
+
+    const config = mockUseInfiniteQuery.mock.calls[0][0]
+    await config.queryFn({ pageParam: 1 })
+
+    expect(mockDiscoverMovies).toHaveBeenCalledWith(expect.objectContaining({
+      certification_country: 'DE',
+      certification: '12',
+    }))
+  })
   it('wechselt auf Filme und nutzt discoverMovies', async () => {
     renderAnime()
 
@@ -114,7 +126,7 @@ describe('Anime Page', () => {
 
     await waitFor(() => {
       const latestConfig = mockUseInfiniteQuery.mock.calls.at(-1)[0]
-      expect(latestConfig.queryKey).toEqual(['anime', 'movie', 1])
+      expect(latestConfig.queryKey).toEqual(['anime', 'movie', '', 'lte', 1])
     })
 
     const config = mockUseInfiniteQuery.mock.calls.at(-1)[0]
@@ -208,12 +220,14 @@ describe('Anime Page', () => {
 
     await waitFor(() => {
       const latestConfig = mockUseInfiniteQuery.mock.calls.at(-1)[0]
-      expect(latestConfig.queryKey).toEqual(['anime', 'tv', 4])
+      expect(latestConfig.queryKey).toEqual(['anime', 'tv', '', 'lte', 4])
       expect(latestConfig.initialPageParam).toBe(4)
     })
 
     randomSpy.mockRestore()
   })
 })
+
+
 
 

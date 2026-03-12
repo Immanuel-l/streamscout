@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   getTvDetails,
   getTvProviders,
+  getTvContentRatings,
   getTvSimilar,
   getTvRecommendations,
   getTvSeason,
@@ -28,7 +29,7 @@ describe('api/tv', () => {
     const result = await getTvDetails(10)
 
     expect(tmdb.get).toHaveBeenCalledWith('/tv/10', {
-      params: { append_to_response: 'keywords,credits,videos', include_video_language: 'de,en,null' },
+      params: { append_to_response: 'keywords,credits,videos,content_ratings', include_video_language: 'de,en,null' },
     })
     expect(result).toEqual({ id: 10, name: 'Testserie' })
   })
@@ -48,6 +49,16 @@ describe('api/tv', () => {
     const result = await getTvProviders(5)
 
     expect(result).toBeUndefined()
+  })
+
+  it('getTvContentRatings liefert results-Array zurueck', async () => {
+    const ratings = [{ iso_3166_1: 'DE', rating: '12' }]
+    tmdb.get.mockResolvedValue({ data: { results: ratings } })
+
+    const result = await getTvContentRatings(5)
+
+    expect(tmdb.get).toHaveBeenCalledWith('/tv/5/content_ratings')
+    expect(result).toEqual(ratings)
   })
 
   it('getTvSimilar nutzt default page=1 und optionale Page', async () => {
@@ -134,3 +145,4 @@ describe('api/tv', () => {
     expect(tmdb.get).toHaveBeenNthCalledWith(2, '/trending/tv/day')
   })
 })
+

@@ -1,14 +1,23 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
-import { discoverMovies } from '../api/movies'
-import { discoverTv } from '../api/tv'
+import { discoverMovies, getMovieReleaseDates } from '../api/movies'
+import { discoverTv, getTvContentRatings } from '../api/tv'
 import { posterUrl, backdropUrl } from '../api/tmdb'
 import { useGenres, useWatchProviders } from '../hooks/useProviders'
 import WatchlistButton from '../components/common/WatchlistButton'
 import ErrorBox from '../components/common/ErrorBox'
 import Select from '../components/common/Select'
 import ProviderFilter from '../components/common/ProviderFilter'
+import {
+  FSK_VALUES,
+  FSK_FILTER_MODE_OPTIONS,
+  normalizeFskCertification,
+  normalizeFskFilterMode,
+  setMovieFskFilterParams,
+  getMovieFskLabelFromReleaseDates,
+  getTvFskLabelFromContentRatings,
+} from '../utils/fsk'
 
 const ratingOptions = [
   { value: '', label: 'Egal' },
@@ -16,6 +25,11 @@ const ratingOptions = [
   { value: '7', label: '7+' },
   { value: '6', label: '6+' },
   { value: '5', label: '5+' },
+]
+
+const fskOptions = [
+  { value: '', label: 'Alle' },
+  ...FSK_VALUES.map((value) => ({ value, label: `FSK ${value}` })),
 ]
 
 const languageOptions = [
@@ -41,6 +55,8 @@ function Random() {
   const [mediaType, setMediaType] = useState(() => searchParams.get('type') || 'movie')
   const [genre, setGenre] = useState(() => searchParams.get('genre') || '')
   const [rating, setRating] = useState(() => searchParams.get('rating') || '')
+  const [fsk, setFsk] = useState(() => normalizeFskCertification(searchParams.get('fsk')) || '')
+  const [fskMode, setFskMode] = useState(() => normalizeFskFilterMode(searchParams.get('fskMode')))
   const [language, setLanguage] = useState(() => searchParams.get('lang') || 'de|en')
   const [era, setEra] = useState(() => searchParams.get('era') || '')
   const [selectedProviders, setSelectedProviders] = useState(() => {
@@ -54,17 +70,77 @@ function Random() {
     if (mediaType !== 'movie') params.type = mediaType
     if (genre) params.genre = genre
     if (rating) params.rating = rating
+    if (fsk) {
+      params.fsk = fsk
+      if (fskMode !== 'lte') params.fskMode = fskMode
+    }
     if (language !== 'de|en') params.lang = language
     if (era) params.era = era
     if (selectedProviders.length > 0) params.providers = selectedProviders.join(',')
     setSearchParams(params, { replace: true })
-  }, [mediaType, genre, rating, language, era, selectedProviders, setSearchParams])
+  }, [mediaType, genre, rating, fsk, fskMode, language, era, selectedProviders, setSearchParams])
+
   const [result, setResult] = useState(null)
+  const [resultFskLabel, setResultFskLabel] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const fskCacheRef = useRef(new Map())
 
   const genres = useGenres(mediaType)
   const providers = useWatchProviders(mediaType)
+
+  useEffect(() => {
+    let isCancelled = false
+
+    async function loadResultFsk() {
+      if (!result) {
+        setResultFskLabel(null)
+        return
+      }
+
+      const type = result.media_type === 'tv' ? 'tv' : 'movie'
+      const cacheKey = `${type}-${result.id}`
+
+      const initialLabel = type === 'tv'
+        ? getTvFskLabelFromContentRatings(result.content_ratings?.results)
+        : getMovieFskLabelFromReleaseDates(result.release_dates?.results)
+
+      if (initialLabel) {
+        fskCacheRef.current.set(cacheKey, initialLabel)
+        setResultFskLabel(initialLabel)
+        return
+      }
+
+      if (fskCacheRef.current.has(cacheKey)) {
+        setResultFskLabel(fskCacheRef.current.get(cacheKey))
+        return
+      }
+
+      setResultFskLabel(null)
+
+      try {
+        const fetchedLabel = type === 'tv'
+          ? getTvFskLabelFromContentRatings(await getTvContentRatings(result.id))
+          : getMovieFskLabelFromReleaseDates(await getMovieReleaseDates(result.id))
+
+        if (!isCancelled) {
+          fskCacheRef.current.set(cacheKey, fetchedLabel)
+          setResultFskLabel(fetchedLabel)
+        }
+      } catch {
+        if (!isCancelled) {
+          fskCacheRef.current.set(cacheKey, null)
+          setResultFskLabel(null)
+        }
+      }
+    }
+
+    loadResultFsk()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [result])
 
   const roll = useCallback(async () => {
     setLoading(true)
@@ -74,8 +150,9 @@ function Random() {
       const params = { sort_by: 'popularity.desc', 'vote_count.gte': 50 }
       if (genre) params.with_genres = genre
       if (rating) params['vote_average.gte'] = rating
+      if (fsk && mediaType === 'movie') setMovieFskFilterParams(params, fsk, fskMode)
 
-      // Language filter — single language goes to API, combined filters client-side
+      // Language filter - single language goes to API, combined filters client-side
       const langCodes = language ? language.split('|') : []
       if (langCodes.length === 1) params.with_original_language = langCodes[0]
 
@@ -103,7 +180,7 @@ function Random() {
         return
       }
 
-      // Retry loop — pick random page, filter results, retry if nothing usable
+      // Retry loop - pick random page, filter results, retry if nothing usable
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         const randomPage = Math.floor(Math.random() * maxPage) + 1
         const page = randomPage === 1 && attempt === 0
@@ -132,12 +209,14 @@ function Random() {
     } finally {
       setLoading(false)
     }
-  }, [mediaType, genre, rating, language, era, selectedProviders])
+  }, [mediaType, genre, rating, fsk, fskMode, language, era, selectedProviders])
 
   function switchMediaType(type) {
     setMediaType(type)
     setGenre('')
     setSelectedProviders([])
+    setFsk('')
+    setFskMode('lte')
   }
 
   function toggleProvider(id) {
@@ -203,6 +282,39 @@ function Random() {
               placeholder="Egal"
             />
           </div>
+
+          {mediaType === 'movie' && (
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs font-medium text-surface-400 uppercase tracking-wider mb-2">FSK</p>
+                <Select
+                  value={fsk}
+                  onChange={setFsk}
+                  options={fskOptions}
+                  placeholder="Alle"
+                />
+              </div>
+
+              {fsk && (
+                <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
+                  {FSK_FILTER_MODE_OPTIONS.map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => setFskMode(value)}
+                      aria-pressed={fskMode === value}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                        fskMode === value
+                          ? 'bg-accent-500 text-black'
+                          : 'text-surface-300 hover:text-surface-100'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <div>
             <p className="text-xs font-medium text-surface-400 uppercase tracking-wider mb-2">Sprache</p>
@@ -302,6 +414,11 @@ function Random() {
                   <span className="px-2 py-0.5 rounded-md bg-surface-800/80 text-accent-400 text-xs font-medium">
                     {result.media_type === 'tv' ? 'Serie' : 'Film'}
                   </span>
+                  {resultFskLabel && (
+                    <span className="px-2 py-0.5 rounded-md bg-surface-800/80 text-surface-200 text-xs font-medium">
+                      {resultFskLabel}
+                    </span>
+                  )}
                   {result.vote_average > 0 && (
                     <span className="flex items-center gap-1">
                       <svg className="w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="currentColor">

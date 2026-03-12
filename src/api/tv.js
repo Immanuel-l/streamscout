@@ -2,10 +2,13 @@ import tmdb from './tmdb'
 import { ALLOWED_PROVIDER_STRING } from '../utils/providers'
 
 export const getTvDetails = (id) =>
-  tmdb.get(`/tv/${id}`, { params: { append_to_response: 'keywords,credits,videos', include_video_language: 'de,en,null' } }).then((res) => res.data)
+  tmdb.get(`/tv/${id}`, { params: { append_to_response: 'keywords,credits,videos,content_ratings', include_video_language: 'de,en,null' } }).then((res) => res.data)
 
 export const getTvProviders = (id) =>
   tmdb.get(`/tv/${id}/watch/providers`).then((res) => res.data.results?.DE)
+
+export const getTvContentRatings = (id) =>
+  tmdb.get(`/tv/${id}/content_ratings`).then((res) => res.data.results)
 
 export const getTvSimilar = (id, page = 1) =>
   tmdb.get(`/tv/${id}/similar`, { params: { page } }).then((res) => res.data)
@@ -24,3 +27,4 @@ export const discoverTv = (params = {}) =>
 
 export const getTrendingTv = (timeWindow = 'week') =>
   tmdb.get(`/trending/tv/${timeWindow}`).then((res) => res.data)
+

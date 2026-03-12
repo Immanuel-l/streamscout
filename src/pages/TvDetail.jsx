@@ -11,6 +11,7 @@ import WatchlistButton from '../components/common/WatchlistButton'
 import CastList from '../components/detail/CastList'
 import TrailerSection from '../components/detail/TrailerSection'
 import ErrorBox from '../components/common/ErrorBox'
+import { getTvFskLabelFromContentRatings } from '../utils/fsk'
 
 const statusMap = {
   'Returning Series': 'Laufend',
@@ -188,6 +189,7 @@ function TvDetail() {
   const backdrop = backdropUrl(show.backdrop_path)
   const poster = posterUrl(show.poster_path)
   const totalEpisodes = show.number_of_episodes
+  const fskLabel = getTvFskLabelFromContentRatings(show.content_ratings?.results)
 
   return (
     <div>
@@ -252,6 +254,9 @@ function TvDetail() {
             }`}>
               {status}
             </span>
+            {fskLabel && (
+              <span className="px-2 py-0.5 rounded-md bg-surface-800 text-surface-200 text-xs font-medium">{fskLabel}</span>
+            )}
             {show.number_of_seasons && (
               <span>{show.number_of_seasons} Staffeln</span>
             )}
@@ -350,3 +355,4 @@ function TvDetail() {
 }
 
 export default TvDetail
+

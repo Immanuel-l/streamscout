@@ -87,7 +87,7 @@ const baseMovie = {
     results: [
       {
         iso_3166_1: 'DE',
-        release_dates: [{ type: 3, release_date: '2024-03-15T00:00:00.000Z' }],
+        release_dates: [{ type: 3, certification: '12', release_date: '2024-03-15T00:00:00.000Z' }],
       },
     ],
   },
@@ -143,6 +143,7 @@ describe('MovieDetail Page', () => {
     expect(mockUseDocumentTitle).toHaveBeenCalledWith('Testfilm')
 
     expect(screen.getByText('Aktuell im Kino')).toBeInTheDocument()
+    expect(screen.getByText('FSK 12')).toBeInTheDocument()
     expect(screen.getByText(/Kinostart in Deutschland:/)).toBeInTheDocument()
 
     expect(screen.queryByTestId('provider-list')).not.toBeInTheDocument()

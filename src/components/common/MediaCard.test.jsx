@@ -7,7 +7,9 @@ const mockUseQuery = vi.fn()
 const mockUseNowPlaying = vi.fn()
 const mockUseIsTouch = vi.fn()
 const mockGetMovieProviders = vi.fn()
+const mockGetMovieReleaseDates = vi.fn()
 const mockGetTvProviders = vi.fn()
+const mockGetTvContentRatings = vi.fn()
 
 vi.mock('@tanstack/react-query', () => ({
   useQuery: (...args) => mockUseQuery(...args),
@@ -23,10 +25,12 @@ vi.mock('../../hooks/useIsTouch', () => ({
 
 vi.mock('../../api/movies', () => ({
   getMovieProviders: (...args) => mockGetMovieProviders(...args),
+  getMovieReleaseDates: (...args) => mockGetMovieReleaseDates(...args),
 }))
 
 vi.mock('../../api/tv', () => ({
   getTvProviders: (...args) => mockGetTvProviders(...args),
+  getTvContentRatings: (...args) => mockGetTvContentRatings(...args),
 }))
 
 vi.mock('../../api/tmdb', () => ({
@@ -51,6 +55,11 @@ let observerCallback
 let observe
 let disconnect
 let originalObserver
+
+function getQueryConfigBySuffix(suffix) {
+  const matchingCalls = mockUseQuery.mock.calls.filter(([config]) => config.queryKey?.[2] === suffix)
+  return matchingCalls.at(-1)?.[0]
+}
 
 function renderCard(props = {}) {
   const media = props.media || defaultMovie
@@ -87,7 +96,7 @@ describe('MediaCard', () => {
     globalThis.IntersectionObserver = originalObserver
   })
 
-  it('rendert Filmkarte und konfiguriert Provider-Query initial deaktiviert', async () => {
+  it('rendert Filmkarte und konfiguriert Provider- sowie FSK-Query initial deaktiviert', async () => {
     renderCard()
 
     expect(screen.getByText('Film')).toBeInTheDocument()
@@ -95,15 +104,22 @@ describe('MediaCard', () => {
     expect(screen.getByAltText('Testfilm')).toHaveAttribute('src', 'https://img.test/w342/poster.jpg')
     expect(screen.getAllByText('73%').length).toBeGreaterThan(0)
 
-    const config = mockUseQuery.mock.calls[0][0]
-    expect(config.queryKey).toEqual(['movie', 42, 'providers'])
-    expect(config.enabled).toBe(false)
+    const providerConfig = getQueryConfigBySuffix('providers')
+    const fskConfig = getQueryConfigBySuffix('fsk')
 
-    await config.queryFn()
+    expect(providerConfig.queryKey).toEqual(['movie', 42, 'providers'])
+    expect(providerConfig.enabled).toBe(false)
+    expect(fskConfig.queryKey).toEqual(['movie', 42, 'fsk'])
+    expect(fskConfig.enabled).toBe(false)
+
+    await providerConfig.queryFn()
+    await fskConfig.queryFn()
+
     expect(mockGetMovieProviders).toHaveBeenCalledWith(42)
+    expect(mockGetMovieReleaseDates).toHaveBeenCalledWith(42)
   })
 
-  it('rendert Serienkarte mit Serien-Link und TV-Provider-Query', async () => {
+  it('rendert Serienkarte mit Serien-Link sowie TV-Provider/FSK-Query', async () => {
     renderCard({
       media: {
         id: 7,
@@ -118,18 +134,47 @@ describe('MediaCard', () => {
     expect(screen.getByText('Serie')).toBeInTheDocument()
     expect(screen.getByRole('link')).toHaveAttribute('href', '/tv/7')
 
-    const config = mockUseQuery.mock.calls[0][0]
-    expect(config.queryKey).toEqual(['tv', 7, 'providers'])
+    const providerConfig = getQueryConfigBySuffix('providers')
+    const fskConfig = getQueryConfigBySuffix('fsk')
 
-    await config.queryFn()
+    expect(providerConfig.queryKey).toEqual(['tv', 7, 'providers'])
+    expect(fskConfig.queryKey).toEqual(['tv', 7, 'fsk'])
+
+    await providerConfig.queryFn()
+    await fskConfig.queryFn()
+
     expect(mockGetTvProviders).toHaveBeenCalledWith(7)
+    expect(mockGetTvContentRatings).toHaveBeenCalledWith(7)
   })
 
-  it('aktiviert Provider-Fetch beim Hover und zeigt Nicht-streambar Hinweis', async () => {
-    mockUseQuery.mockReturnValue({
-      data: { flatrate: [], rent: [], buy: [] },
-      isSuccess: true,
-      isError: false,
+  it('zeigt FSK in der Karten-Meta, wenn sie in den Daten vorhanden ist', () => {
+    renderCard({
+      media: {
+        ...defaultMovie,
+        release_dates: {
+          results: [
+            {
+              iso_3166_1: 'DE',
+              release_dates: [{ type: 3, certification: '12' }],
+            },
+          ],
+        },
+      },
+    })
+
+    expect(screen.getAllByText(/FSK 12/).length).toBeGreaterThan(0)
+    expect(getQueryConfigBySuffix('fsk').enabled).toBe(false)
+  })
+
+  it('aktiviert Provider- und FSK-Fetch beim Hover und zeigt Nicht-streambar Hinweis', async () => {
+    mockUseQuery.mockImplementation(({ queryKey }) => {
+      if (queryKey?.[2] === 'providers') {
+        return { data: { flatrate: [], rent: [], buy: [] }, isSuccess: true, isError: false }
+      }
+      if (queryKey?.[2] === 'fsk') {
+        return { data: null, isSuccess: true, isError: false }
+      }
+      return { data: undefined, isSuccess: false, isError: false }
     })
 
     renderCard()
@@ -137,8 +182,8 @@ describe('MediaCard', () => {
     fireEvent.mouseEnter(screen.getByRole('link'))
 
     await waitFor(() => {
-      const latestConfig = mockUseQuery.mock.calls.at(-1)[0]
-      expect(latestConfig.enabled).toBe(true)
+      expect(getQueryConfigBySuffix('providers').enabled).toBe(true)
+      expect(getQueryConfigBySuffix('fsk').enabled).toBe(true)
     })
 
     expect(screen.getByText('Nicht streambar')).toBeInTheDocument()
@@ -146,10 +191,14 @@ describe('MediaCard', () => {
 
   it('zeigt Im Kino Badge fuer aktuelle Kino-Filme', () => {
     mockUseNowPlaying.mockReturnValue({ data: { ids: new Set([42]) } })
-    mockUseQuery.mockReturnValue({
-      data: { flatrate: [], rent: [], buy: [] },
-      isSuccess: true,
-      isError: false,
+    mockUseQuery.mockImplementation(({ queryKey }) => {
+      if (queryKey?.[2] === 'providers') {
+        return { data: { flatrate: [], rent: [], buy: [] }, isSuccess: true, isError: false }
+      }
+      if (queryKey?.[2] === 'fsk') {
+        return { data: null, isSuccess: true, isError: false }
+      }
+      return { data: undefined, isSuccess: false, isError: false }
     })
 
     renderCard()
@@ -179,16 +228,25 @@ describe('MediaCard', () => {
       buy: [],
     }
 
-    mockUseQuery.mockImplementation(({ enabled }) => (
-      enabled
-        ? { data: providerData, isSuccess: true, isError: false }
-        : { data: undefined, isSuccess: false, isError: false }
-    ))
+    mockUseQuery.mockImplementation(({ queryKey, enabled }) => {
+      if (queryKey?.[2] === 'providers') {
+        return enabled
+          ? { data: providerData, isSuccess: true, isError: false }
+          : { data: undefined, isSuccess: false, isError: false }
+      }
+      if (queryKey?.[2] === 'fsk') {
+        return enabled
+          ? { data: 'FSK 16', isSuccess: true, isError: false }
+          : { data: undefined, isSuccess: false, isError: false }
+      }
+      return { data: undefined, isSuccess: false, isError: false }
+    })
 
     renderCard({ index: 5 })
 
     expect(screen.getByTestId('watchlist-button')).toBeInTheDocument()
-    expect(mockUseQuery.mock.calls[0][0].enabled).toBe(false)
+    expect(getQueryConfigBySuffix('providers').enabled).toBe(false)
+    expect(getQueryConfigBySuffix('fsk').enabled).toBe(false)
 
     await waitFor(() => {
       expect(observe).toHaveBeenCalledTimes(1)
@@ -199,8 +257,8 @@ describe('MediaCard', () => {
     })
 
     await waitFor(() => {
-      const latestConfig = mockUseQuery.mock.calls.at(-1)[0]
-      expect(latestConfig.enabled).toBe(true)
+      expect(getQueryConfigBySuffix('providers').enabled).toBe(true)
+      expect(getQueryConfigBySuffix('fsk').enabled).toBe(true)
     })
 
     expect(screen.getAllByAltText('Netflix').length).toBeGreaterThan(0)

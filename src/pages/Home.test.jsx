@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import Home from './Home'
@@ -18,6 +18,8 @@ const mockUseTrendingAll = vi.fn()
 const mockUsePopularTv = vi.fn()
 const mockUseTopRatedTv = vi.fn()
 const mockUseNewTv = vi.fn()
+const mockGetMovieReleaseDates = vi.fn()
+const mockGetTvContentRatings = vi.fn()
 
 vi.mock('../hooks/useDocumentTitle', () => ({
   useDocumentTitle: (title) => mockUseDocumentTitle(title),
@@ -40,6 +42,14 @@ vi.mock('../hooks/useTv', () => ({
   usePopularTv: () => mockUsePopularTv(),
   useTopRatedTv: () => mockUseTopRatedTv(),
   useNewTv: () => mockUseNewTv(),
+}))
+
+vi.mock('../api/movies', () => ({
+  getMovieReleaseDates: (...args) => mockGetMovieReleaseDates(...args),
+}))
+
+vi.mock('../api/tv', () => ({
+  getTvContentRatings: (...args) => mockGetTvContentRatings(...args),
 }))
 
 vi.mock('../components/common/MediaRow', () => ({
@@ -121,6 +131,8 @@ describe('Home Page', () => {
     mockUsePersistedState.mockReturnValue(['recommended', mockSetKinoSort])
 
     mockUseNowPlaying.mockReturnValue({ data: { movies: kinoMovies }, isLoading: false, error: null })
+    mockGetMovieReleaseDates.mockResolvedValue([{ iso_3166_1: 'DE', release_dates: [{ type: 3, certification: '12' }] }])
+    mockGetTvContentRatings.mockResolvedValue([{ iso_3166_1: 'DE', rating: '16' }])
     mockUseTrendingAll.mockReturnValue({ data: [heroMovie], isLoading: false, error: null })
 
     mockUsePopularMovies.mockReturnValue(queryResult([{ id: 11, title: 'Beliebter Film' }]))
@@ -136,7 +148,7 @@ describe('Home Page', () => {
     vi.useRealTimers()
   })
 
-  it('rendert Hero, Mood-Bereich und alle MediaRows', () => {
+  it('rendert Hero, Mood-Bereich und alle MediaRows', async () => {
     mockUsePersistedState.mockReturnValue(['popularity', mockSetKinoSort])
     mockUseTrendingAll.mockReturnValue({
       data: [
@@ -151,6 +163,9 @@ describe('Home Page', () => {
 
     expect(mockUseDocumentTitle).toHaveBeenCalledWith(null)
     expect(screen.getByText('Hero Film')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText('FSK 12')).toBeInTheDocument()
+    })
     expect(screen.getByRole('link', { name: 'Details ansehen' })).toHaveAttribute('href', '/movie/101')
     expect(screen.getByTestId('watchlist-button')).toHaveTextContent('Watchlist: Hero Film')
 
@@ -174,6 +189,7 @@ describe('Home Page', () => {
 
   it('nutzt die empfohlene Sortierung fuer Kino-Filme', () => {
     mockUsePersistedState.mockReturnValue(['recommended', mockSetKinoSort])
+    mockGetMovieReleaseDates.mockImplementation(() => new Promise(() => {}))
 
     renderHome()
 
@@ -181,8 +197,10 @@ describe('Home Page', () => {
     expect(screen.getByText('Sortierung: recommended')).toBeInTheDocument()
   })
 
-  it('wechselt Hero-Slides ueber den Weiter-Button', () => {
+  it('wechselt Hero-Slides ueber den Weiter-Button', async () => {
     vi.useFakeTimers()
+    mockGetMovieReleaseDates.mockImplementation(() => new Promise(() => {}))
+    mockGetTvContentRatings.mockImplementation(() => new Promise(() => {}))
     mockUseTrendingAll.mockReturnValue({ data: [heroMovie, heroSeries], isLoading: false, error: null })
 
     renderHome()
@@ -199,3 +217,13 @@ describe('Home Page', () => {
     expect(screen.getByRole('link', { name: 'Details ansehen' })).toHaveAttribute('href', '/tv/202')
   })
 })
+
+
+
+
+
+
+
+
+
+

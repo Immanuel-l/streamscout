@@ -8,6 +8,14 @@ import { useInfiniteScroll } from '../hooks/useInfiniteScroll'
 import MediaCard from '../components/common/MediaCard'
 import GridSkeleton from '../components/common/GridSkeleton'
 import ErrorBox from '../components/common/ErrorBox'
+import Select from '../components/common/Select'
+import {
+  FSK_VALUES,
+  FSK_FILTER_MODE_OPTIONS,
+  normalizeFskCertification,
+  normalizeFskFilterMode,
+  setMovieFskFilterParams,
+} from '../utils/fsk'
 
 const animeParams = {
   with_genres: '16',
@@ -15,18 +23,29 @@ const animeParams = {
   sort_by: 'popularity.desc',
 }
 
+const fskOptions = [
+  { value: '', label: 'Alle' },
+  ...FSK_VALUES.map((value) => ({ value, label: `FSK ${value}` })),
+]
+
 function Anime() {
   useDocumentTitle('Anime')
   const [searchParams, setSearchParams] = useSearchParams()
   const [mediaType, setMediaType] = useState(() => searchParams.get('type') || 'tv')
+  const [fsk, setFsk] = useState(() => normalizeFskCertification(searchParams.get('fsk')) || '')
+  const [fskMode, setFskMode] = useState(() => normalizeFskFilterMode(searchParams.get('fskMode')))
   const [startPage, setStartPage] = useState(1)
 
   // Sync state to URL params
   useEffect(() => {
     const params = {}
     if (mediaType !== 'tv') params.type = mediaType
+    if (fsk) {
+      params.fsk = fsk
+      if (fskMode !== 'lte') params.fskMode = fskMode
+    }
     setSearchParams(params, { replace: true })
-  }, [mediaType, setSearchParams])
+  }, [mediaType, fsk, fskMode, setSearchParams])
 
   const {
     data,
@@ -36,9 +55,10 @@ function Anime() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['anime', mediaType, startPage],
+    queryKey: ['anime', mediaType, fsk, fskMode, startPage],
     queryFn: ({ pageParam }) => {
       const params = { ...animeParams, page: pageParam }
+      if (fsk && mediaType === 'movie') setMovieFskFilterParams(params, fsk, fskMode)
       return mediaType === 'tv' ? discoverTv(params) : discoverMovies(params)
     },
     initialPageParam: startPage,
@@ -67,6 +87,12 @@ function Anime() {
     setStartPage(Math.floor(Math.random() * 5) + 1)
   }
 
+  function switchMediaType(type) {
+    setMediaType(type)
+    setFsk('')
+    setFskMode('lte')
+  }
+
   return (
     <div className="space-y-8">
       <div>
@@ -83,7 +109,7 @@ function Anime() {
           <span className="text-4xl">🎌</span>
           <div>
             <h1 className="font-display text-5xl tracking-wide text-surface-100">Anime</h1>
-            <p className="text-surface-300 text-sm mt-1.5 max-w-2xl">Japanische Animationsfilme und -serien — von Shōnen-Action bis Studio Ghibli.</p>
+            <p className="text-surface-300 text-sm mt-1.5 max-w-2xl">Japanische Animationsfilme und -serien - von Shōnen-Action bis Studio Ghibli.</p>
             <div className="flex flex-wrap gap-1.5 mt-2.5">
               {['Animation', 'Japan', 'Nur im Abo'].map((tag) => (
                 <span key={tag} className="px-2.5 py-0.5 rounded-full bg-surface-800 text-surface-300 text-xs font-medium">
@@ -104,7 +130,7 @@ function Anime() {
           ].map(({ type, label }) => (
             <button
               key={type}
-              onClick={() => setMediaType(type)}
+              onClick={() => switchMediaType(type)}
               aria-pressed={mediaType === type}
               className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
                 mediaType === type
@@ -116,6 +142,36 @@ function Anime() {
             </button>
           ))}
         </div>
+
+        {mediaType === 'movie' && (
+          <div className="space-y-2">
+            <Select
+              value={fsk}
+              onChange={setFsk}
+              options={fskOptions}
+              placeholder="FSK"
+            />
+
+            {fsk && (
+              <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
+                {FSK_FILTER_MODE_OPTIONS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setFskMode(value)}
+                    aria-pressed={fskMode === value}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      fskMode === value
+                        ? 'bg-accent-500 text-black'
+                        : 'text-surface-300 hover:text-surface-100'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <button
           onClick={shuffle}
@@ -140,7 +196,7 @@ function Anime() {
               <MediaCard key={`${media.id}-${i}`} media={media} index={i} eager animate={i < firstPageCount} />
             ))}
 
-            {/* Sentinel inside grid, before skeletons — prevents oscillation */}
+            {/* Sentinel inside grid, before skeletons - prevents oscillation */}
             {hasNextPage && (
               <div ref={sentinelRef} className="col-span-full h-px" />
             )}

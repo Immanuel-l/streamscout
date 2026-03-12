@@ -10,6 +10,7 @@ import WatchlistButton from '../components/common/WatchlistButton'
 import CastList from '../components/detail/CastList'
 import TrailerSection from '../components/detail/TrailerSection'
 import ErrorBox from '../components/common/ErrorBox'
+import { getMovieFskLabelFromReleaseDates } from '../utils/fsk'
 
 function MovieDetail() {
   const { id } = useParams()
@@ -39,6 +40,7 @@ function MovieDetail() {
   const kinostart = theatricalDate
     ? new Date(theatricalDate).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })
     : null
+  const fskLabel = getMovieFskLabelFromReleaseDates(movie.release_dates?.results)
 
   return (
     <div>
@@ -94,6 +96,9 @@ function MovieDetail() {
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-surface-300">
             {year && <span>{year}</span>}
             {runtime && <span>{runtime}</span>}
+            {fskLabel && (
+              <span className="px-2 py-0.5 rounded-md bg-surface-800 text-surface-200 text-xs font-medium">{fskLabel}</span>
+            )}
             {movie.genres?.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {movie.genres.map((g) => (
@@ -178,3 +183,4 @@ function MovieDetail() {
 }
 
 export default MovieDetail
+

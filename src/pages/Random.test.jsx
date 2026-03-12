@@ -7,7 +7,9 @@ const mockUseDocumentTitle = vi.fn()
 const mockUseGenres = vi.fn()
 const mockUseWatchProviders = vi.fn()
 const mockDiscoverMovies = vi.fn()
+const mockGetMovieReleaseDates = vi.fn()
 const mockDiscoverTv = vi.fn()
+const mockGetTvContentRatings = vi.fn()
 
 vi.mock('../hooks/useDocumentTitle', () => ({
   useDocumentTitle: (...args) => mockUseDocumentTitle(...args),
@@ -20,10 +22,12 @@ vi.mock('../hooks/useProviders', () => ({
 
 vi.mock('../api/movies', () => ({
   discoverMovies: (...args) => mockDiscoverMovies(...args),
+  getMovieReleaseDates: (...args) => mockGetMovieReleaseDates(...args),
 }))
 
 vi.mock('../api/tv', () => ({
   discoverTv: (...args) => mockDiscoverTv(...args),
+  getTvContentRatings: (...args) => mockGetTvContentRatings(...args),
 }))
 
 vi.mock('../api/tmdb', () => ({
@@ -113,6 +117,14 @@ describe('Random Page', () => {
 
     mockDiscoverMovies.mockResolvedValue(discoveryResponse([sampleMovie]))
     mockDiscoverTv.mockResolvedValue(discoveryResponse([sampleTv]))
+
+    mockGetMovieReleaseDates.mockResolvedValue([
+      {
+        iso_3166_1: 'DE',
+        release_dates: [{ type: 3, certification: '12' }],
+      },
+    ])
+    mockGetTvContentRatings.mockResolvedValue([{ iso_3166_1: 'DE', rating: '16' }])
   })
 
   afterEach(() => {
@@ -145,6 +157,7 @@ describe('Random Page', () => {
     }))
 
     expect(await screen.findByText('Der Zufallsfilm')).toBeInTheDocument()
+    expect(await screen.findByText('FSK 12')).toBeInTheDocument()
     expect(screen.getByTestId('watchlist-button')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Zur Detailseite' })).toHaveAttribute('href', '/movie/101')
   })
@@ -161,17 +174,21 @@ describe('Random Page', () => {
 
     expect(mockUseGenres).toHaveBeenLastCalledWith('tv')
     expect(await screen.findByText('Die Zufallsserie')).toBeInTheDocument()
+    expect(await screen.findByText('FSK 16')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Zur Detailseite' })).toHaveAttribute('href', '/tv/55')
   })
 
-  it('uebergibt gesetzte Filter an discoverMovies', async () => {
+  it('uebergibt gesetzte Filter inklusive FSK-Modus an discoverMovies', async () => {
     renderRandom()
 
     const selects = screen.getAllByTestId('mock-select')
     fireEvent.change(selects[0], { target: { value: '28' } })
     fireEvent.change(selects[1], { target: { value: '7' } })
-    fireEvent.change(selects[2], { target: { value: 'de' } })
-    fireEvent.change(selects[3], { target: { value: '2010' } })
+    fireEvent.change(selects[2], { target: { value: '12' } })
+    fireEvent.change(selects[3], { target: { value: 'de' } })
+    fireEvent.change(selects[4], { target: { value: '2010' } })
+
+    fireEvent.click(screen.getByText('Ab FSK'))
 
     fireEvent.click(screen.getByText('toggle-provider-8'))
     expect(screen.getByTestId('provider-selected-count')).toHaveTextContent('1')
@@ -185,6 +202,8 @@ describe('Random Page', () => {
     expect(mockDiscoverMovies).toHaveBeenCalledWith(expect.objectContaining({
       with_genres: '28',
       'vote_average.gte': '7',
+      'certification.gte': '12',
+      certification_country: 'DE',
       with_original_language: 'de',
       'primary_release_date.gte': '2010-01-01',
       with_watch_providers: '8',

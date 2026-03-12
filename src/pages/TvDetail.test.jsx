@@ -88,6 +88,7 @@ const baseShow = {
   credits: { cast: [{ id: 1, name: 'Actor' }] },
   videos: { results: [{ id: 'v1', key: 'abc' }] },
   keywords: { results: [{ id: 100 }, { id: 200 }] },
+  content_ratings: { results: [{ iso_3166_1: 'DE', rating: '16' }] },
   seasons: [
     { id: 1, season_number: 0, name: 'Specials', episode_count: 2, air_date: '2019-01-01', poster_path: null },
     { id: 2, season_number: 1, name: 'Staffel 1', episode_count: 10, air_date: '2020-01-01', poster_path: '/s1.jpg' },
@@ -164,6 +165,7 @@ describe('TvDetail Page', () => {
 
     expect(screen.getByText('2020–2024')).toBeInTheDocument()
     expect(screen.getByText('Laufend')).toBeInTheDocument()
+    expect(screen.getByText('FSK 16')).toBeInTheDocument()
     expect(screen.getByText('2 Staffeln')).toBeInTheDocument()
     expect(screen.getByText('18 Episoden')).toBeInTheDocument()
 
@@ -197,5 +199,4 @@ describe('TvDetail Page', () => {
     expect(screen.getByTestId('media-row')).toHaveTextContent('Serien:loading')
   })
 })
-
 

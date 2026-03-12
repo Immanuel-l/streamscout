@@ -4,11 +4,14 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import MediaRow from '../components/common/MediaRow'
 import WatchlistButton from '../components/common/WatchlistButton'
 import { useNowPlaying, usePopularMovies, useTopRatedMovies, useNewMovies, usePopularAnime, useTrendingAll } from '../hooks/useMovies'
+import { getMovieReleaseDates } from '../api/movies'
 import { usePopularTv, useTopRatedTv, useNewTv } from '../hooks/useTv'
+import { getTvContentRatings } from '../api/tv'
 import { usePersistedState } from '../hooks/usePersistedState'
 import { backdropUrl } from '../api/tmdb'
 import { moods } from '../utils/moods'
 import WatchlistRecommendations from '../components/home/WatchlistRecommendations'
+import { getMovieFskLabelFromReleaseDates, getTvFskLabelFromContentRatings } from '../utils/fsk'
 
 function HeroSection({ items }) {
   const heroItems = useMemo(
@@ -17,6 +20,7 @@ function HeroSection({ items }) {
   )
   const [index, setIndex] = useState(0)
   const [fade, setFade] = useState(true)
+  const [fetchedFskByKey, setFetchedFskByKey] = useState({})
   const touchRef = useRef(null)
 
   const goTo = useCallback((newIndex) => {
@@ -43,6 +47,45 @@ function HeroSection({ items }) {
     return () => clearInterval(timer)
   }, [next, heroItems.length])
 
+  useEffect(() => {
+    const currentItem = heroItems[index]
+    if (!currentItem) return
+
+    const type = currentItem.media_type === 'tv' ? 'tv' : 'movie'
+    const cacheKey = `${type}-${currentItem.id}`
+
+    const initialLabel = type === 'tv'
+      ? getTvFskLabelFromContentRatings(currentItem.content_ratings?.results)
+      : getMovieFskLabelFromReleaseDates(currentItem.release_dates?.results)
+
+    if (initialLabel) return
+    if (Object.prototype.hasOwnProperty.call(fetchedFskByKey, cacheKey)) return
+
+    let isCancelled = false
+
+    async function loadFsk() {
+      try {
+        const fetchedLabel = type === 'tv'
+          ? getTvFskLabelFromContentRatings(await getTvContentRatings(currentItem.id))
+          : getMovieFskLabelFromReleaseDates(await getMovieReleaseDates(currentItem.id))
+
+        if (!isCancelled) {
+          setFetchedFskByKey((prev) => ({ ...prev, [cacheKey]: fetchedLabel }))
+        }
+      } catch {
+        if (!isCancelled) {
+          setFetchedFskByKey((prev) => ({ ...prev, [cacheKey]: null }))
+        }
+      }
+    }
+
+    loadFsk()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [heroItems, index, fetchedFskByKey])
+
   // Swipe gestures
   function handleTouchStart(e) {
     touchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
@@ -67,8 +110,14 @@ function HeroSection({ items }) {
   const date = item.release_date || item.first_air_date
   const year = date ? new Date(date).getFullYear() : null
   const type = item.media_type === 'tv' ? 'tv' : 'movie'
+  const fskCacheKey = `${type}-${item.id}`
   const linkPath = type === 'tv' ? `/tv/${item.id}` : `/movie/${item.id}`
   const score = item.vote_average > 0 ? Math.round(item.vote_average * 10) : null
+  const initialFskLabel = type === 'tv'
+    ? getTvFskLabelFromContentRatings(item.content_ratings?.results)
+    : getMovieFskLabelFromReleaseDates(item.release_dates?.results)
+  const fetchedFskLabel = fetchedFskByKey[fskCacheKey]
+  const fskLabel = initialFskLabel || fetchedFskLabel || null
 
   return (
     <section className="group/hero relative -mx-4 sm:-mx-6 lg:-mx-8 -mt-8 mb-4">
@@ -122,6 +171,7 @@ function HeroSection({ items }) {
                 <span className="text-accent-400 text-sm font-bold">{score}%</span>
               )}
               {year && <span className="text-white/65 text-sm">{year}</span>}
+              {fskLabel && <span className="text-white/65 text-sm">{fskLabel}</span>}
             </div>
 
             <h2 className="font-display text-4xl sm:text-5xl md:text-6xl tracking-wide text-white leading-tight">
@@ -302,4 +352,12 @@ function Home() {
 }
 
 export default Home
+
+
+
+
+
+
+
+
 
