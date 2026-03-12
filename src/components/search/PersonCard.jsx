@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import { Link } from 'react-router-dom'
 import { IMAGE_BASE } from '../../api/tmdb'
+import { ANIMATION_DELAY_MODULO, ANIMATION_DELAY_MS } from '../../utils/constants'
 
 const departmentLabels = {
   Acting: 'Schauspiel',
@@ -24,7 +25,7 @@ function PersonCard({ person, index = 0, animate = true }) {
     <Link
       to={`/person/${person.id}`}
       className={`group relative w-full ${animate ? 'animate-fade-in' : ''}`}
-      style={animate ? { animationDelay: `${(index % 20) * 50}ms` } : undefined}
+      style={animate ? { animationDelay: `${(index % ANIMATION_DELAY_MODULO) * ANIMATION_DELAY_MS}ms` } : undefined}
     >
       <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-surface-800 transition-shadow duration-500 group-hover:shadow-[0_8px_40px_-8px_rgba(245,158,11,0.15)]">
         {profileUrl ? (

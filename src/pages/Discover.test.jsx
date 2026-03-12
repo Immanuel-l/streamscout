@@ -157,10 +157,10 @@ describe('Discover Page', () => {
     expect(actionBtn).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('zeigt Jahr- und Bewertungs-Select', () => {
+  it('zeigt Jahr-, Bewertungs- und FSK-Select', () => {
     renderDiscover()
     expect(screen.getByTestId('select-Alle Jahre')).toBeInTheDocument()
-    expect(screen.getByTestId('select-Alle')).toBeInTheDocument()
+    expect(screen.getAllByTestId('select-Alle').length).toBeGreaterThanOrEqual(2)
   })
 
   it('zeigt Provider-Filter', () => {

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react'
+import { INFINITE_SCROLL_MARGIN } from '../utils/constants'
 
 /**
  * Hook für Infinite Scroll mit IntersectionObserver.
@@ -32,7 +33,7 @@ export function useInfiniteScroll({ fetchNextPage, hasNextPage, isFetchingNextPa
             fetchRef.current()
           }
         },
-        { rootMargin: '600px' }
+        { rootMargin: INFINITE_SCROLL_MARGIN }
       )
       observer.observe(node)
       observerRef.current = observer

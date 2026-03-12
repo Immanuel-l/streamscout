@@ -53,6 +53,7 @@ function ProviderList({ providers }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 title={`${p.provider_name} – Verfügbarkeit anzeigen`}
+                aria-label={`${p.provider_name} – Verfügbarkeit auf JustWatch anzeigen`}
                 className="transition-all duration-300 hover:scale-110"
               >
                 <img

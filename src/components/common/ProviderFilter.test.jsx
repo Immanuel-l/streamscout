@@ -15,20 +15,20 @@ describe('ProviderFilter', () => {
 
   it('rendert Provider-Buttons mit Labels', () => {
     render(<ProviderFilter providers={mockProviders} selected={[]} onToggle={() => {}} />)
-    expect(screen.getByLabelText('Netflix')).toBeInTheDocument()
-    expect(screen.getByLabelText('Disney Plus')).toBeInTheDocument()
+    expect(screen.getByLabelText('Netflix aktivieren')).toBeInTheDocument()
+    expect(screen.getByLabelText('Disney Plus aktivieren')).toBeInTheDocument()
   })
 
   it('markiert selektierte Provider mit aria-pressed', () => {
     render(<ProviderFilter providers={mockProviders} selected={[8]} onToggle={() => {}} />)
-    expect(screen.getByLabelText('Netflix')).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByLabelText('Disney Plus')).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByLabelText('Netflix deaktivieren')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByLabelText('Disney Plus aktivieren')).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('ruft onToggle mit provider_id beim Klick', () => {
     const onToggle = vi.fn()
     render(<ProviderFilter providers={mockProviders} selected={[]} onToggle={onToggle} />)
-    fireEvent.click(screen.getByLabelText('Netflix'))
+    fireEvent.click(screen.getByLabelText('Netflix aktivieren'))
     expect(onToggle).toHaveBeenCalledWith(8)
   })
 

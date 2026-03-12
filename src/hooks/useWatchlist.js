@@ -8,7 +8,8 @@ const SYNC_EVENT = 'watchlist-sync'
 function readWatchlist() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []
-  } catch {
+  } catch (e) {
+    console.warn('useWatchlist: Fehler beim Lesen der Watchlist:', e)
     return []
   }
 }
@@ -156,7 +157,7 @@ export function useWatchlist() {
         hydrated.push(...results.filter(Boolean))
       }
 
-      return { success: true, items: hydrated }
+      return { success: true, items: hydrated, failedCount: newEntries.length - hydrated.length }
     } catch (e) {
       console.error('Share fetch error:', e)
       return { success: false, error: 'Abruf fehlgeschlagen' }

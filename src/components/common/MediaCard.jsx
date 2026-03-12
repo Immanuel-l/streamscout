@@ -5,6 +5,7 @@ import { posterUrl, IMAGE_BASE } from '../../api/tmdb'
 import { getMovieProviders } from '../../api/movies'
 import { getTvProviders } from '../../api/tv'
 import { ALLOWED_PROVIDER_SET } from '../../utils/providers'
+import { ANIMATION_DELAY_MODULO, ANIMATION_DELAY_MS, CARD_NEAR_VIEWPORT_MARGIN } from '../../utils/constants'
 import { useNowPlaying } from '../../hooks/useMovies'
 import { useIsTouch } from '../../hooks/useIsTouch'
 import WatchlistButton from './WatchlistButton'
@@ -28,7 +29,7 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
           observer.disconnect()
         }
       },
-      { rootMargin: '150px' }
+      { rootMargin: CARD_NEAR_VIEWPORT_MARGIN }
     )
 
     observer.observe(cardRef.current)
@@ -78,7 +79,7 @@ function MediaCard({ media, index = 0, eager = false, animate = true, hideWatchl
       ref={cardRef}
       to={linkPath}
       className={`group relative w-full ${animate ? 'animate-fade-in' : ''}`}
-      style={animate ? { animationDelay: `${(index % 20) * 50}ms` } : undefined}
+      style={animate ? { animationDelay: `${(index % ANIMATION_DELAY_MODULO) * ANIMATION_DELAY_MS}ms` } : undefined}
       onMouseEnter={() => setHovered(true)}
     >
       <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-surface-800 transition-shadow duration-500 group-hover:shadow-[0_8px_40px_-8px_rgba(245,158,11,0.15)]">

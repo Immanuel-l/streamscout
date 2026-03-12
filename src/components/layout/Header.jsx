@@ -1,14 +1,27 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { useTheme } from '../../hooks/useTheme'
+import { t } from '../../utils/i18n'
 
 const navLinks = [
-  { to: '/', label: 'Home' },
-  { to: '/search', label: 'Suche' },
-  { to: '/discover', label: 'Entdecken' },
-  { to: '/random', label: 'Zufall' },
-  { to: '/watchlist', label: 'Merkliste' },
+  { to: '/', labelKey: 'nav.home' },
+  { to: '/search', labelKey: 'nav.search' },
+  { to: '/discover', labelKey: 'nav.discover' },
+  { to: '/random', labelKey: 'nav.random' },
+  { to: '/watchlist', labelKey: 'nav.watchlist' },
 ]
+
+function ThemeIcon({ theme }) {
+  return theme === 'dark' ? (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+    </svg>
+  ) : (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+    </svg>
+  )
+}
 
 function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -30,7 +43,7 @@ function Header() {
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[60] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-accent-500 focus:text-black focus:text-sm focus:font-medium"
       >
-        Zum Inhalt springen
+        {t('nav.skip')}
       </a>
       <header className="w-full bg-surface-950/80 backdrop-blur-md pt-[env(safe-area-inset-top)] border-b border-accent-500/10" style={{ boxShadow: '0 1px 20px -4px rgba(245, 158, 11, 0.08)' }}>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
@@ -42,7 +55,7 @@ function Header() {
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map(({ to, label }) => (
+            {navLinks.map(({ to, labelKey }) => (
               <NavLink
                 key={to}
                 to={to}
@@ -55,23 +68,15 @@ function Header() {
                   }`
                 }
               >
-                {label}
+                {t(labelKey)}
               </NavLink>
             ))}
             <button
               onClick={toggleTheme}
               className="ml-2 p-2 rounded-lg text-surface-200 hover:text-surface-100 hover:bg-surface-700/70 transition-colors"
-              aria-label={theme === 'dark' ? 'Helles Design aktivieren' : 'Dunkles Design aktivieren'}
+              aria-label={theme === 'dark' ? t('theme.light') : t('theme.dark')}
             >
-              {theme === 'dark' ? (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
-                </svg>
-              ) : (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
-                </svg>
-              )}
+              <ThemeIcon theme={theme} />
             </button>
           </nav>
 
@@ -79,17 +84,9 @@ function Header() {
             <button
               onClick={toggleTheme}
               className="p-2 rounded-lg text-surface-200 hover:text-surface-100 hover:bg-surface-700/70 transition-colors"
-              aria-label={theme === 'dark' ? 'Helles Design aktivieren' : 'Dunkles Design aktivieren'}
+              aria-label={theme === 'dark' ? t('theme.light') : t('theme.dark')}
             >
-              {theme === 'dark' ? (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
-                </svg>
-              ) : (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
-                </svg>
-              )}
+              <ThemeIcon theme={theme} />
             </button>
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
@@ -126,7 +123,7 @@ function Header() {
         }`}
       >
         <div className="px-4 py-3 space-y-1">
-          {navLinks.map(({ to, label }) => (
+          {navLinks.map(({ to, labelKey }) => (
             <NavLink
               key={to}
               to={to}
@@ -140,7 +137,7 @@ function Header() {
                 }`
               }
             >
-              {label}
+              {t(labelKey)}
             </NavLink>
           ))}
         </div>
@@ -150,4 +147,3 @@ function Header() {
 }
 
 export default Header
-

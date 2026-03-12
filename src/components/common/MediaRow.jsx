@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import MediaCard from './MediaCard'
+import ArrowButton from './ArrowButton'
 import ErrorBox from './ErrorBox'
 
 function MediaRowSkeleton() {
@@ -16,27 +17,6 @@ function MediaRowSkeleton() {
         </div>
       ))}
     </div>
-  )
-}
-
-function ArrowButton({ direction, onClick }) {
-  const isLeft = direction === 'left'
-  return (
-    <button
-      onClick={onClick}
-      aria-label={isLeft ? 'Zurück scrollen' : 'Weiter scrollen'}
-      className={`absolute top-0 ${isLeft ? 'left-0' : 'right-0'} z-10 h-full w-12 sm:w-14 flex items-center ${isLeft ? 'justify-start' : 'justify-end'} opacity-0 group-hover/row:opacity-100 transition-opacity duration-300 cursor-pointer`}
-    >
-      <span className="w-10 h-10 rounded-full bg-surface-950/80 backdrop-blur-sm border border-surface-700/50 flex items-center justify-center text-surface-100 hover:bg-surface-800 hover:border-surface-600 transition-colors">
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          {isLeft ? (
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          ) : (
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-          )}
-        </svg>
-      </span>
-    </button>
   )
 }
 
@@ -131,7 +111,14 @@ function MediaRow({ title, items, isLoading, error, linkTo, sortOptions, sortBy,
           {/* Scroll container */}
           <div
             ref={scrollRef}
-            className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth"
+            tabIndex={0}
+            role="region"
+            aria-label={`${title} — horizontal scrollen`}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowLeft') { e.preventDefault(); scroll('left') }
+              if (e.key === 'ArrowRight') { e.preventDefault(); scroll('right') }
+            }}
+            className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 focus-visible:rounded-xl"
           >
             {items?.map((media, i) => (
               <div key={media.id} className="shrink-0 w-40 sm:w-48 md:w-52">

@@ -1,27 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { IMAGE_BASE } from '../../api/tmdb'
-
-function ArrowButton({ direction, onClick }) {
-  const isLeft = direction === 'left'
-  return (
-    <button
-      onClick={onClick}
-      aria-label={isLeft ? 'Zurück scrollen' : 'Weiter scrollen'}
-      className={`absolute top-0 ${isLeft ? 'left-0' : 'right-0'} z-10 h-full w-12 sm:w-14 flex items-center ${isLeft ? 'justify-start' : 'justify-end'} opacity-0 group-hover/cast:opacity-100 transition-opacity duration-300 cursor-pointer`}
-    >
-      <span className="w-10 h-10 rounded-full bg-surface-950/80 backdrop-blur-sm border border-surface-700/50 flex items-center justify-center text-surface-100 hover:bg-surface-800 hover:border-surface-600 transition-colors">
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          {isLeft ? (
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          ) : (
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-          )}
-        </svg>
-      </span>
-    </button>
-  )
-}
+import ArrowButton from '../common/ArrowButton'
 
 function CastList({ cast }) {
   const scrollRef = useRef(null)
@@ -74,19 +54,26 @@ function CastList({ cast }) {
         {/* Arrow buttons — desktop only */}
         {canScrollLeft && (
           <div className="hidden sm:block">
-            <ArrowButton direction="left" onClick={() => scroll('left')} />
+            <ArrowButton direction="left" onClick={() => scroll('left')} groupHoverClass="group-hover/cast" />
           </div>
         )}
         {canScrollRight && (
           <div className="hidden sm:block">
-            <ArrowButton direction="right" onClick={() => scroll('right')} />
+            <ArrowButton direction="right" onClick={() => scroll('right')} groupHoverClass="group-hover/cast" />
           </div>
         )}
 
         {/* Scroll container */}
         <div
           ref={scrollRef}
-          className="flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth"
+          tabIndex={0}
+          role="region"
+          aria-label="Besetzung — horizontal scrollen"
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowLeft') { e.preventDefault(); scroll('left') }
+            if (e.key === 'ArrowRight') { e.preventDefault(); scroll('right') }
+          }}
+          className="flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 focus-visible:rounded-xl"
         >
           {visible.map((person) => (
             <Link

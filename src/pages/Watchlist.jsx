@@ -32,7 +32,7 @@ function WatchlistCard({ item, index, onRemove, readOnly = false, isSelected = f
             onRemove(item.id, item.media_type)
           }}
           title="Von Merkliste entfernen"
-          className="absolute top-2 right-2 z-20 w-7 h-7 flex items-center justify-center rounded-full bg-black/60 text-white/70 hover:bg-red-500/90 hover:text-white transition-colors backdrop-blur-sm cursor-pointer"
+          className="absolute top-2 right-2 z-20 w-7 h-7 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-black/60 text-white/70 hover:bg-red-500/90 hover:text-white transition-colors backdrop-blur-sm cursor-pointer"
         >
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -49,7 +49,7 @@ function WatchlistCard({ item, index, onRemove, readOnly = false, isSelected = f
             if (onToggleSelect) onToggleSelect(item)
           }}
           title={isSelected ? 'Abwählen' : 'Auswählen'}
-          className={`absolute top-2 left-2 z-20 w-7 h-7 flex items-center justify-center rounded-full transition-all backdrop-blur-sm cursor-pointer border-2 ${
+          className={`absolute top-2 left-2 z-20 w-7 h-7 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full transition-all backdrop-blur-sm cursor-pointer border-2 ${
             isSelected 
               ? 'bg-accent-500 border-accent-500 text-black shadow-lg shadow-accent-500/20 scale-110' 
               : 'bg-black/40 border-white/40 text-transparent hover:bg-black/60 hover:border-white/60'
@@ -100,6 +100,9 @@ function Watchlist() {
           setSharedItems(res.items)
           // Pre-select all items by default
           setSelectedItems(new Set(res.items.map((m) => `${m.media_type}-${m.id}`)))
+          if (res.failedCount > 0) {
+            toast(`${res.items.length} von ${res.items.length + res.failedCount} Einträgen geladen. Einige konnten nicht abgerufen werden.`, 'warning')
+          }
         } else {
           toast(res.error || 'Fehler beim Laden der geteilten Liste', 'error')
         }

@@ -11,7 +11,7 @@ function ProviderFilter({ providers, selected, onToggle, label = 'Streaming-Anbi
           <button
             key={p.provider_id}
             onClick={() => onToggle(p.provider_id)}
-            aria-label={p.provider_name}
+            aria-label={`${p.provider_name} ${selected.includes(p.provider_id) ? 'deaktivieren' : 'aktivieren'}`}
             aria-pressed={selected.includes(p.provider_id)}
             className={`rounded-xl overflow-hidden transition-all duration-300 ${
               selected.includes(p.provider_id)

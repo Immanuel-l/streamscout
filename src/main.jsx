@@ -6,6 +6,9 @@ import App from './App'
 import ErrorBoundary from './components/common/ErrorBoundary'
 import { ToastProvider } from './components/common/Toast'
 import './index.css'
+import { setLocale } from './utils/i18n'
+
+setLocale('de')
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,3 +39,4 @@ createRoot(document.getElementById('root')).render(
     </ErrorBoundary>
   </StrictMode>,
 )
+

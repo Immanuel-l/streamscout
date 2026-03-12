@@ -1,13 +1,15 @@
 import { useRef, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { posterUrl, IMAGE_BASE } from '../../api/tmdb'
+import { t } from '../../utils/i18n'
 
-const typeLabels = { movie: 'Film', tv: 'Serie', person: 'Person' }
+const typeLabelKeys = { movie: 'media.movie', tv: 'media.tv', person: 'media.person' }
 
 function SearchBar({ value, onChange, suggestions = [], history = [], onHistorySelect, onHistoryRemove, onHistoryClear }) {
   const inputRef = useRef(null)
   const wrapperRef = useRef(null)
   const focusedRef = useRef(true)
+  const [focused, setFocused] = useState(true)
   const [open, setOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [highlighted, setHighlighted] = useState(-1)
@@ -141,15 +143,16 @@ function SearchBar({ value, onChange, suggestions = [], history = [], onHistoryS
         onChange={(e) => handleValueChange(e.target.value)}
         onFocus={() => {
           focusedRef.current = true
+          setFocused(true)
           if (!value && history.length > 0) {
             setHistoryOpen(true)
           } else if (suggestions.length > 0) {
             setOpen(true)
           }
         }}
-        onBlur={() => { focusedRef.current = false }}
+        onBlur={() => { focusedRef.current = false; setFocused(false) }}
         onKeyDown={handleKeyDown}
-        placeholder="Film, Serie oder Person suchen..."
+        placeholder={t('search.placeholder')}
         role="combobox"
         aria-expanded={(open && suggestions.length > 0) || historyOpen}
         aria-autocomplete="list"
@@ -163,12 +166,17 @@ function SearchBar({ value, onChange, suggestions = [], history = [], onHistoryS
             inputRef.current?.focus()
           }}
           className="absolute right-4 top-1/2 -translate-y-1/2 text-surface-400 hover:text-surface-100 transition-colors z-10"
-          aria-label="Suche leeren"
+          aria-label={t('search.clear')}
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
+      )}
+      {!value && !focused && (
+        <kbd className="hidden sm:block absolute right-4 top-1/2 -translate-y-1/2 text-surface-500 text-xs bg-surface-700/50 border border-surface-600/30 px-1.5 py-0.5 rounded font-mono pointer-events-none">
+          /
+        </kbd>
       )}
 
       {/* Autocomplete Dropdown */}
@@ -206,7 +214,7 @@ function SearchBar({ value, onChange, suggestions = [], history = [], onHistoryS
                 <div className="min-w-0 flex-1">
                   <p className="text-surface-100 text-sm font-medium truncate">{title}</p>
                   <p className="text-surface-400 text-xs">
-                    {typeLabels[item.media_type] || ''}{year ? ` · ${year}` : ''}
+                    {t(typeLabelKeys[item.media_type] || '')}{year ? ` · ${year}` : ''}
                   </p>
                 </div>
               </button>
@@ -219,12 +227,12 @@ function SearchBar({ value, onChange, suggestions = [], history = [], onHistoryS
       {historyOpen && history.length > 0 && (
         <div className="absolute left-0 right-0 top-full mt-2 rounded-xl bg-surface-800/95 backdrop-blur-lg border border-surface-700/60 shadow-2xl shadow-black/60 overflow-hidden z-50">
           <div className="px-4 py-2.5 flex items-center justify-between border-b border-surface-700/40">
-            <span className="text-surface-400 text-xs uppercase tracking-wider font-medium">Zuletzt gesucht</span>
+            <span className="text-surface-400 text-xs uppercase tracking-wider font-medium">{t('search.history.title')}</span>
             <button
               onClick={() => { onHistoryClear?.(); setHistoryOpen(false) }}
               className="text-surface-500 text-xs hover:text-surface-300 transition-colors"
             >
-              Löschen
+              {t('search.history.clear')}
             </button>
           </div>
           {history.map((q, index) => (
@@ -246,7 +254,7 @@ function SearchBar({ value, onChange, suggestions = [], history = [], onHistoryS
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onHistoryRemove?.(q) }}
-                className="text-surface-600 hover:text-surface-300 flex-shrink-0 transition-colors p-0.5"
+                className="text-surface-600 hover:text-surface-300 flex-shrink-0 transition-colors p-2"
                 aria-label={`"${q}" aus Verlauf entfernen`}
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -262,5 +270,3 @@ function SearchBar({ value, onChange, suggestions = [], history = [], onHistoryS
 }
 
 export default SearchBar
-
-

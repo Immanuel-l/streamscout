@@ -63,6 +63,8 @@ function ToastItem({ toast, onDismiss }) {
 
   return (
     <div
+      role="alert"
+      aria-live="assertive"
       className={`pointer-events-auto flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-800/95 backdrop-blur-md border border-surface-700/50 shadow-lg shadow-black/40 text-sm text-surface-100 transition-all duration-300 ${
         visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'
       }`}

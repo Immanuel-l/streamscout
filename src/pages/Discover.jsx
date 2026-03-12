@@ -12,6 +12,7 @@ import ErrorBox from '../components/common/ErrorBox'
 import Select from '../components/common/Select'
 import ProviderFilter from '../components/common/ProviderFilter'
 import ScrollToTop from '../components/common/ScrollToTop'
+import { t } from '../utils/i18n'
 
 const currentYear = new Date().getFullYear()
 const years = Array.from({ length: 50 }, (_, i) => currentYear - i)
@@ -23,6 +24,15 @@ const ratingOptions = [
   { value: '7', label: '7+' },
   { value: '6', label: '6+' },
   { value: '5', label: '5+' },
+]
+
+const fskOptions = [
+  { value: '', label: 'Alle' },
+  { value: 'FSK 0', label: 'FSK 0' },
+  { value: 'FSK 6', label: 'FSK 6' },
+  { value: 'FSK 12', label: 'FSK 12' },
+  { value: 'FSK 16', label: 'FSK 16' },
+  { value: 'FSK 18', label: 'FSK 18' },
 ]
 
 const sortOptions = [
@@ -46,6 +56,7 @@ function Discover() {
     const p = searchParams.get('providers')
     return p ? p.split(',').map(Number).filter(Boolean) : []
   })
+  const [fsk, setFsk] = useState(() => searchParams.get('fsk') || '')
 
   // Sync state to URL params
   useEffect(() => {
@@ -56,8 +67,9 @@ function Discover() {
     if (year) params.year = year
     if (rating) params.rating = rating
     if (selectedProviders.length > 0) params.providers = selectedProviders.join(',')
+    if (fsk) params.fsk = fsk
     setSearchParams(params, { replace: true })
-  }, [mediaType, sortBy, selectedGenres, year, rating, selectedProviders, setSearchParams])
+  }, [mediaType, sortBy, selectedGenres, year, rating, selectedProviders, fsk, setSearchParams])
 
   const genres = useGenres(mediaType)
   const providers = useWatchProviders(mediaType)
@@ -74,6 +86,10 @@ function Discover() {
     }
     if (rating) params['vote_average.gte'] = rating
     if (selectedProviders.length > 0) params.with_watch_providers = selectedProviders.join('|')
+    if (fsk && mediaType === 'movie') {
+      params.certification_country = 'DE'
+      params['certification.lte'] = fsk
+    }
     // Bei Sortierung nach Bewertung: Mindestanzahl Votes um obskure Titel zu vermeiden
     if (sortBy === 'rating') params['vote_count.gte'] = 200
     // Bei Sortierung nach Datum: nur bereits erschienene Titel
@@ -83,7 +99,7 @@ function Discover() {
       else params['first_air_date.lte'] = today
     }
     return params
-  }, [mediaType, selectedGenres, year, rating, selectedProviders, sortBy])
+  }, [mediaType, selectedGenres, year, rating, selectedProviders, fsk, sortBy])
 
   const {
     data,
@@ -123,6 +139,7 @@ function Discover() {
     setSelectedGenres([])
     setYear('')
     setRating('')
+    setFsk('')
     setSelectedProviders([])
   }
 
@@ -130,6 +147,7 @@ function Discover() {
     setMediaType(type)
     setSelectedGenres([])
     setSelectedProviders([])
+    setFsk('')
   }
 
   function toggleGenre(id) {
@@ -144,18 +162,18 @@ function Discover() {
     )
   }
 
-  const hasFilters = selectedGenres.length > 0 || year || rating || selectedProviders.length > 0 || sortBy !== 'popularity'
+  const hasFilters = selectedGenres.length > 0 || year || rating || fsk || selectedProviders.length > 0 || sortBy !== 'popularity'
 
   return (
     <div className="space-y-8">
-      <h1 className="font-display text-5xl tracking-wide text-surface-100">Entdecken</h1>
+      <h1 className="font-display text-5xl tracking-wide text-surface-100">{t('discover.title')}</h1>
 
       {/* Media Type Toggle + Sort */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
           {[
-            { type: 'movie', label: 'Filme' },
-            { type: 'tv', label: 'Serien' },
+            { type: 'movie', label: t('discover.movies') },
+            { type: 'tv', label: t('discover.tv') },
           ].map(({ type, label }) => (
             <button
               key={type}
@@ -194,7 +212,7 @@ function Discover() {
       <div className="space-y-5">
         {genres.data && (
           <div>
-            <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">Genre</p>
+            <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">{t('discover.genre')}</p>
             <div className="flex flex-wrap gap-2">
               {genres.data.map((g) => (
                 <button
@@ -216,26 +234,39 @@ function Discover() {
 
         <div className="flex flex-wrap gap-4">
           <div>
-            <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">Jahr</p>
+            <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">{t('discover.year')}</p>
             <Select
               value={year}
               onChange={setYear}
-              options={[{ value: '', label: 'Alle Jahre' }, ...years.map((y) => ({ value: String(y), label: String(y) }))]}
-              placeholder="Alle Jahre"
-              ariaLabel="Jahr"
+              options={[{ value: '', label: t('discover.allYears') }, ...years.map((y) => ({ value: String(y), label: String(y) }))]}
+              placeholder={t('discover.allYears')}
+              ariaLabel={t('discover.year')}
             />
           </div>
 
           <div>
-            <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">Mindestbewertung</p>
+            <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">{t('discover.rating')}</p>
             <Select
               value={rating}
               onChange={setRating}
               options={ratingOptions}
               placeholder="Alle"
-              ariaLabel="Mindestbewertung"
+              ariaLabel={t('discover.rating')}
             />
           </div>
+
+          {mediaType === 'movie' && (
+            <div>
+              <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">{t('discover.fsk')}</p>
+              <Select
+                value={fsk}
+                onChange={setFsk}
+                options={fskOptions}
+                placeholder="Alle"
+                ariaLabel={t('discover.fsk')}
+              />
+            </div>
+          )}
         </div>
 
         <ProviderFilter
@@ -249,7 +280,7 @@ function Discover() {
             onClick={resetFilters}
             className="text-sm text-accent-400 hover:text-accent-300 transition-colors"
           >
-            Filter zurücksetzen
+            {t('discover.resetFilters')}
           </button>
         )}
       </div>
@@ -300,8 +331,8 @@ function Discover() {
             <svg className="w-16 h-16 mx-auto text-surface-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
             </svg>
-            <p className="text-surface-200 text-lg">Keine Ergebnisse</p>
-            <p className="text-surface-200 text-sm mt-1">Versuch andere Filter-Kombinationen.</p>
+            <p className="text-surface-200 text-lg">{t('discover.noResults')}</p>
+            <p className="text-surface-200 text-sm mt-1">{t('discover.noResultsHint')}</p>
           </div>
         )
       )}
@@ -312,6 +343,8 @@ function Discover() {
 }
 
 export default Discover
+
+
 
 
 
