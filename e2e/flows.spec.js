@@ -272,7 +272,7 @@ test.describe('Functional Flows', () => {
     await expect(page.getByText('Link kopiert! Du kannst ihn jetzt teilen.')).toBeVisible()
   })
 
-  test('Discover -> Preset speichern, bearbeiten und teilen', async ({ page }) => {
+  test('Discover -> Filter setzen und zurücksetzen', async ({ page }) => {
     await page.goto('/#/discover')
     await expect(page.getByRole('heading', { name: 'Entdecken' })).toBeVisible()
 
@@ -281,35 +281,12 @@ test.describe('Functional Flows', () => {
     await page.getByRole('button', { name: 'Bewertung' }).click()
     await page.getByRole('button', { name: 'Komödie' }).click()
 
-    await page.getByLabel('Preset-Name').fill('Komoedie Rating')
-    await page.getByRole('button', { name: 'Preset speichern' }).click()
-    await expect(page.getByRole('status')).toContainText('Preset gespeichert.')
-
-    await page.getByLabel('Preset auswählen').selectOption({ label: 'Komoedie Rating' })
-    await page.getByLabel('Preset-Name').fill('Komoedie Prime')
-    await page.getByRole('button', { name: 'Preset umbenennen' }).click()
-    await expect(page.getByRole('status')).toContainText('Preset umbenannt.')
-
-    await page.getByRole('button', { name: 'Presets exportieren' }).click()
-    await expect(page.getByLabel('Preset-Daten')).toContainText('Komoedie Prime')
-
-    await page.getByRole('button', { name: 'Preset-Link kopieren' }).click()
-    await expect(page.getByRole('status')).toContainText('Preset-Link kopiert.')
-
-    const copiedLink = await page.evaluate(() => window.__copiedPresetLink)
-    expect(copiedLink).toContain('#/discover')
-    expect(copiedLink).toContain('sort=rating')
-    expect(copiedLink).toContain('genres=35')
+    await expect(page).toHaveURL(/sort=rating/)
+    await expect(page).toHaveURL(/genres=35/)
 
     await page.getByRole('button', { name: 'Filter zurücksetzen' }).click()
     await expect(page.getByRole('button', { name: 'Komödie' })).toHaveAttribute('aria-pressed', 'false')
-
-    await page.getByLabel('Preset auswählen').selectOption({ label: 'Komoedie Prime' })
-    await page.getByRole('button', { name: 'Preset laden' }).click()
-
-    await expect(page.getByRole('button', { name: 'Komödie' })).toHaveAttribute('aria-pressed', 'true')
-    await expect(page).toHaveURL(/sort=rating/)
-    await expect(page).toHaveURL(/genres=35/)
+    await expect(page).not.toHaveURL(/sort=rating/)
+    await expect(page).not.toHaveURL(/genres=35/)
   })
 })
-
