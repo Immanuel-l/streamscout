@@ -7,6 +7,8 @@ import MediaCard from '../components/common/MediaCard'
 import GridSkeleton from '../components/common/GridSkeleton'
 import ErrorBox from '../components/common/ErrorBox'
 import Select from '../components/common/Select'
+import SegmentedControl from '../components/common/SegmentedControl'
+import FilterField from '../components/common/FilterField'
 import {
   FSK_VALUES,
   FSK_FILTER_MODE_OPTIONS,
@@ -135,51 +137,36 @@ function Kino() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
-          {[
+        <SegmentedControl
+          className="w-fit"
+          options={[
             { value: 'recommended', label: 'Empfohlen' },
             { value: 'date', label: 'Kinostart' },
             { value: 'popularity', label: 'Beliebtheit' },
-          ].map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => setSortBy(value)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                sortBy === value
-                  ? 'bg-accent-500 text-black'
-                  : 'text-surface-300 hover:text-surface-100'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+          ]}
+          value={sortBy}
+          onChange={setSortBy}
+        />
 
         <div className="space-y-2">
-          <Select
-            value={fsk}
-            onChange={setFsk}
-            options={fskOptions}
-            placeholder="FSK"
-          />
+          <FilterField label="FSK">
+            <Select
+              value={fsk}
+              onChange={setFsk}
+              options={fskOptions}
+              placeholder="FSK"
+              ariaLabel="FSK"
+            />
+          </FilterField>
 
           {fsk && (
-            <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
-              {FSK_FILTER_MODE_OPTIONS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  onClick={() => setFskMode(value)}
-                  aria-pressed={fskMode === value}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    fskMode === value
-                      ? 'bg-accent-500 text-black'
-                      : 'text-surface-300 hover:text-surface-100'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              size="sm"
+              className="w-fit"
+              options={FSK_FILTER_MODE_OPTIONS}
+              value={fskMode}
+              onChange={setFskMode}
+            />
           )}
         </div>
       </div>

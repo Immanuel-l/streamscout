@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Watchlist from './Watchlist'
 
 const mockRemove = vi.fn()
@@ -33,6 +34,25 @@ vi.mock('../hooks/useWatchlistProviders', () => ({
   })),
 }))
 
+vi.mock('../hooks/useProviders', () => ({
+  useGenres: vi.fn(() => ({
+    data: [
+      { id: 28, name: 'Action' },
+      { id: 18, name: 'Drama' },
+    ],
+  })),
+}))
+
+vi.mock('../utils/fskAvailability', () => ({
+  getFskAvailabilityQueryOptions: (mediaType, id, enabled = true) => ({
+    queryKey: ['mock-fsk', mediaType, id],
+    queryFn: () => Promise.resolve({ state: 'unknown', certification: null }),
+    enabled,
+    staleTime: 0,
+    retry: false,
+  }),
+}))
+
 vi.mock('../components/common/useToast', () => ({
   useToast: vi.fn(() => mockToast),
 }))
@@ -62,24 +82,36 @@ vi.mock('../api/tmdb', () => ({
 // Import the mock to change return values in individual tests
 import { useWatchlist } from '../hooks/useWatchlist'
 import { useWatchlistProviders } from '../hooks/useWatchlistProviders'
+import { useGenres } from '../hooks/useProviders'
 
 const sampleItems = [
-  { id: 1, media_type: 'movie', title: 'Testfilm', poster_path: '/p1.jpg', vote_average: 8.0, release_date: '2024-01-01' },
-  { id: 2, media_type: 'tv', name: 'Testserie', poster_path: '/p2.jpg', vote_average: 7.5, first_air_date: '2024-06-01' },
-  { id: 3, media_type: 'movie', title: 'Anderer Film', poster_path: '/p3.jpg', vote_average: 6.0, release_date: '2023-05-01' },
+  { id: 1, media_type: 'movie', title: 'Testfilm', poster_path: '/p1.jpg', vote_average: 8.0, release_date: '2024-01-01', genre_ids: [28] },
+  { id: 2, media_type: 'tv', name: 'Testserie', poster_path: '/p2.jpg', vote_average: 7.5, first_air_date: '2024-06-01', genre_ids: [18] },
+  { id: 3, media_type: 'movie', title: 'Anderer Film', poster_path: '/p3.jpg', vote_average: 6.0, release_date: '2023-05-01', genre_ids: [18] },
 ]
 
 function renderWatchlist(initialEntries = ['/watchlist']) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+    },
+  })
+
   return render(
-    <MemoryRouter initialEntries={initialEntries}>
-      <Watchlist />
-    </MemoryRouter>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={initialEntries}>
+        <Watchlist />
+      </MemoryRouter>
+    </QueryClientProvider>
   )
 }
 
 describe('Watchlist Page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    if (!Element.prototype.scrollIntoView) {
+      Element.prototype.scrollIntoView = vi.fn()
+    }
     useWatchlist.mockReturnValue({
       items: [],
       remove: mockRemove,
@@ -91,6 +123,12 @@ describe('Watchlist Page', () => {
       isLoading: false,
       providerMap: {},
       availableProviders: [],
+    })
+    useGenres.mockReturnValue({
+      data: [
+        { id: 28, name: 'Action' },
+        { id: 18, name: 'Drama' },
+      ],
     })
   })
 
@@ -130,9 +168,9 @@ describe('Watchlist Page', () => {
     })
     renderWatchlist()
     // Tabs include counts
-    expect(screen.getByText(/^Alle/)).toBeInTheDocument()
-    expect(screen.getByText(/^Filme/)).toBeInTheDocument()
-    expect(screen.getByText(/^Serien/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Alle \(/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Filme \(/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Serien \(/ })).toBeInTheDocument()
   })
 
   it('filtert nach Medientyp', () => {
@@ -166,10 +204,32 @@ describe('Watchlist Page', () => {
 
     renderWatchlist()
     fireEvent.click(screen.getByRole('button', { name: 'Weitere Filter anzeigen' }))
-    fireEvent.click(screen.getByTitle('Netflix'))
+    fireEvent.click(screen.getByLabelText('Netflix aktivieren'))
 
-    expect(screen.getByText('Keine Einträge für den ausgewählten Anbieter.')).toBeInTheDocument()
+    expect(screen.getByText('Keine Einträge für die gewählten Anbieter.')).toBeInTheDocument()
     expect(screen.queryByText(/Keine Serien auf der Merkliste/)).not.toBeInTheDocument()
+  })
+
+  it('zeigt FSK-Filter in den erweiterten Listenfiltern', () => {
+    useWatchlist.mockReturnValue({
+      items: sampleItems,
+      remove: mockRemove,
+      mergeItems: mockMergeItems,
+      generateShareLink: mockGenerateShareLink,
+      fetchSharedList: mockFetchSharedList,
+    })
+
+    renderWatchlist()
+    fireEvent.click(screen.getByRole('button', { name: 'Weitere Filter anzeigen' }))
+
+    expect(screen.getByRole('combobox', { name: 'FSK' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('combobox', { name: 'FSK' }))
+    fireEvent.click(screen.getByRole('option', { name: 'FSK 12' }))
+
+    expect(screen.getByText('Bis FSK')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Genau FSK')).toBeInTheDocument()
+    expect(screen.getByText('Ab FSK')).toBeInTheDocument()
   })
 
   it('zeigt Sortier-Optionen', () => {
@@ -181,9 +241,9 @@ describe('Watchlist Page', () => {
       fetchSharedList: mockFetchSharedList,
     })
     renderWatchlist()
-    expect(screen.getByText('Zuletzt hinzugefügt')).toBeInTheDocument()
-    expect(screen.getByText('Bewertung')).toBeInTheDocument()
-    expect(screen.getByText('A–Z')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Zuletzt hinzugefügt' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Bewertung' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'A–Z' })).toBeInTheDocument()
   })
 
   it('zeigt den Link-teilen-Button bei gefüllter Liste', () => {
@@ -335,5 +395,7 @@ describe('Watchlist Page', () => {
     })
   })
 })
+
+
 
 

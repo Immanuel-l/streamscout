@@ -37,7 +37,7 @@ describe('providerAvailability', () => {
     const queryClient = createQueryClient()
     const result = await queryClient.fetchQuery(getProviderAvailabilityQueryOptions('movie', 1))
 
-    expect(result).toEqual({ state: 'streamable', isStreamable: true })
+    expect(result).toEqual({ state: 'streamable', isStreamable: true, availableProviderIds: [8] })
   })
 
   it('liefert not_streamable wenn kein erlaubter Flatrate-Provider vorhanden ist', async () => {
@@ -46,7 +46,7 @@ describe('providerAvailability', () => {
     const queryClient = createQueryClient()
     const result = await queryClient.fetchQuery(getProviderAvailabilityQueryOptions('movie', 1))
 
-    expect(result).toEqual({ state: 'not_streamable', isStreamable: false })
+    expect(result).toEqual({ state: 'not_streamable', isStreamable: false, availableProviderIds: [] })
   })
 
   it('retryt bei 429 und liefert danach streamable', async () => {
@@ -67,7 +67,7 @@ describe('providerAvailability', () => {
     const queryClient = createQueryClient()
     const result = await resolveProviderAvailability(queryClient, 'movie', 77)
 
-    expect(result).toEqual({ state: 'unknown', isStreamable: null })
+    expect(result).toEqual({ state: 'unknown', isStreamable: null, availableProviderIds: [] })
   })
 
   it('nutzt React-Query-Cache bei wiederholten Aufrufen', async () => {

@@ -152,14 +152,81 @@ describe('Random Page', () => {
 
     expect(mockDiscoverMovies).toHaveBeenCalledWith(expect.objectContaining({
       sort_by: 'popularity.desc',
-      'vote_count.gte': 50,
+      'vote_count.gte': 80,
       page: 1,
     }))
 
     expect(await screen.findByText('Der Zufallsfilm')).toBeInTheDocument()
-    expect(await screen.findByText('FSK 12')).toBeInTheDocument()
+    expect(await screen.findByText('FSK 12', { selector: 'span' })).toBeInTheDocument()
     expect(screen.getByTestId('watchlist-button')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Zur Detailseite' })).toHaveAttribute('href', '/movie/101')
+  })
+
+  it('mappt legacy sort=rating auf den Fokus Top bewertet', async () => {
+    renderRandom(['/random?sort=rating'])
+
+    fireEvent.click(screen.getByText('Würfeln!'))
+
+    await waitFor(() => {
+      expect(mockDiscoverMovies).toHaveBeenCalledTimes(1)
+    })
+
+    expect(mockDiscoverMovies).toHaveBeenCalledWith(expect.objectContaining({
+      sort_by: 'vote_average.desc',
+      'vote_count.gte': 250,
+      page: 1,
+    }))
+  })
+
+  it('begrenzt Top bewertet auf die vorderen Fokus-Seiten', async () => {
+    mockDiscoverMovies.mockResolvedValue(
+      discoveryResponse([sampleMovie], { total_pages: 100, total_results: 1000 })
+    )
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.99)
+
+    renderRandom(['/random?focus=topRated'])
+    fireEvent.click(screen.getByText('Würfeln!'))
+
+    await waitFor(() => {
+      expect(mockDiscoverMovies).toHaveBeenCalledTimes(2)
+    })
+
+    expect(mockDiscoverMovies).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      sort_by: 'vote_average.desc',
+      'vote_count.gte': 250,
+      page: 1,
+    }))
+    expect(mockDiscoverMovies).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      page: 8,
+    }))
+
+    randomSpy.mockRestore()
+  })
+
+  it('begrenzt Neuere Titel auf die vorderen Fokus-Seiten und nur erschienene Titel', async () => {
+    mockDiscoverMovies.mockResolvedValue(
+      discoveryResponse([sampleMovie], { total_pages: 100, total_results: 1000 })
+    )
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.99)
+
+    renderRandom(['/random?focus=newest'])
+    fireEvent.click(screen.getByText('Würfeln!'))
+
+    await waitFor(() => {
+      expect(mockDiscoverMovies).toHaveBeenCalledTimes(2)
+    })
+
+    expect(mockDiscoverMovies).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      sort_by: 'primary_release_date.desc',
+      'vote_count.gte': 80,
+      'release_date.lte': expect.any(String),
+      page: 1,
+    }))
+    expect(mockDiscoverMovies).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      page: 5,
+    }))
+
+    randomSpy.mockRestore()
   })
 
   it('wechselt auf Serien und nutzt discoverTv', async () => {
@@ -274,6 +341,3 @@ describe('Random Page', () => {
     })
   })
 })
-
-
-

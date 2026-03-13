@@ -6,14 +6,14 @@ import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
 import { useGenres, useWatchProviders } from '../hooks/useProviders'
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll'
-import { useFilterPresets } from '../hooks/useFilterPresets'
 import MediaCard from '../components/common/MediaCard'
 import GridSkeleton from '../components/common/GridSkeleton'
 import ErrorBox from '../components/common/ErrorBox'
 import Select from '../components/common/Select'
 import ProviderFilter from '../components/common/ProviderFilter'
 import FilterPanel from '../components/common/FilterPanel'
-import FilterPresets from '../components/common/FilterPresets'
+import SegmentedControl from '../components/common/SegmentedControl'
+import FilterField from '../components/common/FilterField'
 import ScrollToTop from '../components/common/ScrollToTop'
 import { t } from '../utils/i18n'
 import {
@@ -26,7 +26,6 @@ import {
 
 const currentYear = new Date().getFullYear()
 const years = Array.from({ length: 50 }, (_, i) => currentYear - i)
-const presetStorageKey = 'streamscout-discover-presets'
 
 const ratingOptions = [
   { value: '', label: 'Alle' },
@@ -48,68 +47,6 @@ const sortOptions = [
   { value: 'date', label: 'Erscheinungsdatum', sortBy: 'primary_release_date.desc' },
 ]
 
-function parseNumberList(values) {
-  if (!Array.isArray(values)) return []
-  return values
-    .map((id) => Number(id))
-    .filter((id) => Number.isInteger(id) && id > 0)
-}
-
-function normalizeSortOption(value) {
-  return sortOptions.some((option) => option.value === value) ? value : 'popularity'
-}
-
-function normalizeDiscoverPresetValues(values) {
-  const mediaType = values?.mediaType === 'tv' ? 'tv' : 'movie'
-  const sortBy = normalizeSortOption(values?.sortBy)
-  const selectedGenres = parseNumberList(values?.selectedGenres)
-  const selectedProviders = parseNumberList(values?.selectedProviders)
-  const year = typeof values?.year === 'string' ? values.year : ''
-  const rating = typeof values?.rating === 'string' ? values.rating : ''
-
-  if (mediaType === 'movie') {
-    return {
-      mediaType,
-      sortBy,
-      selectedGenres,
-      year,
-      rating,
-      selectedProviders,
-      fsk: normalizeFskCertification(values?.fsk) || '',
-      fskMode: normalizeFskFilterMode(values?.fskMode),
-    }
-  }
-
-  return {
-    mediaType,
-    sortBy,
-    selectedGenres,
-    year,
-    rating,
-    selectedProviders,
-    fsk: '',
-    fskMode: 'lte',
-  }
-}
-
-function buildDiscoverSearchParams(values) {
-  const normalized = normalizeDiscoverPresetValues(values)
-  const params = {}
-
-  if (normalized.mediaType !== 'movie') params.type = normalized.mediaType
-  if (normalized.sortBy !== 'popularity') params.sort = normalized.sortBy
-  if (normalized.selectedGenres.length > 0) params.genres = normalized.selectedGenres.join(',')
-  if (normalized.year) params.year = normalized.year
-  if (normalized.rating) params.rating = normalized.rating
-  if (normalized.selectedProviders.length > 0) params.providers = normalized.selectedProviders.join(',')
-  if (normalized.fsk) {
-    params.fsk = normalized.fsk
-    if (normalized.fskMode !== 'lte') params.fskMode = normalized.fskMode
-  }
-
-  return params
-}
-
 function Discover() {
   useDocumentTitle('Entdecken')
   const [searchParams, setSearchParams] = useSearchParams()
@@ -128,20 +65,6 @@ function Discover() {
   const [fsk, setFsk] = useState(() => normalizeFskCertification(searchParams.get('fsk')) || '')
   const [fskMode, setFskMode] = useState(() => normalizeFskFilterMode(searchParams.get('fskMode')))
 
-  const {
-    presets,
-    savePreset,
-    renamePreset,
-    getPresetById,
-    deletePreset,
-    exportPresets,
-    importPresets,
-  } = useFilterPresets(presetStorageKey)
-  const [presetName, setPresetName] = useState('')
-  const [selectedPresetId, setSelectedPresetId] = useState('')
-  const [presetStatus, setPresetStatus] = useState('')
-  const [presetTransfer, setPresetTransfer] = useState('')
-  const activePresetId = presets.some((preset) => preset.id === selectedPresetId) ? selectedPresetId : ''
 
   // Sync state to URL params
   useEffect(() => {
@@ -158,6 +81,7 @@ function Discover() {
     }
     setSearchParams(params, { replace: true })
   }, [mediaType, sortBy, selectedGenres, year, rating, selectedProviders, fsk, fskMode, setSearchParams])
+
 
   const genres = useGenres(mediaType)
   const providers = useWatchProviders(mediaType)
@@ -193,130 +117,6 @@ function Discover() {
 
     return params
   }, [mediaType, selectedGenres, year, rating, selectedProviders, fsk, fskMode, sortBy])
-
-  const currentPresetValues = useMemo(
-    () => ({
-      mediaType,
-      sortBy,
-      selectedGenres,
-      year,
-      rating,
-      selectedProviders,
-      fsk,
-      fskMode,
-    }),
-    [mediaType, sortBy, selectedGenres, year, rating, selectedProviders, fsk, fskMode]
-  )
-
-  function applyPresetValues(values) {
-    const normalized = normalizeDiscoverPresetValues(values)
-
-    setMediaType(normalized.mediaType)
-    setSortBy(normalized.sortBy)
-    setSelectedGenres(normalized.selectedGenres)
-    setYear(normalized.year)
-    setRating(normalized.rating)
-    setSelectedProviders(normalized.selectedProviders)
-    setFsk(normalized.fsk)
-    setFskMode(normalized.fskMode)
-  }
-
-  function handleSavePreset() {
-    const result = savePreset(presetName, currentPresetValues)
-    if (!result.success) {
-      setPresetStatus(result.error)
-      return
-    }
-
-    setSelectedPresetId(result.id)
-    setPresetName('')
-    setPresetStatus(result.replaced ? 'Preset aktualisiert.' : 'Preset gespeichert.')
-  }
-
-  function handleRenamePreset() {
-    if (!activePresetId) {
-      setPresetStatus('Bitte wähle ein Preset aus.')
-      return
-    }
-
-    const result = renamePreset(activePresetId, presetName)
-    if (!result.success) {
-      setPresetStatus(result.error)
-      return
-    }
-
-    setPresetName('')
-    setPresetStatus('Preset umbenannt.')
-  }
-
-  function handleExportPresets() {
-    setPresetTransfer(exportPresets())
-    setPresetStatus('Preset-Daten exportiert.')
-  }
-
-  function handleImportPresets() {
-    const result = importPresets(presetTransfer)
-    if (!result.success) {
-      setPresetStatus(result.error)
-      return
-    }
-
-    setPresetStatus(`${result.importedCount} Presets importiert, ${result.replacedCount} aktualisiert.`)
-  }
-
-  async function handleCopyPresetLink() {
-    if (!activePresetId) {
-      setPresetStatus('Bitte wähle ein Preset aus.')
-      return
-    }
-
-    const preset = getPresetById(activePresetId)
-    if (!preset) {
-      setPresetStatus('Preset nicht gefunden.')
-      return
-    }
-
-    const hashPath = window.location.hash.split('?')[0] || '#/discover'
-    const params = new URLSearchParams(buildDiscoverSearchParams(preset.values))
-    const targetUrl = new URL(window.location.href)
-    targetUrl.hash = params.size > 0 ? `${hashPath}?${params.toString()}` : hashPath
-
-    if (!navigator.clipboard?.writeText) {
-      setPresetStatus('Clipboard ist nicht verfügbar.')
-      return
-    }
-
-    try {
-      await navigator.clipboard.writeText(targetUrl.toString())
-      setPresetStatus('Preset-Link kopiert.')
-    } catch {
-      setPresetStatus('Preset-Link konnte nicht kopiert werden.')
-    }
-  }
-
-  function handleLoadPreset() {
-    if (!activePresetId) return
-    const preset = getPresetById(activePresetId)
-    if (!preset) {
-      setPresetStatus('Preset nicht gefunden.')
-      return
-    }
-
-    applyPresetValues(preset.values)
-    setPresetStatus('Preset geladen.')
-  }
-
-  function handleDeletePreset() {
-    if (!activePresetId) return
-    const deleted = deletePreset(activePresetId)
-    if (!deleted) {
-      setPresetStatus('Preset nicht gefunden.')
-      return
-    }
-
-    setSelectedPresetId('')
-    setPresetStatus('Preset gelöscht.')
-  }
 
   const {
     data,
@@ -393,122 +193,21 @@ function Discover() {
   const quickFilters = (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
-          {[
-            { type: 'movie', label: t('discover.movies') },
-            { type: 'tv', label: t('discover.tv') },
-          ].map(({ type, label }) => (
-            <button
-              key={type}
-              onClick={() => switchMediaType(type)}
-              aria-pressed={mediaType === type}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                mediaType === type
-                  ? 'bg-accent-500 text-black'
-                  : 'text-surface-200 hover:text-surface-100'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          size="lg"
+          options={[
+            { value: 'movie', label: t('discover.movies') },
+            { value: 'tv', label: t('discover.tv') },
+          ]}
+          value={mediaType}
+          onChange={switchMediaType}
+        />
 
-        <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
-          {sortOptions.map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => setSortBy(value)}
-              aria-pressed={sortBy === value}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                sortBy === value
-                  ? 'bg-accent-500 text-black'
-                  : 'text-surface-200 hover:text-surface-100'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {genres.data && (
-        <div>
-          <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">{t('discover.genre')}</p>
-          <div className="flex flex-wrap gap-2">
-            {genres.data.map((g) => (
-              <button
-                key={g.id}
-                onClick={() => toggleGenre(g.id)}
-                aria-pressed={selectedGenres.includes(g.id)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-                  selectedGenres.includes(g.id)
-                    ? 'bg-accent-500 text-black shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]'
-                    : 'bg-surface-800 text-surface-200 hover:bg-surface-700'
-                }`}
-              >
-                {g.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="flex flex-wrap gap-4">
-        <div>
-          <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">{t('discover.year')}</p>
-          <Select
-            value={year}
-            onChange={setYear}
-            options={[{ value: '', label: t('discover.allYears') }, ...years.map((y) => ({ value: String(y), label: String(y) }))]}
-            placeholder={t('discover.allYears')}
-            ariaLabel={t('discover.year')}
-          />
-        </div>
-
-        <div>
-          <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">{t('discover.rating')}</p>
-          <Select
-            value={rating}
-            onChange={setRating}
-            options={ratingOptions}
-            placeholder="Alle"
-            ariaLabel={t('discover.rating')}
-          />
-        </div>
-
-        {mediaType === 'movie' && (
-          <div className="space-y-3">
-            <div>
-              <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">{t('discover.fsk')}</p>
-              <Select
-                value={fsk}
-                onChange={setFsk}
-                options={fskOptions}
-                placeholder="Alle"
-                ariaLabel={t('discover.fsk')}
-              />
-            </div>
-
-            {fsk && (
-              <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
-                {FSK_FILTER_MODE_OPTIONS.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => setFskMode(value)}
-                    aria-pressed={fskMode === value}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                      fskMode === value
-                        ? 'bg-accent-500 text-black'
-                        : 'text-surface-200 hover:text-surface-100'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        <SegmentedControl
+          options={sortOptions.map(({ value, label }) => ({ value, label }))}
+          value={sortBy}
+          onChange={setSortBy}
+        />
       </div>
     </div>
   )
@@ -525,29 +224,79 @@ function Discover() {
         activeCount={activeFilterCount}
         onReset={hasFilters ? resetFilters : undefined}
       >
+        {genres.data && (
+          <FilterField label={t('discover.genre')}>
+            <div className="flex flex-wrap gap-2">
+              {genres.data.map((g) => (
+                <button
+                  key={g.id}
+                  onClick={() => toggleGenre(g.id)}
+                  aria-pressed={selectedGenres.includes(g.id)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                    selectedGenres.includes(g.id)
+                      ? 'bg-accent-500 text-black shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]'
+                      : 'bg-surface-800 text-surface-200 hover:bg-surface-700'
+                  }`}
+                >
+                  {g.name}
+                </button>
+              ))}
+            </div>
+          </FilterField>
+        )}
+
+        <div className="flex flex-wrap gap-4">
+          <FilterField label={t('discover.year')}>
+            <Select
+              value={year}
+              onChange={setYear}
+              options={[{ value: '', label: t('discover.allYears') }, ...years.map((y) => ({ value: String(y), label: String(y) }))]}
+              placeholder={t('discover.allYears')}
+              ariaLabel={t('discover.year')}
+            />
+          </FilterField>
+
+          <FilterField label={t('discover.rating')}>
+            <Select
+              value={rating}
+              onChange={setRating}
+              options={ratingOptions}
+              placeholder="Alle"
+              ariaLabel={t('discover.rating')}
+            />
+          </FilterField>
+        </div>
+
+        {mediaType === 'movie' && (
+          <div className="space-y-3">
+            <FilterField label={t('discover.fsk')}>
+              <Select
+                value={fsk}
+                onChange={setFsk}
+                options={fskOptions}
+                placeholder="Alle"
+                ariaLabel={t('discover.fsk')}
+              />
+            </FilterField>
+
+            {fsk && (
+              <SegmentedControl
+                size="sm"
+                className="w-fit"
+                options={FSK_FILTER_MODE_OPTIONS}
+                value={fskMode}
+                onChange={setFskMode}
+              />
+            )}
+          </div>
+        )}
+
         <ProviderFilter
           providers={providers.data}
           selected={selectedProviders}
           onToggle={toggleProvider}
         />
 
-        <FilterPresets
-          presets={presets}
-          presetName={presetName}
-          selectedPresetId={activePresetId}
-          transferValue={presetTransfer}
-          onPresetNameChange={setPresetName}
-          onSelectedPresetChange={setSelectedPresetId}
-          onTransferChange={setPresetTransfer}
-          onSave={handleSavePreset}
-          onRename={handleRenamePreset}
-          onLoad={handleLoadPreset}
-          onDelete={handleDeletePreset}
-          onCopyShareLink={handleCopyPresetLink}
-          onExport={handleExportPresets}
-          onImport={handleImportPresets}
-          statusMessage={presetStatus}
-        />
       </FilterPanel>
 
       {/* Results */}

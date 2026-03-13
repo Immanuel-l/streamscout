@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -6,7 +6,6 @@ import Discover from './Discover'
 import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
 
-// Mock hooks
 vi.mock('../hooks/useDocumentTitle', () => ({
   useDocumentTitle: vi.fn(),
 }))
@@ -30,7 +29,6 @@ vi.mock('../hooks/useProviders', () => ({
   })),
 }))
 
-// Mock API modules
 vi.mock('../api/movies', () => ({
   discoverMovies: vi.fn(),
 }))
@@ -39,7 +37,6 @@ vi.mock('../api/tv', () => ({
   discoverTv: vi.fn(),
 }))
 
-// Mock child components
 vi.mock('../components/common/MediaCard', () => ({
   default: ({ media }) => (
     <div data-testid="media-card">{media.title || media.name}</div>
@@ -152,7 +149,7 @@ describe('Discover Page', () => {
     expect(ratingBtn).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('zeigt Genre-Buttons in den erweiterten Filtern', () => {
+  it('zeigt Genre-Buttons nach dem Aufklappen', () => {
     renderDiscover()
     openAdvancedFilters()
     expect(screen.getByText('Action')).toBeInTheDocument()
@@ -169,12 +166,10 @@ describe('Discover Page', () => {
     expect(actionBtn).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('zeigt Jahr-, Bewertungs- und FSK-Select', () => {
+  it('zeigt Jahr-, Bewertungs- und FSK-Select in den erweiterten Filtern', () => {
     renderDiscover()
-    expect(screen.getByTestId('select-Alle Jahre')).toBeInTheDocument()
-    expect(screen.getAllByTestId('select-Alle').length).toBeGreaterThanOrEqual(1)
-
     openAdvancedFilters()
+    expect(screen.getByTestId('select-Alle Jahre')).toBeInTheDocument()
     expect(screen.getAllByTestId('select-Alle').length).toBeGreaterThanOrEqual(2)
   })
 
@@ -205,110 +200,6 @@ describe('Discover Page', () => {
     expect(screen.getByText('Action')).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('speichert und laedt ein Filter-Preset', () => {
-    renderDiscover()
-
-    openAdvancedFilters()
-    fireEvent.click(screen.getByText('Action'))
-    fireEvent.click(screen.getByText('Bewertung'))
-
-    fireEvent.change(screen.getByLabelText('Preset-Name'), { target: { value: 'Action-Rating' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Preset speichern' }))
-
-    expect(screen.getByRole('status')).toHaveTextContent('Preset gespeichert.')
-
-    fireEvent.click(screen.getByText('Filter zurücksetzen'))
-    expect(screen.getByText('Action')).toHaveAttribute('aria-pressed', 'false')
-
-    const savedOption = screen.getByRole('option', { name: 'Action-Rating' })
-    fireEvent.change(screen.getByLabelText('Preset auswählen'), {
-      target: { value: savedOption.getAttribute('value') },
-    })
-    fireEvent.click(screen.getByRole('button', { name: 'Preset laden' }))
-
-    expect(screen.getByText('Action')).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByText('Bewertung')).toHaveAttribute('aria-pressed', 'true')
-  })
-
-  it('benennt ein Preset um und exportiert/importiert Daten', () => {
-    renderDiscover()
-
-    openAdvancedFilters()
-    fireEvent.change(screen.getByLabelText('Preset-Name'), { target: { value: 'Temp' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Preset speichern' }))
-
-    const savedOption = screen.getByRole('option', { name: 'Temp' })
-    fireEvent.change(screen.getByLabelText('Preset auswählen'), {
-      target: { value: savedOption.getAttribute('value') },
-    })
-
-    fireEvent.change(screen.getByLabelText('Preset-Name'), { target: { value: 'Neu' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Preset umbenennen' }))
-
-    expect(screen.getByRole('status')).toHaveTextContent('Preset umbenannt.')
-    expect(screen.getByRole('option', { name: 'Neu' })).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Presets exportieren' }))
-    expect(screen.getByLabelText('Preset-Daten').value).toContain('Neu')
-
-    fireEvent.change(screen.getByLabelText('Preset-Daten'), {
-      target: { value: '[{"name":"Importiert","values":{"sortBy":"rating","mediaType":"movie"}}]' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: 'Presets importieren' }))
-
-    expect(screen.getByRole('status')).toHaveTextContent('1 Presets importiert, 0 aktualisiert.')
-    expect(screen.getByRole('option', { name: 'Importiert' })).toBeInTheDocument()
-  }, 10000)
-
-  it('kopiert einen Preset-Link in die Zwischenablage', async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined)
-    Object.defineProperty(navigator, 'clipboard', {
-      configurable: true,
-      value: { writeText },
-    })
-
-    renderDiscover()
-
-    fireEvent.click(screen.getByText('Bewertung'))
-    openAdvancedFilters()
-    fireEvent.change(screen.getByLabelText('Preset-Name'), { target: { value: 'Share' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Preset speichern' }))
-
-    const option = screen.getByRole('option', { name: 'Share' })
-    fireEvent.change(screen.getByLabelText('Preset auswählen'), {
-      target: { value: option.getAttribute('value') },
-    })
-
-    fireEvent.click(screen.getByRole('button', { name: 'Preset-Link kopieren' }))
-
-    await waitFor(() => {
-      expect(writeText).toHaveBeenCalledTimes(1)
-    })
-
-    const copiedLink = writeText.mock.calls[0][0]
-    expect(copiedLink).toContain('#/discover')
-    expect(copiedLink).toContain('sort=rating')
-    expect(screen.getByRole('status')).toHaveTextContent('Preset-Link kopiert.')
-  })
-
-  it('loescht ein gespeichertes Preset', () => {
-    renderDiscover()
-
-    openAdvancedFilters()
-    fireEvent.change(screen.getByLabelText('Preset-Name'), { target: { value: 'Temp' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Preset speichern' }))
-
-    const savedOption = screen.getByRole('option', { name: 'Temp' })
-    fireEvent.change(screen.getByLabelText('Preset auswählen'), {
-      target: { value: savedOption.getAttribute('value') },
-    })
-
-    fireEvent.click(screen.getByRole('button', { name: 'Preset löschen' }))
-
-    expect(screen.getByRole('status')).toHaveTextContent('Preset gelöscht.')
-    expect(screen.queryByRole('option', { name: 'Temp' })).not.toBeInTheDocument()
-  })
-
   it('initialisiert Medientyp aus URL-Parametern', () => {
     renderDiscover(['/discover?type=tv'])
     expect(screen.getByText('Serien')).toHaveAttribute('aria-pressed', 'true')
@@ -319,5 +210,3 @@ describe('Discover Page', () => {
     expect(screen.getByText('Bewertung')).toHaveAttribute('aria-pressed', 'true')
   })
 })
-
-

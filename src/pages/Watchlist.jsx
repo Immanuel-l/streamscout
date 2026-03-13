@@ -1,18 +1,46 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
+import { useQueries } from '@tanstack/react-query'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { useWatchlist, SHARE_ITEM_LIMIT } from '../hooks/useWatchlist'
 import { useWatchlistProviders } from '../hooks/useWatchlistProviders'
+import { useGenres } from '../hooks/useProviders'
 import { useToast } from '../components/common/useToast'
 import MediaCard from '../components/common/MediaCard'
 import FilterPanel from '../components/common/FilterPanel'
-import { IMAGE_BASE } from '../api/tmdb'
+import SegmentedControl from '../components/common/SegmentedControl'
+import FilterField from '../components/common/FilterField'
+import Select from '../components/common/Select'
+import ProviderFilter from '../components/common/ProviderFilter'
 import WatchlistRecommendations from '../components/home/WatchlistRecommendations'
+import { getFskAvailabilityQueryOptions } from '../utils/fskAvailability'
+import {
+  FSK_VALUES,
+  FSK_FILTER_MODE_OPTIONS,
+  matchesFskFilter,
+} from '../utils/fsk'
 
 const tabs = [
   { key: 'all', label: 'Alle' },
   { key: 'movie', label: 'Filme' },
   { key: 'tv', label: 'Serien' },
+]
+
+const currentYear = new Date().getFullYear()
+const years = Array.from({ length: 50 }, (_, i) => currentYear - i)
+
+const ratingOptions = [
+  { value: '', label: 'Alle' },
+  { value: '9', label: '9+' },
+  { value: '8', label: '8+' },
+  { value: '7', label: '7+' },
+  { value: '6', label: '6+' },
+  { value: '5', label: '5+' },
+]
+
+const fskOptions = [
+  { value: '', label: 'Alle' },
+  ...FSK_VALUES.map((value) => ({ value, label: `FSK ${value}` })),
 ]
 
 function WatchlistCard({ item, index, onRemove, readOnly = false, isSelected = false, onToggleSelect }) {
@@ -81,13 +109,21 @@ function Watchlist() {
   const initializedShare = useRef('')
 
   const [selectedItems, setSelectedItems] = useState(new Set())
-  const [selectedProvider, setSelectedProvider] = useState(null)
   const [sortBy, setSortBy] = useState('added')
+  const [selectedGenres, setSelectedGenres] = useState([])
+  const [year, setYear] = useState('')
+  const [rating, setRating] = useState('')
+  const [fsk, setFsk] = useState('')
+  const [fskMode, setFskMode] = useState('lte')
+  const [selectedProviders, setSelectedProviders] = useState([])
+  const [onlyStreamable, setOnlyStreamable] = useState(false)
 
   // Determine what to render based on the view mode
   const displayedItems = isSharedView ? sharedItems : items
 
   const { isLoading: providersLoading, providerMap, availableProviders } = useWatchlistProviders(displayedItems)
+  const movieGenres = useGenres('movie')
+  const tvGenres = useGenres('tv')
 
   // Handle URL share link (fetching the preview)
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -182,91 +218,206 @@ function Watchlist() {
     navigate('/watchlist', { replace: true })
   }
 
-  const filtered = (activeTab === 'all'
-    ? displayedItems
-    : displayedItems.filter((m) => m.media_type === activeTab)
-  ).filter((m) => {
-    if (!selectedProvider) return true
-    const key = `${m.media_type}-${m.id}`
-    return providerMap[key]?.has(selectedProvider)
-  }).sort((a, b) => {
-    if (sortBy === 'rating') return (b.vote_average || 0) - (a.vote_average || 0)
-    if (sortBy === 'alpha') return (a.title || a.name || '').localeCompare(b.title || b.name || '', 'de')
-    return 0 // 'added' — keep original order (localStorage order)
+  const availableGenres = useMemo(() => {
+    if (activeTab === 'movie') return movieGenres.data || []
+    if (activeTab === 'tv') return tvGenres.data || []
+
+    const map = new Map()
+    for (const item of movieGenres.data || []) {
+      map.set(item.id, item)
+    }
+    for (const item of tvGenres.data || []) {
+      if (!map.has(item.id)) map.set(item.id, item)
+    }
+
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'de'))
+  }, [activeTab, movieGenres.data, tvGenres.data])
+
+  const hasProviderFilter = selectedProviders.length > 0
+  const hasFskFilter = Boolean(fsk)
+
+  function toggleGenre(id) {
+    setSelectedGenres((prev) =>
+      prev.includes(id) ? prev.filter((genreId) => genreId !== id) : [...prev, id]
+    )
+  }
+
+  function toggleProvider(id) {
+    setSelectedProviders((prev) =>
+      prev.includes(id) ? prev.filter((providerId) => providerId !== id) : [...prev, id]
+    )
+  }
+
+  const filteredWithoutFsk = useMemo(() => {
+    let next = [...displayedItems]
+
+    if (selectedGenres.length > 0) {
+      next = next.filter((item) =>
+        Array.isArray(item.genre_ids) && selectedGenres.some((genreId) => item.genre_ids.includes(genreId))
+      )
+    }
+
+    if (year) {
+      next = next.filter((item) => {
+        const date = item.release_date || item.first_air_date || ''
+        return date.startsWith(year)
+      })
+    }
+
+    if (rating) {
+      const minRating = Number(rating)
+      next = next.filter((item) => (Number(item.vote_average) || 0) >= minRating)
+    }
+
+    if (onlyStreamable && !providersLoading) {
+      next = next.filter((item) => {
+        const key = `${item.media_type}-${item.id}`
+        return Boolean(providerMap[key] && providerMap[key].size > 0)
+      })
+    }
+
+    if (hasProviderFilter && !providersLoading) {
+      next = next.filter((item) => {
+        const key = `${item.media_type}-${item.id}`
+        const providersForItem = providerMap[key]
+        if (!providersForItem) return false
+        return selectedProviders.some((providerId) => providersForItem.has(providerId))
+      })
+    }
+
+    return next
+  }, [displayedItems, selectedGenres, year, rating, onlyStreamable, providersLoading, providerMap, hasProviderFilter, selectedProviders])
+
+  const fskQueries = useQueries({
+    queries: (hasFskFilter ? filteredWithoutFsk : []).map((item) =>
+      getFskAvailabilityQueryOptions(item.media_type, item.id, true)
+    ),
   })
 
-  // Count matches the filtered results now, instead of all tab items
-  const movieCount = displayedItems.filter((m) => {
-    if (m.media_type !== 'movie') return false
-    if (!selectedProvider) return true
-    return providerMap[`movie-${m.id}`]?.has(selectedProvider)
-  }).length
+  const fskStateByKey = useMemo(() => {
+    const map = new Map()
+    if (!hasFskFilter) return map
 
-  const tvCount = displayedItems.filter((m) => {
-    if (m.media_type !== 'tv') return false
-    if (!selectedProvider) return true
-    return providerMap[`tv-${m.id}`]?.has(selectedProvider)
-  }).length
+    filteredWithoutFsk.forEach((item, index) => {
+      map.set(`${item.media_type}-${item.id}`, fskQueries[index]?.data)
+    })
 
-  const emptyFilteredMessage = selectedProvider
-    ? 'Keine Einträge für den ausgewählten Anbieter.'
-    : activeTab === 'movie'
-      ? 'Keine Filme auf der Merkliste.'
-      : activeTab === 'tv'
-        ? 'Keine Serien auf der Merkliste.'
-        : 'Keine Einträge auf der Merkliste.'
+    return map
+  }, [filteredWithoutFsk, fskQueries, hasFskFilter])
+
+  const fskChecking = hasFskFilter && filteredWithoutFsk.length > 0 && fskQueries.some((query) => query.isLoading)
+
+  const fskUnknownCount = hasFskFilter
+    ? filteredWithoutFsk.filter((item) => fskStateByKey.get(`${item.media_type}-${item.id}`)?.state === 'unknown').length
+    : 0
+
+  const filteredAll = useMemo(() => {
+    let next = [...filteredWithoutFsk]
+
+    if (hasFskFilter && !fskChecking) {
+      next = next.filter((item) => {
+        const state = fskStateByKey.get(`${item.media_type}-${item.id}`)
+        return matchesFskFilter(state?.certification, fsk, fskMode)
+      })
+    }
+
+    next.sort((a, b) => {
+      if (sortBy === 'rating') return (b.vote_average || 0) - (a.vote_average || 0)
+      if (sortBy === 'alpha') return (a.title || a.name || '').localeCompare(b.title || b.name || '', 'de')
+      return 0
+    })
+
+    return next
+  }, [filteredWithoutFsk, hasFskFilter, fskChecking, fskStateByKey, fsk, fskMode, sortBy])
+
+  const filtered = activeTab === 'all'
+    ? filteredAll
+    : filteredAll.filter((item) => item.media_type === activeTab)
+
+  const movieCount = filteredAll.filter((item) => item.media_type === 'movie').length
+  const tvCount = filteredAll.filter((item) => item.media_type === 'tv').length
+
+  const hasAdvancedFilters =
+    selectedGenres.length > 0 ||
+    year ||
+    rating ||
+    fsk ||
+    selectedProviders.length > 0 ||
+    onlyStreamable
+
+  const emptyFilteredMessage = hasProviderFilter
+    ? 'Keine Einträge für die gewählten Anbieter.'
+    : onlyStreamable
+      ? 'Keine streambaren Einträge für diese Auswahl.'
+      : hasFskFilter
+        ? 'Keine Einträge für den gewählten FSK-Filter.'
+        : hasAdvancedFilters
+          ? 'Keine Einträge für die aktiven Filter.'
+          : activeTab === 'movie'
+            ? 'Keine Filme auf der Merkliste.'
+            : activeTab === 'tv'
+              ? 'Keine Serien auf der Merkliste.'
+              : 'Keine Einträge auf der Merkliste.'
 
   function resetFilters() {
     setActiveTab('all')
     setSortBy('added')
-    setSelectedProvider(null)
+    setSelectedGenres([])
+    setYear('')
+    setRating('')
+    setFsk('')
+    setFskMode('lte')
+    setSelectedProviders([])
+    setOnlyStreamable(false)
   }
 
-  const hasControlFilters = activeTab !== 'all' || sortBy !== 'added' || selectedProvider !== null
-  const activeFilterCount = (activeTab !== 'all' ? 1 : 0) + (sortBy !== 'added' ? 1 : 0) + (selectedProvider ? 1 : 0)
+  const hasControlFilters =
+    activeTab !== 'all' ||
+    sortBy !== 'added' ||
+    selectedGenres.length > 0 ||
+    year ||
+    rating ||
+    fsk ||
+    selectedProviders.length > 0 ||
+    onlyStreamable
+
+  const activeFilterCount =
+    (activeTab !== 'all' ? 1 : 0) +
+    (sortBy !== 'added' ? 1 : 0) +
+    selectedGenres.length +
+    (year ? 1 : 0) +
+    (rating ? 1 : 0) +
+    (fsk ? 1 : 0) +
+    selectedProviders.length +
+    (onlyStreamable ? 1 : 0)
+
+  const tabOptions = tabs.map(({ key, label }) => {
+    const count = key === 'all' ? filteredAll.length : key === 'movie' ? movieCount : tvCount
+    return { value: key, label: `${label} (${count})` }
+  })
+
+  const watchlistSortOptions = [
+    { value: 'added', label: 'Zuletzt hinzugefügt' },
+    { value: 'rating', label: 'Bewertung' },
+    { value: 'alpha', label: 'A–Z' },
+  ]
 
   const quickFilters = (
     <div className="flex flex-wrap items-center gap-3">
-      <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
-        {tabs.map(({ key, label }) => {
-          const count = key === 'all' ? filtered.length : key === 'movie' ? movieCount : tvCount
-          return (
-            <button
-              key={key}
-              onClick={() => setActiveTab(key)}
-              aria-pressed={activeTab === key}
-              className={`px-4 sm:px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === key
-                  ? 'bg-accent-500 text-black'
-                  : 'text-surface-200 hover:text-surface-100'
-              }`}
-            >
-              {label} ({count})
-            </button>
-          )
-        })}
-      </div>
+      <SegmentedControl
+        options={tabOptions}
+        value={activeTab}
+        onChange={setActiveTab}
+        buttonClassName="sm:px-5"
+      />
 
-      <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
-        {[
-          { value: 'added', label: 'Zuletzt hinzugefügt' },
-          { value: 'rating', label: 'Bewertung' },
-          { value: 'alpha', label: 'A–Z' },
-        ].map(({ value, label }) => (
-          <button
-            key={value}
-            onClick={() => setSortBy(value)}
-            aria-pressed={sortBy === value}
-            className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
-              sortBy === value
-                ? 'bg-accent-500 text-black'
-                : 'text-surface-200 hover:text-surface-100'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        size="sm"
+        options={watchlistSortOptions}
+        value={sortBy}
+        onChange={setSortBy}
+        buttonClassName="sm:text-sm sm:px-4"
+      />
     </div>
   )
 
@@ -354,45 +505,120 @@ function Watchlist() {
           onReset={hasControlFilters ? resetFilters : undefined}
           className="bg-surface-800/20"
         >
-          {availableProviders.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-surface-200 text-xs uppercase tracking-wider font-medium max-sm:hidden">
-                Anbieter
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {availableProviders.map((p) => (
-                  <button
-                    key={p.provider_id}
-                    onClick={() => setSelectedProvider((prev) => prev === p.provider_id ? null : p.provider_id)}
-                    title={p.provider_name}
-                    className={`relative rounded-lg overflow-hidden transition-all duration-300 cursor-pointer ${
-                      selectedProvider === p.provider_id
-                        ? 'ring-2 ring-accent-400 scale-110 shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]'
-                        : selectedProvider
-                          ? 'opacity-40 hover:opacity-100 hover:scale-105'
-                          : 'opacity-80 hover:opacity-100 hover:scale-105'
-                    }`}
-                  >
-                    <img
-                      src={`${IMAGE_BASE}/w92${p.logo_path}`}
-                      alt={p.provider_name}
-                      className="w-10 h-10 sm:w-11 sm:h-11 object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-              {providersLoading && (
-                <div className="text-surface-200">
-                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
+          <div className="space-y-4">
+            {availableGenres.length > 0 ? (
+              <FilterField label="Genre">
+                <div className="flex flex-wrap gap-2">
+                  {availableGenres.map((genreOption) => (
+                    <button
+                      key={genreOption.id}
+                      onClick={() => toggleGenre(genreOption.id)}
+                      aria-pressed={selectedGenres.includes(genreOption.id)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                        selectedGenres.includes(genreOption.id)
+                          ? 'bg-accent-500 text-black shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]'
+                          : 'bg-surface-800 text-surface-200 hover:bg-surface-700'
+                      }`}
+                    >
+                      {genreOption.name}
+                    </button>
+                  ))}
                 </div>
+              </FilterField>
+            ) : (
+              <p className="text-sm text-surface-300">Genre-Filter sind für diese Auswahl gerade nicht verfügbar.</p>
+            )}
+
+            <div className="flex flex-wrap gap-4">
+              <FilterField label="Jahr">
+                <Select
+                  value={year}
+                  onChange={setYear}
+                  options={[{ value: '', label: 'Alle Jahre' }, ...years.map((itemYear) => ({ value: String(itemYear), label: String(itemYear) }))]}
+                  placeholder="Alle Jahre"
+                  ariaLabel="Jahr"
+                />
+              </FilterField>
+
+              <FilterField label="Bewertung">
+                <Select
+                  value={rating}
+                  onChange={setRating}
+                  options={ratingOptions}
+                  placeholder="Alle"
+                  ariaLabel="Bewertung"
+                />
+              </FilterField>
+            </div>
+
+            <div className="space-y-3">
+              <FilterField label="FSK">
+                <Select
+                  value={fsk}
+                  onChange={setFsk}
+                  options={fskOptions}
+                  placeholder="Alle"
+                  ariaLabel="FSK"
+                />
+              </FilterField>
+
+              {fsk && (
+                <SegmentedControl
+                  size="sm"
+                  className="w-fit"
+                  options={FSK_FILTER_MODE_OPTIONS}
+                  value={fskMode}
+                  onChange={setFskMode}
+                />
               )}
             </div>
-          ) : (
-            <p className="text-sm text-surface-300">Noch keine Anbieter-Filter für die aktuelle Auswahl verfügbar.</p>
-          )}
+
+            {availableProviders.length > 0 ? (
+              <ProviderFilter
+                providers={availableProviders}
+                selected={selectedProviders}
+                onToggle={toggleProvider}
+                label="Anbieter"
+              />
+            ) : (
+              <p className="text-sm text-surface-300">Noch keine Anbieter-Filter für die aktuelle Auswahl verfügbar.</p>
+            )}
+
+            <FilterField label="Streaming" className="space-y-2">
+              <button
+                onClick={() => setOnlyStreamable((prev) => !prev)}
+                aria-pressed={onlyStreamable}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  onlyStreamable
+                    ? 'bg-accent-500/15 text-accent-400 border border-accent-500/30'
+                    : 'bg-surface-800 text-surface-200 hover:text-surface-100'
+                }`}
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+                </svg>
+                Nur streambar
+              </button>
+            </FilterField>
+
+            {(providersLoading && (hasProviderFilter || onlyStreamable)) && (
+              <p role="status" aria-live="polite" className="text-surface-200 text-sm animate-pulse">
+                Streaming-Verfügbarkeit wird geprüft…
+              </p>
+            )}
+
+            {fskChecking && (
+              <p role="status" aria-live="polite" className="text-surface-200 text-sm animate-pulse">
+                FSK-Freigaben werden geprüft…
+              </p>
+            )}
+
+            {fskUnknownCount > 0 && (
+              <p role="status" aria-live="polite" className="text-amber-300 text-sm">
+                Bei {fskUnknownCount} Einträgen konnte die FSK-Freigabe nicht geprüft werden.
+              </p>
+            )}
+          </div>
         </FilterPanel>
       )}
 

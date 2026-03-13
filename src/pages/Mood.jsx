@@ -7,7 +7,6 @@ import { discoverTv } from '../api/tv'
 import { useGenres, useWatchProviders } from '../hooks/useProviders'
 import { getMoodBySlug } from '../utils/moods'
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll'
-import { useFilterPresets } from '../hooks/useFilterPresets'
 import MediaCard from '../components/common/MediaCard'
 import GridSkeleton from '../components/common/GridSkeleton'
 import ErrorBox from '../components/common/ErrorBox'
@@ -15,7 +14,8 @@ import ScrollToTop from '../components/common/ScrollToTop'
 import Select from '../components/common/Select'
 import ProviderFilter from '../components/common/ProviderFilter'
 import FilterPanel from '../components/common/FilterPanel'
-import FilterPresets from '../components/common/FilterPresets'
+import SegmentedControl from '../components/common/SegmentedControl'
+import FilterField from '../components/common/FilterField'
 import {
   FSK_VALUES,
   FSK_FILTER_MODE_OPTIONS,
@@ -29,8 +29,8 @@ const years = Array.from({ length: 50 }, (_, i) => currentYear - i)
 
 const sortOptions = [
   { value: 'popularity', label: 'Beliebtheit', sortBy: 'popularity.desc' },
-  { value: 'date', label: 'Erscheinungsdatum', sortByMovie: 'primary_release_date.desc', sortByTv: 'first_air_date.desc' },
   { value: 'rating', label: 'Bewertung', sortBy: 'vote_average.desc' },
+  { value: 'date', label: 'Erscheinungsdatum', sortByMovie: 'primary_release_date.desc', sortByTv: 'first_air_date.desc' },
 ]
 
 const ratingOptions = [
@@ -46,68 +46,6 @@ const fskOptions = [
   { value: '', label: 'Alle' },
   ...FSK_VALUES.map((value) => ({ value, label: `FSK ${value}` })),
 ]
-
-function parseNumberList(values) {
-  if (!Array.isArray(values)) return []
-  return values
-    .map((id) => Number(id))
-    .filter((id) => Number.isInteger(id) && id > 0)
-}
-
-function normalizeSortValue(value) {
-  return sortOptions.some((option) => option.value === value) ? value : 'popularity'
-}
-
-function normalizeMoodPresetValues(values) {
-  const mediaType = values?.mediaType === 'tv' ? 'tv' : 'movie'
-  const sortValue = normalizeSortValue(values?.sortValue)
-  const selectedGenres = parseNumberList(values?.selectedGenres)
-  const selectedProviders = parseNumberList(values?.selectedProviders)
-  const year = typeof values?.year === 'string' ? values.year : ''
-  const rating = typeof values?.rating === 'string' ? values.rating : ''
-
-  if (mediaType === 'movie') {
-    return {
-      mediaType,
-      sortValue,
-      selectedGenres,
-      year,
-      rating,
-      selectedProviders,
-      fsk: normalizeFskCertification(values?.fsk) || '',
-      fskMode: normalizeFskFilterMode(values?.fskMode),
-    }
-  }
-
-  return {
-    mediaType,
-    sortValue,
-    selectedGenres,
-    year,
-    rating,
-    selectedProviders,
-    fsk: '',
-    fskMode: 'lte',
-  }
-}
-
-function buildMoodSearchParams(values) {
-  const normalized = normalizeMoodPresetValues(values)
-  const params = {}
-
-  if (normalized.mediaType !== 'movie') params.type = normalized.mediaType
-  if (normalized.sortValue !== 'popularity') params.sort = normalized.sortValue
-  if (normalized.selectedGenres.length > 0) params.genres = normalized.selectedGenres.join(',')
-  if (normalized.year) params.year = normalized.year
-  if (normalized.rating) params.rating = normalized.rating
-  if (normalized.selectedProviders.length > 0) params.providers = normalized.selectedProviders.join(',')
-  if (normalized.fsk) {
-    params.fsk = normalized.fsk
-    if (normalized.fskMode !== 'lte') params.fskMode = normalized.fskMode
-  }
-
-  return params
-}
 
 function Mood() {
   const { slug } = useParams()
@@ -134,145 +72,6 @@ function Mood() {
   const genres = useGenres(mediaType)
   const providers = useWatchProviders(mediaType)
 
-  const presetStorageKey = `streamscout-mood-presets:${slug || 'unknown'}`
-  const {
-    presets,
-    savePreset,
-    renamePreset,
-    getPresetById,
-    deletePreset,
-    exportPresets,
-    importPresets,
-  } = useFilterPresets(presetStorageKey)
-  const [presetName, setPresetName] = useState('')
-  const [selectedPresetId, setSelectedPresetId] = useState('')
-  const [presetStatus, setPresetStatus] = useState('')
-  const [presetTransfer, setPresetTransfer] = useState('')
-  const activePresetId = presets.some((preset) => preset.id === selectedPresetId) ? selectedPresetId : ''
-
-  const currentPresetValues = useMemo(
-    () => ({
-      mediaType,
-      sortValue,
-      selectedGenres,
-      year,
-      rating,
-      selectedProviders,
-      fsk,
-      fskMode,
-    }),
-    [mediaType, sortValue, selectedGenres, year, rating, selectedProviders, fsk, fskMode]
-  )
-
-  function applyPresetValues(values) {
-    const normalized = normalizeMoodPresetValues(values)
-
-    setMediaType(normalized.mediaType)
-    setSortValue(normalized.sortValue)
-    setSelectedGenres(normalized.selectedGenres)
-    setYear(normalized.year)
-    setRating(normalized.rating)
-    setSelectedProviders(normalized.selectedProviders)
-    setFsk(normalized.fsk)
-    setFskMode(normalized.fskMode)
-  }
-
-  function handleSavePreset() {
-    const result = savePreset(presetName, currentPresetValues)
-    if (!result.success) {
-      setPresetStatus(result.error)
-      return
-    }
-
-    setSelectedPresetId(result.id)
-    setPresetName('')
-    setPresetStatus(result.replaced ? 'Preset aktualisiert.' : 'Preset gespeichert.')
-  }
-
-  function handleRenamePreset() {
-    if (!activePresetId) {
-      setPresetStatus('Bitte wähle ein Preset aus.')
-      return
-    }
-
-    const result = renamePreset(activePresetId, presetName)
-    if (!result.success) {
-      setPresetStatus(result.error)
-      return
-    }
-
-    setPresetName('')
-    setPresetStatus('Preset umbenannt.')
-  }
-
-  function handleExportPresets() {
-    setPresetTransfer(exportPresets())
-    setPresetStatus('Preset-Daten exportiert.')
-  }
-
-  function handleImportPresets() {
-    const result = importPresets(presetTransfer)
-    if (!result.success) {
-      setPresetStatus(result.error)
-      return
-    }
-
-    setPresetStatus(`${result.importedCount} Presets importiert, ${result.replacedCount} aktualisiert.`)
-  }
-
-  async function handleCopyPresetLink() {
-    if (!activePresetId) {
-      setPresetStatus('Bitte wähle ein Preset aus.')
-      return
-    }
-
-    const preset = getPresetById(activePresetId)
-    if (!preset) {
-      setPresetStatus('Preset nicht gefunden.')
-      return
-    }
-
-    const hashPath = window.location.hash.split('?')[0] || `#/mood/${slug || ''}`
-    const params = new URLSearchParams(buildMoodSearchParams(preset.values))
-    const targetUrl = new URL(window.location.href)
-    targetUrl.hash = params.size > 0 ? `${hashPath}?${params.toString()}` : hashPath
-
-    if (!navigator.clipboard?.writeText) {
-      setPresetStatus('Clipboard ist nicht verfügbar.')
-      return
-    }
-
-    try {
-      await navigator.clipboard.writeText(targetUrl.toString())
-      setPresetStatus('Preset-Link kopiert.')
-    } catch {
-      setPresetStatus('Preset-Link konnte nicht kopiert werden.')
-    }
-  }
-
-  function handleLoadPreset() {
-    if (!activePresetId) return
-    const preset = getPresetById(activePresetId)
-    if (!preset) {
-      setPresetStatus('Preset nicht gefunden.')
-      return
-    }
-
-    applyPresetValues(preset.values)
-    setPresetStatus('Preset geladen.')
-  }
-
-  function handleDeletePreset() {
-    if (!activePresetId) return
-    const deleted = deletePreset(activePresetId)
-    if (!deleted) {
-      setPresetStatus('Preset nicht gefunden.')
-      return
-    }
-
-    setSelectedPresetId('')
-    setPresetStatus('Preset gelöscht.')
-  }
 
   function resetFilters() {
     setSortValue('popularity')
@@ -299,6 +98,7 @@ function Mood() {
     }
     setSearchParams(params, { replace: true })
   }, [mediaType, sortValue, selectedGenres, year, rating, selectedProviders, fsk, fskMode, setSearchParams])
+
 
   const moodParams = mood?.[mediaType] || {}
   const sortOption = sortOptions.find((o) => o.value === sortValue) || sortOptions[0]
@@ -390,132 +190,31 @@ function Mood() {
   const quickFilters = (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
-          {[
-            { type: 'movie', label: 'Filme' },
-            { type: 'tv', label: 'Serien' },
-          ].map(({ type, label }) => (
-            <button
-              key={type}
-              onClick={() => switchMediaType(type)}
-              aria-pressed={mediaType === type}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                mediaType === type
-                  ? 'bg-accent-500 text-black'
-                  : 'text-surface-300 hover:text-surface-100'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          size="lg"
+          options={[
+            { value: 'movie', label: 'Filme' },
+            { value: 'tv', label: 'Serien' },
+          ]}
+          value={mediaType}
+          onChange={switchMediaType}
+        />
 
-        <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
-          {sortOptions.map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => setSortValue(value)}
-              aria-pressed={sortValue === value}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                sortValue === value
-                  ? 'bg-accent-500 text-black'
-                  : 'text-surface-300 hover:text-surface-100'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          options={sortOptions.map(({ value, label }) => ({ value, label }))}
+          value={sortValue}
+          onChange={setSortValue}
+        />
 
         <button
           onClick={shuffle}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-800 text-surface-300 hover:text-surface-100 hover:bg-surface-700 transition-colors text-sm font-medium"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-800 text-surface-200 hover:text-surface-100 hover:bg-surface-700 transition-colors text-sm font-medium"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
           </svg>
           Mischen
         </button>
-      </div>
-
-      {genres.data && (
-        <div>
-          <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">Genre</p>
-          <div className="flex flex-wrap gap-2">
-            {genres.data.map((genreOption) => (
-              <button
-                key={genreOption.id}
-                onClick={() => toggleGenre(genreOption.id)}
-                aria-pressed={selectedGenres.includes(genreOption.id)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-                  selectedGenres.includes(genreOption.id)
-                    ? 'bg-accent-500 text-black shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]'
-                    : 'bg-surface-800 text-surface-200 hover:bg-surface-700'
-                }`}
-              >
-                {genreOption.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="flex flex-wrap gap-4">
-        <div>
-          <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">Jahr</p>
-          <Select
-            value={year}
-            onChange={setYear}
-            options={[{ value: '', label: 'Alle Jahre' }, ...years.map((itemYear) => ({ value: String(itemYear), label: String(itemYear) }))]}
-            placeholder="Alle Jahre"
-            ariaLabel="Jahr"
-          />
-        </div>
-
-        <div>
-          <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">Bewertung</p>
-          <Select
-            value={rating}
-            onChange={setRating}
-            options={ratingOptions}
-            placeholder="Alle"
-            ariaLabel="Bewertung"
-          />
-        </div>
-
-        {mediaType === 'movie' && (
-          <div className="space-y-3">
-            <div>
-              <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">FSK</p>
-              <Select
-                value={fsk}
-                onChange={setFsk}
-                options={fskOptions}
-                placeholder="Alle"
-                ariaLabel="FSK"
-              />
-            </div>
-
-            {fsk && (
-              <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
-                {FSK_FILTER_MODE_OPTIONS.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => setFskMode(value)}
-                    aria-pressed={fskMode === value}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                      fskMode === value
-                        ? 'bg-accent-500 text-black'
-                        : 'text-surface-300 hover:text-surface-100'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   )
@@ -561,30 +260,79 @@ function Mood() {
         activeCount={activeFilterCount}
         onReset={hasFilters ? resetFilters : undefined}
       >
+        {genres.data && (
+          <FilterField label="Genre">
+            <div className="flex flex-wrap gap-2">
+              {genres.data.map((genreOption) => (
+                <button
+                  key={genreOption.id}
+                  onClick={() => toggleGenre(genreOption.id)}
+                  aria-pressed={selectedGenres.includes(genreOption.id)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                    selectedGenres.includes(genreOption.id)
+                      ? 'bg-accent-500 text-black shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]'
+                      : 'bg-surface-800 text-surface-200 hover:bg-surface-700'
+                  }`}
+                >
+                  {genreOption.name}
+                </button>
+              ))}
+            </div>
+          </FilterField>
+        )}
+
+        <div className="flex flex-wrap gap-4">
+          <FilterField label="Jahr">
+            <Select
+              value={year}
+              onChange={setYear}
+              options={[{ value: '', label: 'Alle Jahre' }, ...years.map((itemYear) => ({ value: String(itemYear), label: String(itemYear) }))]}
+              placeholder="Alle Jahre"
+              ariaLabel="Jahr"
+            />
+          </FilterField>
+
+          <FilterField label="Bewertung">
+            <Select
+              value={rating}
+              onChange={setRating}
+              options={ratingOptions}
+              placeholder="Alle"
+              ariaLabel="Bewertung"
+            />
+          </FilterField>
+        </div>
+
+        {mediaType === 'movie' && (
+          <div className="space-y-3">
+            <FilterField label="FSK">
+              <Select
+                value={fsk}
+                onChange={setFsk}
+                options={fskOptions}
+                placeholder="Alle"
+                ariaLabel="FSK"
+              />
+            </FilterField>
+
+            {fsk && (
+              <SegmentedControl
+                size="sm"
+                className="w-fit"
+                options={FSK_FILTER_MODE_OPTIONS}
+                value={fskMode}
+                onChange={setFskMode}
+              />
+            )}
+          </div>
+        )}
+
         <ProviderFilter
           providers={providers.data}
           selected={selectedProviders}
           onToggle={toggleProvider}
         />
 
-        <FilterPresets
-          presets={presets}
-          presetName={presetName}
-          selectedPresetId={activePresetId}
-          transferValue={presetTransfer}
-          onPresetNameChange={setPresetName}
-          onSelectedPresetChange={setSelectedPresetId}
-          onTransferChange={setPresetTransfer}
-          onSave={handleSavePreset}
-          onRename={handleRenamePreset}
-          onLoad={handleLoadPreset}
-          onDelete={handleDeletePreset}
-          onCopyShareLink={handleCopyPresetLink}
-          onExport={handleExportPresets}
-          onImport={handleImportPresets}
-          statusMessage={presetStatus}
-          emptyMessage="Noch keine Presets für diese Stimmung gespeichert."
-        />
       </FilterPanel>
 
       {/* Results */}

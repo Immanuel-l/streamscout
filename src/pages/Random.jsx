@@ -10,6 +10,8 @@ import ErrorBox from '../components/common/ErrorBox'
 import Select from '../components/common/Select'
 import ProviderFilter from '../components/common/ProviderFilter'
 import FilterPanel from '../components/common/FilterPanel'
+import SegmentedControl from '../components/common/SegmentedControl'
+import FilterField from '../components/common/FilterField'
 import {
   FSK_VALUES,
   FSK_FILTER_MODE_OPTIONS,
@@ -37,20 +39,31 @@ const fskOptions = [
   ...FSK_VALUES.map((value) => ({ value, label: `FSK ${value}` })),
 ]
 
-const sortOptions = [
-  { value: 'popularity', label: 'Beliebtheit', sortByMovie: 'popularity.desc', sortByTv: 'popularity.desc' },
-  { value: 'rating', label: 'Bewertung', sortByMovie: 'vote_average.desc', sortByTv: 'vote_average.desc' },
-  { value: 'date', label: 'Erscheinungsdatum', sortByMovie: 'primary_release_date.desc', sortByTv: 'first_air_date.desc' },
+const focusOptions = [
+  { value: 'balanced', label: 'Ausgewogen', sortByMovie: 'popularity.desc', sortByTv: 'popularity.desc', minVotes: 80, maxRandomPage: 80 },
+  { value: 'topRated', label: 'Top bewertet', sortByMovie: 'vote_average.desc', sortByTv: 'vote_average.desc', minVotes: 250, maxRandomPage: 8, pickTopCount: 12 },
+  { value: 'newest', label: 'Neuere Titel', sortByMovie: 'primary_release_date.desc', sortByTv: 'first_air_date.desc', minVotes: 80, releasedOnly: true, maxRandomPage: 5, pickTopCount: 12 },
 ]
 
 const MAX_RETRIES = 3
+const LEGACY_SORT_TO_FOCUS = {
+  popularity: 'balanced',
+  rating: 'topRated',
+  date: 'newest',
+}
+
+function normalizeFocus(value, legacySort) {
+  if (focusOptions.some((option) => option.value === value)) return value
+  if (legacySort && LEGACY_SORT_TO_FOCUS[legacySort]) return LEGACY_SORT_TO_FOCUS[legacySort]
+  return 'balanced'
+}
 
 
 function Random() {
   useDocumentTitle('Zufallsgenerator')
   const [searchParams, setSearchParams] = useSearchParams()
   const [mediaType, setMediaType] = useState(() => searchParams.get('type') || 'movie')
-  const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || 'popularity')
+  const [focus, setFocus] = useState(() => normalizeFocus(searchParams.get('focus'), searchParams.get('sort')))
   const [selectedGenres, setSelectedGenres] = useState(() => {
     const value = searchParams.get('genres')
     return value ? value.split(',').map(Number).filter(Boolean) : []
@@ -67,7 +80,7 @@ function Random() {
   useEffect(() => {
     const params = {}
     if (mediaType !== 'movie') params.type = mediaType
-    if (sortBy !== 'popularity') params.sort = sortBy
+    if (focus !== 'balanced') params.focus = focus
     if (selectedGenres.length > 0) params.genres = selectedGenres.join(',')
     if (year) params.year = year
     if (rating) params.rating = rating
@@ -77,7 +90,7 @@ function Random() {
     }
     if (selectedProviders.length > 0) params.providers = selectedProviders.join(',')
     setSearchParams(params, { replace: true })
-  }, [mediaType, sortBy, selectedGenres, year, rating, fsk, fskMode, selectedProviders, setSearchParams])
+  }, [mediaType, focus, selectedGenres, year, rating, fsk, fskMode, selectedProviders, setSearchParams])
 
   const [result, setResult] = useState(null)
   const [resultFskLabel, setResultFskLabel] = useState(null)
@@ -141,10 +154,11 @@ function Random() {
     }
   }, [result])
 
-  const sortParam = useMemo(() => {
-    const option = sortOptions.find((item) => item.value === sortBy) || sortOptions[0]
-    return mediaType === 'tv' ? option.sortByTv : option.sortByMovie
-  }, [mediaType, sortBy])
+  const focusConfig = useMemo(
+    () => focusOptions.find((item) => item.value === focus) || focusOptions[0],
+    [focus]
+  )
+  const sortParam = mediaType === 'tv' ? focusConfig.sortByTv : focusConfig.sortByMovie
 
   const roll = useCallback(async () => {
     setLoading(true)
@@ -152,11 +166,9 @@ function Random() {
 
     try {
       const params = { sort_by: sortParam }
+      params['vote_count.gte'] = focusConfig.minVotes
 
-      if (sortBy === 'rating') params['vote_count.gte'] = 200
-      else params['vote_count.gte'] = 50
-
-      if (sortBy === 'date') {
+      if (focusConfig.releasedOnly) {
         const today = new Date().toISOString().split('T')[0]
         if (mediaType === 'movie') params['release_date.lte'] = today
         else params['first_air_date.lte'] = today
@@ -175,6 +187,7 @@ function Random() {
 
       const first = await discover({ ...params, page: 1 })
       const maxPage = Math.min(first.total_pages, 500)
+      const maxFocusPage = Math.max(1, Math.min(maxPage, focusConfig.maxRandomPage || maxPage))
 
       if (maxPage === 0 || first.total_results === 0) {
         setError('Keine Ergebnisse für diese Filter.')
@@ -184,15 +197,18 @@ function Random() {
       }
 
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-        const randomPage = Math.floor(Math.random() * maxPage) + 1
+        const randomPage = Math.floor(Math.random() * maxFocusPage) + 1
         const page = randomPage === 1 && attempt === 0
           ? first
           : await discover({ ...params, page: randomPage })
 
         const items = page.results.filter((m) => m.poster_path && m.overview)
+        const candidatePool = focusConfig.pickTopCount
+          ? items.slice(0, focusConfig.pickTopCount)
+          : items
 
-        if (items.length > 0) {
-          const pick = items[Math.floor(Math.random() * items.length)]
+        if (candidatePool.length > 0) {
+          const pick = candidatePool[Math.floor(Math.random() * candidatePool.length)]
           setResult({ ...pick, media_type: mediaType })
           return
         }
@@ -206,7 +222,7 @@ function Random() {
     } finally {
       setLoading(false)
     }
-  }, [mediaType, sortBy, sortParam, selectedGenres, year, rating, fsk, fskMode, selectedProviders])
+  }, [mediaType, focusConfig, sortParam, selectedGenres, year, rating, fsk, fskMode, selectedProviders])
 
   function switchMediaType(type) {
     setMediaType(type)
@@ -229,7 +245,7 @@ function Random() {
   }
 
   function resetFilters() {
-    setSortBy('popularity')
+    setFocus('balanced')
     setSelectedGenres([])
     setYear('')
     setRating('')
@@ -243,54 +259,34 @@ function Random() {
   const releaseYear = date ? new Date(date).getFullYear() : null
   const linkPath = result ? (result.media_type === 'tv' ? `/tv/${result.id}` : `/movie/${result.id}`) : null
 
-  const hasFilters = selectedGenres.length > 0 || year || rating || fsk || selectedProviders.length > 0 || sortBy !== 'popularity'
+  const hasFilters = selectedGenres.length > 0 || year || rating || fsk || selectedProviders.length > 0 || focus !== 'balanced'
   const activeFilterCount =
     selectedGenres.length +
     (year ? 1 : 0) +
     (rating ? 1 : 0) +
     (fsk ? 1 : 0) +
     selectedProviders.length +
-    (sortBy !== 'popularity' ? 1 : 0)
+    (focus !== 'balanced' ? 1 : 0)
 
   const quickFilters = (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
-          {[
-            { type: 'movie', label: 'Filme' },
-            { type: 'tv', label: 'Serien' },
-          ].map(({ type, label }) => (
-            <button
-              key={type}
-              onClick={() => switchMediaType(type)}
-              aria-pressed={mediaType === type}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                mediaType === type
-                  ? 'bg-accent-500 text-black'
-                  : 'text-surface-300 hover:text-surface-100'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          size="lg"
+          className="w-fit"
+          options={[
+            { value: 'movie', label: 'Filme' },
+            { value: 'tv', label: 'Serien' },
+          ]}
+          value={mediaType}
+          onChange={switchMediaType}
+        />
 
-        <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
-          {sortOptions.map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => setSortBy(value)}
-              aria-pressed={sortBy === value}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                sortBy === value
-                  ? 'bg-accent-500 text-black'
-                  : 'text-surface-300 hover:text-surface-100'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          options={focusOptions.map(({ value, label }) => ({ value, label }))}
+          value={focus}
+          onChange={setFocus}
+        />
 
         <button
           onClick={roll}
@@ -315,86 +311,6 @@ function Random() {
           )}
         </button>
       </div>
-
-      {genres.data && (
-        <div>
-          <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">Genre</p>
-          <div className="flex flex-wrap gap-2">
-            {genres.data.map((genreOption) => (
-              <button
-                key={genreOption.id}
-                onClick={() => toggleGenre(genreOption.id)}
-                aria-pressed={selectedGenres.includes(genreOption.id)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-                  selectedGenres.includes(genreOption.id)
-                    ? 'bg-accent-500 text-black shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]'
-                    : 'bg-surface-800 text-surface-200 hover:bg-surface-700'
-                }`}
-              >
-                {genreOption.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="flex flex-wrap gap-4">
-        <div>
-          <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">Jahr</p>
-          <Select
-            value={year}
-            onChange={setYear}
-            options={[{ value: '', label: 'Alle Jahre' }, ...years.map((itemYear) => ({ value: String(itemYear), label: String(itemYear) }))]}
-            placeholder="Alle Jahre"
-            ariaLabel="Jahr"
-          />
-        </div>
-
-        <div>
-          <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">Bewertung</p>
-          <Select
-            value={rating}
-            onChange={setRating}
-            options={ratingOptions}
-            placeholder="Alle"
-            ariaLabel="Bewertung"
-          />
-        </div>
-
-        {mediaType === 'movie' && (
-          <div className="space-y-3">
-            <div>
-              <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">FSK</p>
-              <Select
-                value={fsk}
-                onChange={setFsk}
-                options={fskOptions}
-                placeholder="Alle"
-                ariaLabel="FSK"
-              />
-            </div>
-
-            {fsk && (
-              <div className="flex gap-1 bg-surface-800 rounded-xl p-1 w-fit">
-                {FSK_FILTER_MODE_OPTIONS.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => setFskMode(value)}
-                    aria-pressed={fskMode === value}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                      fskMode === value
-                        ? 'bg-accent-500 text-black'
-                        : 'text-surface-300 hover:text-surface-100'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
     </div>
   )
 
@@ -415,6 +331,76 @@ function Random() {
         activeCount={activeFilterCount}
         onReset={hasFilters ? resetFilters : undefined}
       >
+        {genres.data && (
+          <FilterField
+            label="Genre"
+            description="Auswahlfokus oben steuert, aus welchem Treffer-Pool gewürfelt wird."
+          >
+            <div className="flex flex-wrap gap-2">
+              {genres.data.map((genreOption) => (
+                <button
+                  key={genreOption.id}
+                  onClick={() => toggleGenre(genreOption.id)}
+                  aria-pressed={selectedGenres.includes(genreOption.id)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                    selectedGenres.includes(genreOption.id)
+                      ? 'bg-accent-500 text-black shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]'
+                      : 'bg-surface-800 text-surface-200 hover:bg-surface-700'
+                  }`}
+                >
+                  {genreOption.name}
+                </button>
+              ))}
+            </div>
+          </FilterField>
+        )}
+
+        <div className="flex flex-wrap gap-4">
+          <FilterField label="Jahr">
+            <Select
+              value={year}
+              onChange={setYear}
+              options={[{ value: '', label: 'Alle Jahre' }, ...years.map((itemYear) => ({ value: String(itemYear), label: String(itemYear) }))]}
+              placeholder="Alle Jahre"
+              ariaLabel="Jahr"
+            />
+          </FilterField>
+
+          <FilterField label="Bewertung">
+            <Select
+              value={rating}
+              onChange={setRating}
+              options={ratingOptions}
+              placeholder="Alle"
+              ariaLabel="Bewertung"
+            />
+          </FilterField>
+        </div>
+
+        {mediaType === 'movie' && (
+          <div className="space-y-3">
+            <FilterField label="FSK">
+              <Select
+                value={fsk}
+                onChange={setFsk}
+                options={fskOptions}
+                placeholder="Alle"
+                ariaLabel="FSK"
+              />
+            </FilterField>
+
+            {fsk && (
+              <SegmentedControl
+                size="sm"
+                className="w-fit"
+                options={FSK_FILTER_MODE_OPTIONS}
+                value={fskMode}
+                onChange={setFskMode}
+              />
+            )}
+          </div>
+        )}
+
         <ProviderFilter
           providers={providers.data}
           selected={selectedProviders}
@@ -519,5 +505,3 @@ function Random() {
 }
 
 export default Random
-
-

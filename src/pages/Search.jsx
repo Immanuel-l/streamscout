@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useInfiniteQuery, useQueries } from '@tanstack/react-query'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
-import { useGenres } from '../hooks/useProviders'
+import { useGenres, useWatchProviders } from '../hooks/useProviders'
 import { searchMulti, searchMovies, searchTv, searchPerson } from '../api/common'
 import { useDebounce } from '../hooks/useDebounce'
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll'
@@ -10,13 +10,24 @@ import {
   getProviderAvailabilityQueryOptions,
   STREAMABLE_CHECK_STEP,
 } from '../utils/providerAvailability'
+import { getFskAvailabilityQueryOptions } from '../utils/fskAvailability'
+import {
+  FSK_VALUES,
+  FSK_FILTER_MODE_OPTIONS,
+  normalizeFskCertification,
+  normalizeFskFilterMode,
+  matchesFskFilter,
+} from '../utils/fsk'
 import SearchBar from '../components/search/SearchBar'
 import MediaCard from '../components/common/MediaCard'
 import PersonCard from '../components/search/PersonCard'
 import GridSkeleton from '../components/common/GridSkeleton'
 import ErrorBox from '../components/common/ErrorBox'
 import FilterPanel from '../components/common/FilterPanel'
+import SegmentedControl from '../components/common/SegmentedControl'
+import FilterField from '../components/common/FilterField'
 import Select from '../components/common/Select'
+import ProviderFilter from '../components/common/ProviderFilter'
 import ScrollToTop from '../components/common/ScrollToTop'
 
 const searchFns = {
@@ -36,6 +47,11 @@ const ratingOptions = [
   { value: '7', label: '7+' },
   { value: '6', label: '6+' },
   { value: '5', label: '5+' },
+]
+
+const fskOptions = [
+  { value: '', label: 'Alle' },
+  ...FSK_VALUES.map((value) => ({ value, label: `FSK ${value}` })),
 ]
 
 const sortOptions = [
@@ -76,13 +92,21 @@ function Search() {
   })
   const [year, setYear] = useState(() => searchParams.get('year') || '')
   const [rating, setRating] = useState(() => searchParams.get('rating') || '')
+  const [fsk, setFsk] = useState(() => normalizeFskCertification(searchParams.get('fsk')) || '')
+  const [fskMode, setFskMode] = useState(() => normalizeFskFilterMode(searchParams.get('fskMode')))
   const [onlyStreamable, setOnlyStreamable] = useState(() => searchParams.get('streamable') === 'true')
+  const [selectedProviders, setSelectedProviders] = useState(() => {
+    const value = searchParams.get('providers')
+    return value ? value.split(',').map(Number).filter(Boolean) : []
+  })
   const [searchHistory, setSearchHistory] = useState(getSearchHistory)
-  const [streamableCheckLimit, setStreamableCheckLimit] = useState(STREAMABLE_CHECK_STEP)
+  const [detailCheckLimit, setDetailCheckLimit] = useState(STREAMABLE_CHECK_STEP)
   const debouncedQuery = useDebounce(query, 300)
 
   const movieGenres = useGenres('movie')
   const tvGenres = useGenres('tv')
+  const movieProviders = useWatchProviders('movie')
+  const tvProviders = useWatchProviders('tv')
 
   const availableGenres = useMemo(() => {
     if (mediaType === 'movie') return movieGenres.data || []
@@ -99,6 +123,29 @@ function Search() {
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'de'))
   }, [mediaType, movieGenres.data, tvGenres.data])
 
+  const availableProviders = useMemo(() => {
+    if (mediaType === 'movie') return movieProviders.data || []
+    if (mediaType === 'tv') return tvProviders.data || []
+
+    const map = new Map()
+
+    for (const provider of movieProviders.data || []) {
+      map.set(provider.provider_id, provider)
+    }
+
+    for (const provider of tvProviders.data || []) {
+      if (!map.has(provider.provider_id)) {
+        map.set(provider.provider_id, provider)
+      }
+    }
+
+    return Array.from(map.values()).sort((a, b) => {
+      const priorityDiff = (a.display_priority ?? 9999) - (b.display_priority ?? 9999)
+      if (priorityDiff !== 0) return priorityDiff
+      return String(a.provider_name || '').localeCompare(String(b.provider_name || ''), 'de')
+    })
+  }, [mediaType, movieProviders.data, tvProviders.data])
+
   const isPersonSearch = mediaType === 'person'
 
   function handleMediaType(type) {
@@ -109,6 +156,9 @@ function Search() {
       setSelectedGenres([])
       setYear('')
       setRating('')
+      setSelectedProviders([])
+      setFsk('')
+      setFskMode('lte')
       return
     }
 
@@ -121,12 +171,21 @@ function Search() {
     setSelectedGenres([])
     setYear('')
     setRating('')
+    setSelectedProviders([])
+    setFsk('')
+    setFskMode('lte')
     setOnlyStreamable(false)
   }
 
   function toggleGenre(id) {
     setSelectedGenres((prev) =>
       prev.includes(id) ? prev.filter((genreId) => genreId !== id) : [...prev, id]
+    )
+  }
+
+  function toggleProvider(id) {
+    setSelectedProviders((prev) =>
+      prev.includes(id) ? prev.filter((providerId) => providerId !== id) : [...prev, id]
     )
   }
 
@@ -139,14 +198,19 @@ function Search() {
     if (selectedGenres.length > 0) params.genres = selectedGenres.join(',')
     if (year) params.year = year
     if (rating) params.rating = rating
+    if (selectedProviders.length > 0) params.providers = selectedProviders.join(',')
+    if (fsk) {
+      params.fsk = fsk
+      if (fskMode !== 'lte') params.fskMode = fskMode
+    }
     if (onlyStreamable) params.streamable = 'true'
     setSearchParams(params, { replace: true })
-  }, [debouncedQuery, mediaType, sortBy, selectedGenres, year, rating, onlyStreamable, setSearchParams])
+  }, [debouncedQuery, mediaType, sortBy, selectedGenres, year, rating, selectedProviders, fsk, fskMode, onlyStreamable, setSearchParams])
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    setStreamableCheckLimit(STREAMABLE_CHECK_STEP)
-  }, [debouncedQuery, mediaType, sortBy, selectedGenres, year, rating, onlyStreamable])
+    setDetailCheckLimit(STREAMABLE_CHECK_STEP)
+  }, [debouncedQuery, mediaType, sortBy, selectedGenres, year, rating, selectedProviders, fsk, fskMode, onlyStreamable])
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const {
@@ -197,9 +261,14 @@ function Search() {
     })
   }, [data, mediaType, isPersonSearch])
 
-  const providerCheckItems = useMemo(
-    () => (isPersonSearch ? [] : rawResults.slice(0, streamableCheckLimit)),
-    [isPersonSearch, rawResults, streamableCheckLimit]
+  const hasFskFilter = Boolean(fsk)
+  const hasProviderFilter = selectedProviders.length > 0
+  const hasProviderChecks = !isPersonSearch && (onlyStreamable || hasProviderFilter)
+  const hasDetailChecks = !isPersonSearch && (hasProviderChecks || hasFskFilter)
+
+  const detailCheckItems = useMemo(
+    () => (isPersonSearch ? [] : rawResults.slice(0, detailCheckLimit)),
+    [isPersonSearch, rawResults, detailCheckLimit]
   )
 
   const suggestions = useMemo(() => {
@@ -218,25 +287,80 @@ function Search() {
   }, [data, mediaType, isPersonSearch])
 
   const providerQueries = useQueries({
-    queries: (onlyStreamable && !isPersonSearch ? providerCheckItems : []).map((media) =>
+    queries: (hasProviderChecks && !isPersonSearch ? detailCheckItems : []).map((media) =>
       getProviderAvailabilityQueryOptions(media.media_type, media.id, true)
     ),
   })
 
-  const providersChecking = onlyStreamable && !isPersonSearch && providerQueries.some((q) => q.isLoading)
-  const streamableUnknownCount = onlyStreamable && !isPersonSearch
-    ? providerQueries.filter((q) => q.data?.state === 'unknown').length
+  const fskQueries = useQueries({
+    queries: (hasFskFilter && !isPersonSearch ? detailCheckItems : []).map((media) =>
+      getFskAvailabilityQueryOptions(media.media_type, media.id, true)
+    ),
+  })
+
+  const getResultKey = useCallback((media) => `${media.media_type}-${media.id}`, [])
+
+  const providerStateByKey = useMemo(() => {
+    const map = new Map()
+    if (!hasProviderChecks || isPersonSearch) return map
+
+    detailCheckItems.forEach((media, index) => {
+      map.set(getResultKey(media), providerQueries[index]?.data)
+    })
+
+    return map
+  }, [detailCheckItems, providerQueries, hasProviderChecks, isPersonSearch, getResultKey])
+
+  const fskStateByKey = useMemo(() => {
+    const map = new Map()
+    if (!hasFskFilter || isPersonSearch) return map
+
+    detailCheckItems.forEach((media, index) => {
+      map.set(getResultKey(media), fskQueries[index]?.data)
+    })
+
+    return map
+  }, [detailCheckItems, fskQueries, hasFskFilter, isPersonSearch, getResultKey])
+
+  const providersChecking = hasProviderChecks && !isPersonSearch && providerQueries.some((q) => q.isLoading)
+  const fskChecking = hasFskFilter && !isPersonSearch && fskQueries.some((q) => q.isLoading)
+
+  const providerUnknownCount = hasProviderChecks && !isPersonSearch
+    ? detailCheckItems.filter((media) => providerStateByKey.get(getResultKey(media))?.state === 'unknown').length
     : 0
-  const streamableLimitReached = onlyStreamable && !isPersonSearch && rawResults.length > providerCheckItems.length
-  const noProviderResolved = onlyStreamable && !isPersonSearch && providerCheckItems.length > 0 && providerQueries.every((q) => q.isLoading)
+
+  const fskUnknownCount = hasFskFilter && !isPersonSearch
+    ? detailCheckItems.filter((media) => fskStateByKey.get(getResultKey(media))?.state === 'unknown').length
+    : 0
+
+  const detailLimitReached = hasDetailChecks && rawResults.length > detailCheckItems.length
+
+  const noProviderResolved = hasProviderChecks && !isPersonSearch && detailCheckItems.length > 0 && providerQueries.every((q) => q.isLoading)
+  const noFskResolved = hasFskFilter && !isPersonSearch && detailCheckItems.length > 0 && fskQueries.every((q) => q.isLoading)
 
   const results = useMemo(() => {
     if (!rawResults.length) return []
     if (isPersonSearch) return rawResults
 
-    let filtered = onlyStreamable
-      ? providerCheckItems.filter((_, i) => providerQueries[i]?.data?.state === 'streamable')
-      : [...rawResults]
+    let filtered = hasDetailChecks ? [...detailCheckItems] : [...rawResults]
+
+    if (onlyStreamable) {
+      filtered = filtered.filter((item) => providerStateByKey.get(getResultKey(item))?.state === 'streamable')
+    }
+
+    if (hasProviderFilter) {
+      filtered = filtered.filter((item) => {
+        const availableProviderIds = providerStateByKey.get(getResultKey(item))?.availableProviderIds
+        return Array.isArray(availableProviderIds) && selectedProviders.some((providerId) => availableProviderIds.includes(providerId))
+      })
+    }
+
+    if (hasFskFilter) {
+      filtered = filtered.filter((item) => {
+        const fskState = fskStateByKey.get(getResultKey(item))
+        return matchesFskFilter(fskState?.certification, fsk, fskMode)
+      })
+    }
 
     if (selectedGenres.length > 0) {
       filtered = filtered.filter((item) =>
@@ -266,16 +390,34 @@ function Search() {
     }
 
     return filtered
-  }, [rawResults, providerCheckItems, providerQueries, sortBy, selectedGenres, year, rating, onlyStreamable, isPersonSearch])
+  }, [
+    rawResults,
+    isPersonSearch,
+    hasDetailChecks,
+    detailCheckItems,
+    onlyStreamable,
+    hasProviderFilter,
+    selectedProviders,
+    providerStateByKey,
+    getResultKey,
+    hasFskFilter,
+    fskStateByKey,
+    fsk,
+    fskMode,
+    selectedGenres,
+    year,
+    rating,
+    sortBy,
+  ])
 
-  const fetchNextWithProviderWindow = useCallback(() => {
-    if (onlyStreamable && !isPersonSearch) {
-      setStreamableCheckLimit((prev) => prev + STREAMABLE_CHECK_STEP)
+  const fetchNextWithDetailWindow = useCallback(() => {
+    if (hasDetailChecks) {
+      setDetailCheckLimit((prev) => prev + STREAMABLE_CHECK_STEP)
     }
     return fetchNextPage()
-  }, [fetchNextPage, onlyStreamable, isPersonSearch])
+  }, [fetchNextPage, hasDetailChecks])
 
-  const sentinelRef = useInfiniteScroll({ fetchNextPage: fetchNextWithProviderWindow, hasNextPage, isFetchingNextPage })
+  const sentinelRef = useInfiniteScroll({ fetchNextPage: fetchNextWithDetailWindow, hasNextPage, isFetchingNextPage })
 
   function handleHistorySelect(q) {
     setQuery(q)
@@ -297,119 +439,81 @@ function Search() {
   const hasQuery = debouncedQuery.length >= 2
   const hasResults = results.length > 0
   const noResults = hasQuery && !isLoading && !error && data && rawResults.length === 0
-  const allFilteredOut = hasQuery && !isLoading && rawResults.length > 0 && results.length === 0 && !providersChecking
+  const allFilteredOut = hasQuery && !isLoading && rawResults.length > 0 && results.length === 0 && !providersChecking && !fskChecking
   const defaultSort = isPersonSearch ? 'relevance' : 'popularity'
-  const hasActiveFilters = mediaType !== 'all' || sortBy !== defaultSort || selectedGenres.length > 0 || year || rating || onlyStreamable
+  const hasActiveFilters = Boolean(
+    mediaType !== 'all' ||
+    sortBy !== defaultSort ||
+    selectedGenres.length > 0 ||
+    year ||
+    rating ||
+    fsk ||
+    selectedProviders.length > 0 ||
+    onlyStreamable
+  )
   const activeFilterCount =
     (mediaType !== 'all' ? 1 : 0) +
     (sortBy !== defaultSort ? 1 : 0) +
     selectedGenres.length +
     (year ? 1 : 0) +
     (rating ? 1 : 0) +
+    (fsk ? 1 : 0) +
+    selectedProviders.length +
     (onlyStreamable ? 1 : 0)
+
+  const detailCheckScopes = []
+  if (onlyStreamable) detailCheckScopes.push('Streambarkeit')
+  if (hasProviderFilter) detailCheckScopes.push('Anbieter')
+  if (hasFskFilter) detailCheckScopes.push('FSK-Freigabe')
+
+  const detailLimitLabel = detailCheckScopes.length > 1
+    ? `${detailCheckScopes.slice(0, -1).join(', ')} und ${detailCheckScopes[detailCheckScopes.length - 1]}`
+    : detailCheckScopes[0] || 'Details'
+
+  const filteredOutTitle = hasProviderFilter
+    ? 'Keine Ergebnisse für die gewählten Anbieter'
+    : onlyStreamable
+      ? 'Keine streambaren Ergebnisse'
+      : hasFskFilter
+        ? 'Keine Ergebnisse für den gewählten FSK-Filter'
+        : 'Keine Ergebnisse für die aktiven Filter'
+
+  const filteredOutDescription = hasProviderFilter
+    ? 'Wähle andere Anbieter oder deaktiviere den Anbieter-Filter.'
+    : onlyStreamable
+      ? 'Deaktiviere den Filter oder versuch einen anderen Suchbegriff.'
+      : hasFskFilter
+        ? 'Passe den FSK-Filter an oder versuch einen anderen Suchbegriff.'
+        : 'Passe die Filter an oder versuch einen anderen Suchbegriff.'
 
   const quickFilters = (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
-          {[
-            { type: 'all', label: 'Alle' },
-            { type: 'movie', label: 'Filme' },
-            { type: 'tv', label: 'Serien' },
-            { type: 'person', label: 'Personen' },
-          ].map(({ type, label }) => (
-            <button
-              key={type}
-              onClick={() => handleMediaType(type)}
-              aria-pressed={mediaType === type}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                mediaType === type
-                  ? 'bg-accent-500 text-black'
-                  : 'text-surface-200 hover:text-surface-100'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          options={[
+            { value: 'all', label: 'Alle' },
+            { value: 'movie', label: 'Filme' },
+            { value: 'tv', label: 'Serien' },
+            { value: 'person', label: 'Personen' },
+          ]}
+          value={mediaType}
+          onChange={handleMediaType}
+        />
 
         {!isPersonSearch && (
-          <div className="flex gap-1 bg-surface-800 rounded-xl p-1">
-            {sortOptions.map(({ value, label }) => (
-              <button
-                key={value}
-                onClick={() => setSortBy(value)}
-                aria-pressed={sortBy === value}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  sortBy === value
-                    ? 'bg-accent-500 text-black'
-                    : 'text-surface-200 hover:text-surface-100'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            options={sortOptions.map(({ value, label }) => ({ value, label }))}
+            value={sortBy}
+            onChange={setSortBy}
+          />
         )}
 
         {results.length > 0 && !isLoading && (
-          <span className="text-surface-200 text-sm ml-auto">
+          <span className="ml-auto text-sm text-surface-200">
             {results.length.toLocaleString('de-DE')}{hasNextPage ? '+' : ''} Ergebnisse
           </span>
         )}
       </div>
-
-      {!isPersonSearch && (
-        <>
-          {availableGenres.length > 0 ? (
-            <div>
-              <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">Genre</p>
-              <div className="flex flex-wrap gap-2">
-                {availableGenres.map((genreOption) => (
-                  <button
-                    key={genreOption.id}
-                    onClick={() => toggleGenre(genreOption.id)}
-                    aria-pressed={selectedGenres.includes(genreOption.id)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-                      selectedGenres.includes(genreOption.id)
-                        ? 'bg-accent-500 text-black shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]'
-                        : 'bg-surface-800 text-surface-200 hover:bg-surface-700'
-                    }`}
-                  >
-                    {genreOption.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-surface-300">Genre-Filter sind für diesen Modus gerade nicht verfügbar.</p>
-          )}
-
-          <div className="flex flex-wrap gap-4">
-            <div>
-              <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">Jahr</p>
-              <Select
-                value={year}
-                onChange={setYear}
-                options={[{ value: '', label: 'Alle Jahre' }, ...years.map((itemYear) => ({ value: String(itemYear), label: String(itemYear) }))]}
-                placeholder="Alle Jahre"
-                ariaLabel="Jahr"
-              />
-            </div>
-
-            <div>
-              <p className="text-xs font-medium text-surface-200 uppercase tracking-wider mb-2">Bewertung</p>
-              <Select
-                value={rating}
-                onChange={setRating}
-                options={ratingOptions}
-                placeholder="Alle"
-                ariaLabel="Bewertung"
-              />
-            </div>
-          </div>
-        </>
-      )}
     </div>
   )
 
@@ -439,20 +543,96 @@ function Search() {
         >
           {!isPersonSearch ? (
             <div className="space-y-4">
-              <button
-                onClick={() => setOnlyStreamable(!onlyStreamable)}
-                aria-pressed={onlyStreamable}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                  onlyStreamable
-                    ? 'bg-accent-500/15 text-accent-400 border border-accent-500/30'
-                    : 'bg-surface-800 text-surface-200 hover:text-surface-100'
-                }`}
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
-                </svg>
-                Nur Streambar
-              </button>
+              {availableGenres.length > 0 ? (
+                <FilterField label="Genre">
+                  <div className="flex flex-wrap gap-2">
+                    {availableGenres.map((genreOption) => (
+                      <button
+                        key={genreOption.id}
+                        onClick={() => toggleGenre(genreOption.id)}
+                        aria-pressed={selectedGenres.includes(genreOption.id)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                          selectedGenres.includes(genreOption.id)
+                            ? 'bg-accent-500 text-black shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]'
+                            : 'bg-surface-800 text-surface-200 hover:bg-surface-700'
+                        }`}
+                      >
+                        {genreOption.name}
+                      </button>
+                    ))}
+                  </div>
+                </FilterField>
+              ) : (
+
+                <p className="text-sm text-surface-300">Genre-Filter sind für diesen Modus gerade nicht verfügbar.</p>
+              )}
+
+              <div className="flex flex-wrap gap-4">
+                <FilterField label="Jahr">
+                  <Select
+                    value={year}
+                    onChange={setYear}
+                    options={[{ value: '', label: 'Alle Jahre' }, ...years.map((itemYear) => ({ value: String(itemYear), label: String(itemYear) }))]}
+                    placeholder="Alle Jahre"
+                    ariaLabel="Jahr"
+                  />
+                </FilterField>
+
+                <FilterField label="Bewertung">
+                  <Select
+                    value={rating}
+                    onChange={setRating}
+                    options={ratingOptions}
+                    placeholder="Alle"
+                    ariaLabel="Bewertung"
+                  />
+                </FilterField>
+              </div>
+
+              <div className="space-y-3">
+                <FilterField label="FSK">
+                  <Select
+                    value={fsk}
+                    onChange={setFsk}
+                    options={fskOptions}
+                    placeholder="Alle"
+                    ariaLabel="FSK"
+                  />
+                </FilterField>
+
+                {fsk && (
+                  <SegmentedControl
+                    size="sm"
+                    className="w-fit"
+                    options={FSK_FILTER_MODE_OPTIONS}
+                    value={fskMode}
+                    onChange={setFskMode}
+                  />
+                )}
+              </div>
+
+              <ProviderFilter
+                providers={availableProviders}
+                selected={selectedProviders}
+                onToggle={toggleProvider}
+              />
+
+              <FilterField label="Streaming" className="space-y-2">
+                <button
+                  onClick={() => setOnlyStreamable(!onlyStreamable)}
+                  aria-pressed={onlyStreamable}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                    onlyStreamable
+                      ? 'bg-accent-500/15 text-accent-400 border border-accent-500/30'
+                      : 'bg-surface-800 text-surface-200 hover:text-surface-100'
+                  }`}
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+                  </svg>
+                  Nur streambar
+                </button>
+              </FilterField>
             </div>
           ) : (
             <p className="text-sm text-surface-300">Für Personen sind nur Typ-Filter verfügbar.</p>
@@ -462,7 +642,7 @@ function Search() {
 
       {error && <ErrorBox message="Suche fehlgeschlagen. Bitte versuch es später nochmal." />}
 
-      {(hasQuery && isLoading) || noProviderResolved ? <GridSkeleton count={12} /> : null}
+      {(hasQuery && isLoading) || noProviderResolved || noFskResolved ? <GridSkeleton count={12} /> : null}
 
       {hasResults && (
         <>
@@ -504,7 +684,7 @@ function Search() {
 
           {error && rawResults.length > 0 && !isFetchingNextPage && (
             <div className="py-8 max-w-md mx-auto">
-              <ErrorBox message="Fehler beim Laden weiterer Ergebnisse." onRetry={() => fetchNextWithProviderWindow()} />
+              <ErrorBox message="Fehler beim Laden weiterer Ergebnisse." onRetry={() => fetchNextWithDetailWindow()} />
             </div>
           )}
 
@@ -512,9 +692,13 @@ function Search() {
             <p role="status" aria-live="polite" className="text-surface-200 text-sm text-center py-4 animate-pulse">Streaming-Verfügbarkeit wird geprüft…</p>
           )}
 
-          {streamableLimitReached && (
+          {fskChecking && (
+            <p role="status" aria-live="polite" className="text-surface-200 text-sm text-center py-2 animate-pulse">FSK-Freigaben werden geprüft…</p>
+          )}
+
+          {detailLimitReached && (
             <p role="status" aria-live="polite" className="text-surface-300 text-xs text-center py-2">
-              Aktuell werden die ersten {providerCheckItems.length} Treffer auf Streambarkeit geprüft. Beim Weiter-Scrollen werden weitere geprüft.
+              Aktuell werden die ersten {detailCheckItems.length} Treffer auf {detailLimitLabel} geprüft. Beim Weiter-Scrollen werden weitere geprüft.
             </p>
           )}
 
@@ -524,9 +708,17 @@ function Search() {
         </>
       )}
 
-      {streamableUnknownCount > 0 && (
+      {providerUnknownCount > 0 && (
         <p role="status" aria-live="polite" className="text-amber-300 text-sm text-center py-2">
-          Bei {streamableUnknownCount} Treffern konnte die Streaming-Verfügbarkeit nicht geprüft werden.
+          {hasProviderFilter
+            ? `Bei ${providerUnknownCount} Treffern konnten die Anbieter nicht geprüft werden.`
+            : `Bei ${providerUnknownCount} Treffern konnte die Streaming-Verfügbarkeit nicht geprüft werden.`}
+        </p>
+      )}
+
+      {fskUnknownCount > 0 && (
+        <p role="status" aria-live="polite" className="text-amber-300 text-sm text-center py-2">
+          Bei {fskUnknownCount} Treffern konnte die FSK-Freigabe nicht geprüft werden.
         </p>
       )}
 
@@ -545,8 +737,8 @@ function Search() {
           <svg className="w-16 h-16 mx-auto text-surface-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
           </svg>
-          <p className="text-surface-200 text-lg">Keine streambare Ergebnisse</p>
-          <p className="text-surface-200 text-sm mt-1">Deaktiviere den Filter oder versuch einen anderen Suchbegriff.</p>
+          <p className="text-surface-200 text-lg">{filteredOutTitle}</p>
+          <p className="text-surface-200 text-sm mt-1">{filteredOutDescription}</p>
         </div>
       )}
 
@@ -566,13 +758,3 @@ function Search() {
 }
 
 export default Search
-
-
-
-
-
-
-
-
-
-

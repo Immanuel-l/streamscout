@@ -70,21 +70,31 @@ export function getProviderAvailabilityKey(mediaType, id) {
   return [PROVIDER_QUERY_KEY_PREFIX, mediaType, Number(id)]
 }
 
+function getAvailableProviderIds(providerData) {
+  if (!Array.isArray(providerData?.flatrate)) return []
+
+  return Array.from(new Set(
+    providerData.flatrate
+      .map((provider) => provider?.provider_id)
+      .filter((providerId) => Number.isInteger(providerId) && ALLOWED_PROVIDER_SET.has(providerId))
+  ))
+}
+
 function getAvailabilityState(providerData) {
-  const isStreamable = Boolean(
-    providerData?.flatrate?.some((provider) => ALLOWED_PROVIDER_SET.has(provider.provider_id))
-  )
+  const availableProviderIds = getAvailableProviderIds(providerData)
+  const isStreamable = availableProviderIds.length > 0
 
   return {
     state: isStreamable ? 'streamable' : 'not_streamable',
     isStreamable,
+    availableProviderIds,
   }
 }
 
 async function fetchProviderAvailability(mediaType, id) {
   const fetchProviders = getProviderFetcher(mediaType)
   if (!fetchProviders || !id) {
-    return { state: 'unknown', isStreamable: null }
+    return { state: 'unknown', isStreamable: null, availableProviderIds: [] }
   }
 
   try {
@@ -93,7 +103,7 @@ async function fetchProviderAvailability(mediaType, id) {
     )
     return getAvailabilityState(providerData)
   } catch {
-    return { state: 'unknown', isStreamable: null }
+    return { state: 'unknown', isStreamable: null, availableProviderIds: [] }
   }
 }
 

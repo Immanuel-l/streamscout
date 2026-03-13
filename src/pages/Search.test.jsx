@@ -12,7 +12,7 @@ const mockSearchMovies = vi.fn()
 const mockSearchTv = vi.fn()
 const mockSearchPerson = vi.fn()
 const mockUseGenres = vi.fn()
-
+const mockUseWatchProviders = vi.fn()
 
 const mockUseInfiniteQuery = vi.fn()
 const mockUseQueries = vi.fn()
@@ -31,6 +31,7 @@ vi.mock('../hooks/useDocumentTitle', () => ({
 
 vi.mock('../hooks/useProviders', () => ({
   useGenres: (...args) => mockUseGenres(...args),
+  useWatchProviders: (...args) => mockUseWatchProviders(...args),
 }))
 
 vi.mock('../api/common', () => ({
@@ -92,6 +93,16 @@ vi.mock('../components/common/ScrollToTop', () => ({
   default: () => null,
 }))
 
+vi.mock('../components/common/ProviderFilter', () => ({
+  default: ({ providers = [], selected = [], onToggle }) => (
+    <div data-testid="provider-filter">
+      <span data-testid="provider-filter-count">{providers.length}</span>
+      <span data-testid="provider-selected-count">{selected.length}</span>
+      <button type="button" onClick={() => onToggle?.(8)}>toggle-provider-8</button>
+    </div>
+  ),
+}))
+
 function buildInfiniteState(overrides = {}) {
   return {
     data: undefined,
@@ -112,6 +123,18 @@ function renderSearch(initialEntries = ['/search']) {
   )
 }
 
+function mockDetailQueries({ provider = [], fsk = [] } = {}) {
+  mockUseQueries.mockImplementation(({ queries }) => {
+    if (!Array.isArray(queries) || queries.length === 0) return []
+
+    const prefix = queries[0]?.queryKey?.[0]
+    if (prefix === 'provider-availability') return provider
+    if (prefix === 'fsk-availability') return fsk
+
+    return []
+  })
+}
+
 describe('Search Page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -120,6 +143,11 @@ describe('Search Page', () => {
     mockUseGenres.mockImplementation((type) => {
       if (type === 'movie') return { data: [{ id: 28, name: 'Action' }] }
       if (type === 'tv') return { data: [{ id: 10765, name: 'Sci-Fi' }] }
+      return { data: [] }
+    })
+    mockUseWatchProviders.mockImplementation((type) => {
+      if (type === 'movie') return { data: [{ provider_id: 8, provider_name: 'Netflix', logo_path: '/n.jpg', display_priority: 1 }] }
+      if (type === 'tv') return { data: [{ provider_id: 337, provider_name: 'Disney+', logo_path: '/d.jpg', display_priority: 1 }] }
       return { data: [] }
     })
     mockUseInfiniteQuery.mockReturnValue(buildInfiniteState())
@@ -201,12 +229,132 @@ describe('Search Page', () => {
     fireEvent.click(screen.getByText('Personen'))
 
     expect(screen.getAllByTestId('person-card')).toHaveLength(2)
-    expect(screen.queryByText('Nur Streambar')).not.toBeInTheDocument()
+    expect(screen.queryByText('Nur streambar')).not.toBeInTheDocument()
     expect(screen.queryByText('Bewertung')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByText('Filme'))
-    expect(screen.getByText('Nur Streambar')).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByText('Nur streambar')).toHaveAttribute('aria-pressed', 'false')
     expect(screen.getByText('Beliebtheit')).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('zeigt FSK-Filter in den erweiterten Suchfiltern', () => {
+    mockUseInfiniteQuery.mockReturnValue(buildInfiniteState({
+      data: {
+        pages: [
+          {
+            page: 1,
+            total_pages: 1,
+            results: [
+              { id: 1, media_type: 'movie', title: 'Film A', poster_path: '/a.jpg', overview: 'ok' },
+            ],
+          },
+        ],
+      },
+    }))
+
+    renderSearch(['/search?q=test&fsk=12'])
+
+    const openButton = screen.queryByRole('button', { name: 'Weitere Filter anzeigen' })
+    if (openButton) fireEvent.click(openButton)
+
+    expect(screen.getByRole('combobox', { name: 'FSK' })).toBeInTheDocument()
+    expect(screen.getByText('Bis FSK')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Genau FSK')).toBeInTheDocument()
+    expect(screen.getByText('Ab FSK')).toBeInTheDocument()
+  })
+
+  it('zeigt Anbieter-Filter in den erweiterten Suchfiltern', () => {
+    mockUseInfiniteQuery.mockReturnValue(buildInfiniteState({
+      data: {
+        pages: [
+          {
+            page: 1,
+            total_pages: 1,
+            results: [
+              { id: 1, media_type: 'movie', title: 'Film A', poster_path: '/a.jpg', overview: 'ok' },
+            ],
+          },
+        ],
+      },
+    }))
+
+    renderSearch(['/search?q=test'])
+
+    const openButton = screen.queryByRole('button', { name: 'Weitere Filter anzeigen' })
+    if (openButton) fireEvent.click(openButton)
+
+    expect(screen.getByTestId('provider-filter')).toBeInTheDocument()
+    expect(screen.getByTestId('provider-filter-count')).toHaveTextContent('2')
+  })
+
+  it('filtert Ergebnisse anhand gewaehlter Anbieter', () => {
+    mockUseInfiniteQuery.mockReturnValue(buildInfiniteState({
+      data: {
+        pages: [
+          {
+            page: 1,
+            total_pages: 1,
+            results: [
+              { id: 1, media_type: 'movie', title: 'Film A', poster_path: '/a.jpg', overview: 'ok' },
+              { id: 2, media_type: 'movie', title: 'Film B', poster_path: '/b.jpg', overview: 'ok' },
+            ],
+          },
+        ],
+      },
+    }))
+
+    mockDetailQueries({
+      provider: [
+        { isLoading: false, isSuccess: true, isError: false, data: { state: 'streamable', isStreamable: true, availableProviderIds: [8] } },
+        { isLoading: false, isSuccess: true, isError: false, data: { state: 'streamable', isStreamable: true, availableProviderIds: [337] } },
+      ],
+    })
+
+    renderSearch(['/search?q=test'])
+
+    const openButton = screen.queryByRole('button', { name: 'Weitere Filter anzeigen' })
+    if (openButton) fireEvent.click(openButton)
+
+    fireEvent.click(screen.getByText('toggle-provider-8'))
+
+    expect(screen.getByTestId('provider-selected-count')).toHaveTextContent('1')
+    expect(screen.getAllByTestId('media-card')).toHaveLength(1)
+    expect(screen.getByText('Film A')).toBeInTheDocument()
+
+    const providerQueryCall = mockUseQueries.mock.calls.find((call) => call[0]?.queries?.[0]?.queryKey?.[0] === 'provider-availability')
+    expect(providerQueryCall[0].queries).toHaveLength(2)
+  })
+
+  it('filtert Ergebnisse anhand von FSK', () => {
+    mockUseInfiniteQuery.mockReturnValue(buildInfiniteState({
+      data: {
+        pages: [
+          {
+            page: 1,
+            total_pages: 1,
+            results: [
+              { id: 1, media_type: 'movie', title: 'Film A', poster_path: '/a.jpg', overview: 'ok' },
+              { id: 2, media_type: 'movie', title: 'Film B', poster_path: '/b.jpg', overview: 'ok' },
+            ],
+          },
+        ],
+      },
+    }))
+
+    mockDetailQueries({
+      fsk: [
+        { isLoading: false, isSuccess: true, isError: false, data: { state: 'known', certification: '12' } },
+        { isLoading: false, isSuccess: true, isError: false, data: { state: 'known', certification: '16' } },
+      ],
+    })
+
+    renderSearch(['/search?q=test&fsk=12&fskMode=lte'])
+
+    expect(screen.getAllByTestId('media-card')).toHaveLength(1)
+    expect(screen.getByText('Film A')).toBeInTheDocument()
+
+    const fskQueryCall = mockUseQueries.mock.calls.find((call) => call[0]?.queries?.[0]?.queryKey?.[0] === 'fsk-availability')
+    expect(fskQueryCall[0].queries).toHaveLength(2)
   })
 
   it('zeigt Skeleton wenn Provider bei aktivem Streamable-Filter noch nicht aufgeloest sind', () => {
@@ -276,7 +424,7 @@ describe('Search Page', () => {
 
     renderSearch(['/search?q=test&streamable=true'])
 
-    expect(screen.getByText('Keine streambare Ergebnisse')).toBeInTheDocument()
+    expect(screen.getByText('Keine streambaren Ergebnisse')).toBeInTheDocument()
   })
 
   it('sortiert Ergebnisse nach Bewertung und Jahr', () => {
@@ -407,17 +555,46 @@ describe('Search Page', () => {
       },
     }))
 
-    mockUseQueries.mockReturnValue([
-      { isLoading: false, isSuccess: true, isError: false, data: { state: 'unknown', isStreamable: null } },
-    ])
+    mockDetailQueries({
+      provider: [
+        { isLoading: false, isSuccess: true, isError: false, data: { state: 'unknown', isStreamable: null } },
+      ],
+    })
 
     renderSearch(['/search?q=test&streamable=true'])
 
     expect(screen.getByText('Bei 1 Treffern konnte die Streaming-Verfügbarkeit nicht geprüft werden.')).toBeInTheDocument()
-    expect(screen.getByText('Keine streambare Ergebnisse')).toBeInTheDocument()
+    expect(screen.getByText('Keine streambaren Ergebnisse')).toBeInTheDocument()
   })
 
-  it('prüft bei "Nur Streambar" initial nur das erste Arbeitsfenster', () => {
+  it('zeigt Hinweis bei unbekannter FSK-Freigabe', () => {
+    mockUseInfiniteQuery.mockReturnValue(buildInfiniteState({
+      data: {
+        pages: [
+          {
+            page: 1,
+            total_pages: 1,
+            results: [
+              { id: 1, media_type: 'movie', title: 'Film A', poster_path: '/a.jpg', overview: 'ok' },
+            ],
+          },
+        ],
+      },
+    }))
+
+    mockDetailQueries({
+      fsk: [
+        { isLoading: false, isSuccess: true, isError: false, data: { state: 'unknown', certification: null } },
+      ],
+    })
+
+    renderSearch(['/search?q=test&fsk=12'])
+
+    expect(screen.getByText('Bei 1 Treffern konnte die FSK-Freigabe nicht geprüft werden.')).toBeInTheDocument()
+    expect(screen.getByText('Keine Ergebnisse für den gewählten FSK-Filter')).toBeInTheDocument()
+  })
+
+  it('prüft bei "Nur streambar" initial nur das erste Arbeitsfenster', () => {
     const manyResults = Array.from({ length: 80 }, (_, i) => ({
       id: i + 1,
       media_type: 'movie',
@@ -454,8 +631,3 @@ describe('Search Page', () => {
     expect(screen.getByText('Aktuell werden die ersten 60 Treffer auf Streambarkeit geprüft. Beim Weiter-Scrollen werden weitere geprüft.')).toBeInTheDocument()
   })
 })
-
-
-
-
-

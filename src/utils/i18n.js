@@ -47,7 +47,7 @@ const de = {
   'discover.year': 'Jahr',
   'discover.allYears': 'Alle Jahre',
   'discover.rating': 'Mindestbewertung',
-  'discover.fsk': 'Altersfreigabe',
+  'discover.fsk': 'FSK',
   'discover.fsk.all': 'Alle',
   'discover.resetFilters': 'Filter zurücksetzen',
   'discover.noResults': 'Keine Ergebnisse',
@@ -97,3 +97,4 @@ export function setLocale(locale) {
 export function getLocale() {
   return currentLocale
 }
+
