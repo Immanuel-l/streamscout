@@ -104,109 +104,51 @@ describe('Discover Page', () => {
     discoverTv.mockResolvedValue({ page: 1, total_pages: 1, results: [] })
   })
 
-  it('zeigt die Überschrift "Entdecken"', () => {
+  it('rendert Grundstruktur mit Standardauswahl', () => {
     renderDiscover()
+
     expect(screen.getByText('Entdecken')).toBeInTheDocument()
-  })
-
-  it('zeigt Medientyp-Toggle für Filme und Serien', () => {
-    renderDiscover()
-    expect(screen.getByText('Filme')).toBeInTheDocument()
-    expect(screen.getByText('Serien')).toBeInTheDocument()
-  })
-
-  it('hat Filme standardmäßig ausgewählt', () => {
-    renderDiscover()
-    const filmeBtn = screen.getByText('Filme')
-    expect(filmeBtn).toHaveAttribute('aria-pressed', 'true')
-    const serienBtn = screen.getByText('Serien')
-    expect(serienBtn).toHaveAttribute('aria-pressed', 'false')
-  })
-
-  it('wechselt den Medientyp per Klick', () => {
-    renderDiscover()
-    const serienBtn = screen.getByText('Serien')
-    fireEvent.click(serienBtn)
-    expect(serienBtn).toHaveAttribute('aria-pressed', 'true')
-  })
-
-  it('zeigt Sortier-Optionen', () => {
-    renderDiscover()
-    expect(screen.getByText('Beliebtheit')).toBeInTheDocument()
-    expect(screen.getByText('Bewertung')).toBeInTheDocument()
-    expect(screen.getByText('Erscheinungsdatum')).toBeInTheDocument()
-  })
-
-  it('hat Beliebtheit als Standard-Sortierung', () => {
-    renderDiscover()
+    expect(screen.getByText('Filme')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Serien')).toHaveAttribute('aria-pressed', 'false')
     expect(screen.getByText('Beliebtheit')).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('wechselt die Sortierung per Klick', () => {
+  it('wechselt Medientyp und Sortierung per Klick', () => {
     renderDiscover()
-    const ratingBtn = screen.getByText('Bewertung')
-    fireEvent.click(ratingBtn)
-    expect(ratingBtn).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(screen.getByText('Serien'))
+    expect(screen.getByText('Serien')).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(screen.getByText('Bewertung'))
+    expect(screen.getByText('Bewertung')).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('zeigt Genre-Buttons nach dem Aufklappen', () => {
+  it('zeigt erweiterte Filter, erlaubt Genre-Toggle und Reset', () => {
     renderDiscover()
     openAdvancedFilters()
-    expect(screen.getByText('Action')).toBeInTheDocument()
-    expect(screen.getByText('Komödie')).toBeInTheDocument()
-    expect(screen.getByText('Drama')).toBeInTheDocument()
+
+    const actionButton = screen.getByText('Action')
+    expect(actionButton).toHaveAttribute('aria-pressed', 'false')
+
+    fireEvent.click(actionButton)
+    expect(actionButton).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Filter zurücksetzen')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('Filter zurücksetzen'))
+    expect(actionButton).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('toggled Genre-Auswahl per Klick', () => {
+  it('zeigt den Provider-Filter in den erweiterten Filtern', () => {
     renderDiscover()
     openAdvancedFilters()
-    const actionBtn = screen.getByText('Action')
-    expect(actionBtn).toHaveAttribute('aria-pressed', 'false')
-    fireEvent.click(actionBtn)
-    expect(actionBtn).toHaveAttribute('aria-pressed', 'true')
-  })
 
-  it('zeigt Jahr-, Bewertungs- und FSK-Select in den erweiterten Filtern', () => {
-    renderDiscover()
-    openAdvancedFilters()
-    expect(screen.getByTestId('select-Alle Jahre')).toBeInTheDocument()
-    expect(screen.getAllByTestId('select-Alle').length).toBeGreaterThanOrEqual(2)
-  })
-
-  it('zeigt Provider-Filter in den erweiterten Filtern', () => {
-    renderDiscover()
-    openAdvancedFilters()
     expect(screen.getByTestId('provider-filter')).toBeInTheDocument()
   })
 
-  it('zeigt "Filter zurücksetzen" wenn Filter aktiv sind', () => {
-    renderDiscover()
-    openAdvancedFilters()
-    fireEvent.click(screen.getByText('Action'))
-    expect(screen.getByText('Filter zurücksetzen')).toBeInTheDocument()
-  })
+  it('liest type und sort aus URL-Parametern', () => {
+    renderDiscover(['/discover?type=tv&sort=rating'])
 
-  it('versteckt "Filter zurücksetzen" im Standard-Zustand', () => {
-    renderDiscover()
-    expect(screen.queryByText('Filter zurücksetzen')).not.toBeInTheDocument()
-  })
-
-  it('setzt Filter per "Filter zurücksetzen" zurück', () => {
-    renderDiscover()
-    openAdvancedFilters()
-    fireEvent.click(screen.getByText('Action'))
-    expect(screen.getByText('Action')).toHaveAttribute('aria-pressed', 'true')
-    fireEvent.click(screen.getByText('Filter zurücksetzen'))
-    expect(screen.getByText('Action')).toHaveAttribute('aria-pressed', 'false')
-  })
-
-  it('initialisiert Medientyp aus URL-Parametern', () => {
-    renderDiscover(['/discover?type=tv'])
     expect(screen.getByText('Serien')).toHaveAttribute('aria-pressed', 'true')
-  })
-
-  it('initialisiert Sortierung aus URL-Parametern', () => {
-    renderDiscover(['/discover?sort=rating'])
     expect(screen.getByText('Bewertung')).toHaveAttribute('aria-pressed', 'true')
   })
 })

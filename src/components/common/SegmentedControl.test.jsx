@@ -8,19 +8,14 @@ describe('SegmentedControl', () => {
     { value: 'tv', label: 'Serien' },
   ]
 
-  it('rendert alle Optionen und markiert die aktive Option', () => {
-    render(<SegmentedControl options={options} value="movie" onChange={() => {}} />)
-
-    expect(screen.getByText('Filme')).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByText('Serien')).toHaveAttribute('aria-pressed', 'false')
-  })
-
-  it('ruft onChange mit dem Wert der geklickten Option auf', () => {
+  it('markiert die aktive Option und ruft onChange beim Wechsel auf', () => {
     const onChange = vi.fn()
     render(<SegmentedControl options={options} value="movie" onChange={onChange} />)
 
-    fireEvent.click(screen.getByText('Serien'))
+    expect(screen.getByText('Filme')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Serien')).toHaveAttribute('aria-pressed', 'false')
 
+    fireEvent.click(screen.getByText('Serien'))
     expect(onChange).toHaveBeenCalledWith('tv')
   })
 

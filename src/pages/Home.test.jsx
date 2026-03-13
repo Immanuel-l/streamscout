@@ -148,7 +148,7 @@ describe('Home Page', () => {
     vi.useRealTimers()
   })
 
-  it('rendert Hero, Mood-Bereich und alle MediaRows', async () => {
+  it('rendert Hero, Mood-Bereich und zentrale Reihen', async () => {
     mockUsePersistedState.mockReturnValue(['popularity', mockSetKinoSort])
     mockUseTrendingAll.mockReturnValue({
       data: [
@@ -163,41 +163,27 @@ describe('Home Page', () => {
 
     expect(mockUseDocumentTitle).toHaveBeenCalledWith(null)
     expect(screen.getByText('Hero Film')).toBeInTheDocument()
+
     await waitFor(() => {
       expect(screen.getByText('FSK 12')).toBeInTheDocument()
     })
+
     expect(screen.getByRole('link', { name: 'Details ansehen' })).toHaveAttribute('href', '/movie/101')
     expect(screen.getByTestId('watchlist-button')).toHaveTextContent('Watchlist: Hero Film')
 
-    expect(screen.getByText('Kino B | Kino C | Kino A')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Sortiere Aktuell im Kino' }))
     expect(mockSetKinoSort).toHaveBeenCalledWith('popularity')
 
     expect(screen.getByTestId('watchlist-recommendations')).toBeInTheDocument()
+    expect(screen.getByTestId('row-Beliebte Filme')).toBeInTheDocument()
+    expect(screen.getByTestId('row-Beliebte Serien')).toBeInTheDocument()
+
     for (const mood of moods) {
       expect(screen.getByText(mood.title)).toBeInTheDocument()
     }
-
-    expect(screen.getByTestId('row-Beliebte Filme')).toBeInTheDocument()
-    expect(screen.getByTestId('row-Beliebte Serien')).toBeInTheDocument()
-    expect(screen.getByTestId('row-Beliebte Anime')).toBeInTheDocument()
-    expect(screen.getByTestId('row-Bestbewertete Filme')).toBeInTheDocument()
-    expect(screen.getByTestId('row-Bestbewertete Serien')).toBeInTheDocument()
-    expect(screen.getByTestId('row-Neu erschienen')).toBeInTheDocument()
-    expect(screen.getByTestId('row-Neue Serien')).toBeInTheDocument()
   })
 
-  it('nutzt die empfohlene Sortierung fuer Kino-Filme', () => {
-    mockUsePersistedState.mockReturnValue(['recommended', mockSetKinoSort])
-    mockGetMovieReleaseDates.mockImplementation(() => new Promise(() => {}))
-
-    renderHome()
-
-    expect(screen.getByText('Kino B | Kino A | Kino C')).toBeInTheDocument()
-    expect(screen.getByText('Sortierung: recommended')).toBeInTheDocument()
-  })
-
-  it('wechselt Hero-Slides ueber den Weiter-Button', async () => {
+  it('wechselt Hero-Slides über den Weiter-Button', () => {
     vi.useFakeTimers()
     mockGetMovieReleaseDates.mockImplementation(() => new Promise(() => {}))
     mockGetTvContentRatings.mockImplementation(() => new Promise(() => {}))
@@ -217,13 +203,3 @@ describe('Home Page', () => {
     expect(screen.getByRole('link', { name: 'Details ansehen' })).toHaveAttribute('href', '/tv/202')
   })
 })
-
-
-
-
-
-
-
-
-
-

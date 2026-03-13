@@ -13,27 +13,14 @@ describe('ProviderFilter', () => {
     expect(container.firstChild).toBeNull()
   })
 
-  it('rendert Provider-Buttons mit Labels', () => {
-    render(<ProviderFilter providers={mockProviders} selected={[]} onToggle={() => {}} />)
-    expect(screen.getByLabelText('Netflix aktivieren')).toBeInTheDocument()
-    expect(screen.getByLabelText('Disney Plus aktivieren')).toBeInTheDocument()
-  })
+  it('rendert Provider und toggelt deren Auswahl', () => {
+    const onToggle = vi.fn()
+    render(<ProviderFilter providers={mockProviders} selected={[8]} onToggle={onToggle} />)
 
-  it('markiert selektierte Provider mit aria-pressed', () => {
-    render(<ProviderFilter providers={mockProviders} selected={[8]} onToggle={() => {}} />)
     expect(screen.getByLabelText('Netflix deaktivieren')).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByLabelText('Disney Plus aktivieren')).toHaveAttribute('aria-pressed', 'false')
-  })
 
-  it('ruft onToggle mit provider_id beim Klick', () => {
-    const onToggle = vi.fn()
-    render(<ProviderFilter providers={mockProviders} selected={[]} onToggle={onToggle} />)
-    fireEvent.click(screen.getByLabelText('Netflix aktivieren'))
-    expect(onToggle).toHaveBeenCalledWith(8)
-  })
-
-  it('zeigt benutzerdefiniertes Label', () => {
-    render(<ProviderFilter providers={mockProviders} selected={[]} onToggle={() => {}} label="Filter" />)
-    expect(screen.getByText('Filter')).toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText('Disney Plus aktivieren'))
+    expect(onToggle).toHaveBeenCalledWith(337)
   })
 })

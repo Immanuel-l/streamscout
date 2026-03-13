@@ -4,7 +4,6 @@ import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from './App'
 
-// Mock alle lazy-loaded Pages
 vi.mock('./pages/Home', () => ({
   default: () => <div data-testid="page-home">Home Page</div>,
 }))
@@ -68,6 +67,7 @@ function renderApp(initialRoute = '/') {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
+
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[initialRoute]}>
@@ -78,94 +78,39 @@ function renderApp(initialRoute = '/') {
 }
 
 describe('App Routing', () => {
-  it('rendert die Home-Seite auf "/"', async () => {
+  it('rendert Layout und Home auf der Startseite', async () => {
     renderApp('/')
+
     await waitFor(() => {
+      expect(screen.getByTestId('layout')).toBeInTheDocument()
       expect(screen.getByTestId('page-home')).toBeInTheDocument()
     })
   })
 
-  it('rendert die Search-Seite auf "/search"', async () => {
-    renderApp('/search')
+  it.each([
+    ['/search', 'page-search'],
+    ['/discover', 'page-discover'],
+    ['/movie/123', 'page-movie-detail'],
+    ['/tv/456', 'page-tv-detail'],
+    ['/person/789', 'page-person-detail'],
+    ['/watchlist', 'page-watchlist'],
+    ['/random', 'page-random'],
+    ['/mood/action', 'page-mood'],
+    ['/anime', 'page-anime'],
+    ['/kino', 'page-kino'],
+  ])('rendert für %s die passende Seite', async (route, testId) => {
+    renderApp(route)
+
     await waitFor(() => {
-      expect(screen.getByTestId('page-search')).toBeInTheDocument()
+      expect(screen.getByTestId(testId)).toBeInTheDocument()
     })
   })
 
-  it('rendert die Discover-Seite auf "/discover"', async () => {
-    renderApp('/discover')
-    await waitFor(() => {
-      expect(screen.getByTestId('page-discover')).toBeInTheDocument()
-    })
-  })
-
-  it('rendert die MovieDetail-Seite auf "/movie/:id"', async () => {
-    renderApp('/movie/123')
-    await waitFor(() => {
-      expect(screen.getByTestId('page-movie-detail')).toBeInTheDocument()
-    })
-  })
-
-  it('rendert die TvDetail-Seite auf "/tv/:id"', async () => {
-    renderApp('/tv/456')
-    await waitFor(() => {
-      expect(screen.getByTestId('page-tv-detail')).toBeInTheDocument()
-    })
-  })
-
-  it('rendert die PersonDetail-Seite auf "/person/:id"', async () => {
-    renderApp('/person/789')
-    await waitFor(() => {
-      expect(screen.getByTestId('page-person-detail')).toBeInTheDocument()
-    })
-  })
-
-  it('rendert die Watchlist-Seite auf "/watchlist"', async () => {
-    renderApp('/watchlist')
-    await waitFor(() => {
-      expect(screen.getByTestId('page-watchlist')).toBeInTheDocument()
-    })
-  })
-
-  it('rendert die Random-Seite auf "/random"', async () => {
-    renderApp('/random')
-    await waitFor(() => {
-      expect(screen.getByTestId('page-random')).toBeInTheDocument()
-    })
-  })
-
-  it('rendert die Mood-Seite auf "/mood/:slug"', async () => {
-    renderApp('/mood/action')
-    await waitFor(() => {
-      expect(screen.getByTestId('page-mood')).toBeInTheDocument()
-    })
-  })
-
-  it('rendert die Anime-Seite auf "/anime"', async () => {
-    renderApp('/anime')
-    await waitFor(() => {
-      expect(screen.getByTestId('page-anime')).toBeInTheDocument()
-    })
-  })
-
-  it('rendert die Kino-Seite auf "/kino"', async () => {
-    renderApp('/kino')
-    await waitFor(() => {
-      expect(screen.getByTestId('page-kino')).toBeInTheDocument()
-    })
-  })
-
-  it('rendert die NotFound-Seite auf unbekannten Pfaden', async () => {
+  it('rendert bei unbekannter Route die NotFound-Seite', async () => {
     renderApp('/unbekannter-pfad')
+
     await waitFor(() => {
       expect(screen.getByTestId('page-not-found')).toBeInTheDocument()
-    })
-  })
-
-  it('rendert das Layout um alle Routen', async () => {
-    renderApp('/')
-    await waitFor(() => {
-      expect(screen.getByTestId('layout')).toBeInTheDocument()
     })
   })
 })

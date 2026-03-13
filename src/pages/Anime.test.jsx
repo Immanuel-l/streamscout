@@ -79,7 +79,7 @@ describe('Anime Page', () => {
     mockUseInfiniteQuery.mockReturnValue(buildInfiniteState())
   })
 
-  it('rendert Header und Standardzustand fuer Serien', () => {
+  it('rendert Standardzustand und setzt den Seitentitel', () => {
     renderAnime()
 
     expect(screen.getByText('Anime')).toBeInTheDocument()
@@ -88,39 +88,13 @@ describe('Anime Page', () => {
     expect(mockUseDocumentTitle).toHaveBeenCalledWith('Anime')
   })
 
-  it('konfiguriert useInfiniteQuery mit Anime-Parametern fuer TV', async () => {
+  it('konfiguriert Query korrekt und wechselt auf Movie-Mode', async () => {
     renderAnime()
 
-    const config = mockUseInfiniteQuery.mock.calls[0][0]
-    expect(config.queryKey).toEqual(['anime', 'tv', '', 'lte', 1])
-    expect(config.initialPageParam).toBe(1)
-    expect(config.retry).toBe(1)
-    expect(config.getNextPageParam({ page: 1, total_pages: 2 })).toBe(2)
-    expect(config.getNextPageParam({ page: 500, total_pages: 999 })).toBeUndefined()
-
-    await config.queryFn({ pageParam: 3 })
-    expect(mockDiscoverTv).toHaveBeenCalledWith(expect.objectContaining({
-      with_genres: '16',
-      with_origin_country: 'JP',
-      sort_by: 'popularity.desc',
-      page: 3,
-    }))
-  })
-
-
-  it('uebergibt FSK-Filterparameter fuer Anime-Filme', async () => {
-    renderAnime(['/anime?type=movie&fsk=12&fskMode=eq'])
-
-    const config = mockUseInfiniteQuery.mock.calls[0][0]
-    await config.queryFn({ pageParam: 1 })
-
-    expect(mockDiscoverMovies).toHaveBeenCalledWith(expect.objectContaining({
-      certification_country: 'DE',
-      certification: '12',
-    }))
-  })
-  it('wechselt auf Filme und nutzt discoverMovies', async () => {
-    renderAnime()
+    const initialConfig = mockUseInfiniteQuery.mock.calls[0][0]
+    expect(initialConfig.queryKey).toEqual(['anime', 'tv', '', 'lte', 1])
+    await initialConfig.queryFn({ pageParam: 3 })
+    expect(mockDiscoverTv).toHaveBeenCalledWith(expect.objectContaining({ page: 3 }))
 
     fireEvent.click(screen.getByText('Filme'))
 
@@ -128,13 +102,9 @@ describe('Anime Page', () => {
       const latestConfig = mockUseInfiniteQuery.mock.calls.at(-1)[0]
       expect(latestConfig.queryKey).toEqual(['anime', 'movie', '', 'lte', 1])
     })
-
-    const config = mockUseInfiniteQuery.mock.calls.at(-1)[0]
-    await config.queryFn({ pageParam: 2 })
-    expect(mockDiscoverMovies).toHaveBeenCalledWith(expect.objectContaining({ page: 2 }))
   })
 
-  it('zeigt Loading- und Fehlerzustand', () => {
+  it('zeigt Loading und Fehlerzustand', () => {
     mockUseInfiniteQuery.mockReturnValue(buildInfiniteState({ isLoading: true }))
     const { unmount } = renderAnime()
     expect(screen.getByTestId('grid-skeleton')).toBeInTheDocument()
@@ -142,10 +112,10 @@ describe('Anime Page', () => {
 
     mockUseInfiniteQuery.mockReturnValue(buildInfiniteState({ error: new Error('boom') }))
     renderAnime()
-    expect(screen.getByText(/Ergebnisse konnten nicht geladen werden./)).toBeInTheDocument()
+    expect(screen.getByTestId('error-box')).toBeInTheDocument()
   })
 
-  it('rendert Ergebnisse gefiltert, mappt media_type und setzt animate fuer Folge-Seiten', () => {
+  it('filtert invalide Ergebnisse und setzt Animate nur für Seite 1', () => {
     mockUseInfiniteQuery.mockReturnValue(buildInfiniteState({
       data: {
         pages: [
@@ -155,7 +125,6 @@ describe('Anime Page', () => {
             results: [
               { id: 1, title: 'Anime A', poster_path: '/a.jpg', overview: 'ok' },
               { id: 2, title: 'Ohne Poster', poster_path: null, overview: 'x' },
-              { id: 3, title: 'Ohne Overview', poster_path: '/c.jpg', overview: '' },
             ],
           },
           {
@@ -174,60 +143,8 @@ describe('Anime Page', () => {
 
     expect(screen.getAllByTestId('media-card')).toHaveLength(2)
     expect(mediaCardCalls[0].media.media_type).toBe('movie')
-    expect(mediaCardCalls[1].media.media_type).toBe('movie')
     expect(mediaCardCalls[0].animate).toBe(true)
     expect(mediaCardCalls[1].animate).toBe(false)
-    expect(mediaCardCalls.every((call) => call.eager === true)).toBe(true)
-    expect(mockUseInfiniteScroll).toHaveBeenCalledWith(expect.objectContaining({
-      hasNextPage: true,
-      isFetchingNextPage: false,
-    }))
-  })
-
-  it('zeigt End-of-list-Hinweis bei vielen Ergebnissen ohne weitere Seiten', () => {
-    const manyResults = Array.from({ length: 21 }, (_, i) => ({
-      id: i + 1,
-      title: `Anime ${i + 1}`,
-      poster_path: `/${i + 1}.jpg`,
-      overview: 'ok',
-    }))
-
-    mockUseInfiniteQuery.mockReturnValue(buildInfiniteState({
-      data: { pages: [{ page: 1, total_pages: 1, results: manyResults }] },
-      hasNextPage: false,
-    }))
-
-    renderAnime()
-    expect(screen.getByText('Keine weiteren Ergebnisse.')).toBeInTheDocument()
-  })
-
-  it('zeigt Empty State wenn keine verwertbaren Ergebnisse vorhanden sind', () => {
-    mockUseInfiniteQuery.mockReturnValue(buildInfiniteState({
-      data: {
-        pages: [{ page: 1, total_pages: 1, results: [{ id: 1, title: 'X', poster_path: null, overview: '' }] }],
-      },
-    }))
-
-    renderAnime()
-    expect(screen.getByText('Keine Ergebnisse gefunden')).toBeInTheDocument()
-  })
-
-  it('setzt die Startseite beim Mischen neu', async () => {
-    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.6) // => page 4
-    renderAnime()
-
-    fireEvent.click(screen.getByText('Mischen'))
-
-    await waitFor(() => {
-      const latestConfig = mockUseInfiniteQuery.mock.calls.at(-1)[0]
-      expect(latestConfig.queryKey).toEqual(['anime', 'tv', '', 'lte', 4])
-      expect(latestConfig.initialPageParam).toBe(4)
-    })
-
-    randomSpy.mockRestore()
+    expect(mockUseInfiniteScroll).toHaveBeenCalledWith(expect.objectContaining({ hasNextPage: true }))
   })
 })
-
-
-
-

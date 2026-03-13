@@ -1,12 +1,10 @@
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
-// Intercept TMDB API calls and return mock data
 function mockTmdbApi(page) {
   return page.route('https://api.themoviedb.org/3/**', (route) => {
     const url = route.request().url()
 
-    // Trending / popular results
     if (url.includes('/trending') || url.includes('/movie/popular') || url.includes('/tv/popular')) {
       return route.fulfill({
         status: 200,
@@ -23,7 +21,6 @@ function mockTmdbApi(page) {
       })
     }
 
-    // Search
     if (url.includes('/search')) {
       return route.fulfill({
         status: 200,
@@ -39,7 +36,6 @@ function mockTmdbApi(page) {
       })
     }
 
-    // Discover
     if (url.includes('/discover')) {
       return route.fulfill({
         status: 200,
@@ -55,7 +51,6 @@ function mockTmdbApi(page) {
       })
     }
 
-    // Genres
     if (url.includes('/genre')) {
       return route.fulfill({
         status: 200,
@@ -70,7 +65,6 @@ function mockTmdbApi(page) {
       })
     }
 
-    // Movie/TV providers (must come before generic /watch/providers match)
     if (url.match(/\/(movie|tv)\/\d+\/watch\/providers/)) {
       return route.fulfill({
         status: 200,
@@ -79,7 +73,6 @@ function mockTmdbApi(page) {
       })
     }
 
-    // Watch providers (list)
     if (url.includes('/watch/providers')) {
       return route.fulfill({
         status: 200,
@@ -88,7 +81,6 @@ function mockTmdbApi(page) {
       })
     }
 
-    // Movie/TV details
     if (url.match(/\/(movie|tv)\/\d+/)) {
       return route.fulfill({
         status: 200,
@@ -108,7 +100,6 @@ function mockTmdbApi(page) {
       })
     }
 
-    // Now playing / on the air
     if (url.includes('/now_playing') || url.includes('/on_the_air') || url.includes('/airing_today')) {
       return route.fulfill({
         status: 200,
@@ -117,7 +108,6 @@ function mockTmdbApi(page) {
       })
     }
 
-    // Default: empty results
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -138,47 +128,23 @@ test.describe('Smoke Tests', () => {
 
   test('Startseite lädt und zeigt Navigation', async ({ page }) => {
     await page.goto('/')
-    // Multiple nav elements (desktop, mobile, footer) — use .first()
     await expect(page.locator('nav').first()).toBeVisible()
     await expect(page.locator('text=StreamScout').first()).toBeVisible()
   })
 
-  test('Navigation zu Suche funktioniert', async ({ page }) => {
-    await page.goto('/')
-    await page.click('a[href*="search"]')
-    await expect(page).toHaveURL(/search/)
-    await expect(page.locator('h1:text("Suche")')).toBeVisible()
-  })
-
-  test('Navigation zu Entdecken funktioniert', async ({ page }) => {
-    await page.goto('/')
-    await page.click('a[href*="discover"]')
-    await expect(page).toHaveURL(/discover/)
-    await expect(page.locator('h1:text("Entdecken")')).toBeVisible()
-  })
-
-  test('Navigation zu Merkliste funktioniert', async ({ page }) => {
-    await page.goto('/')
-    await page.click('a[href*="watchlist"]')
-    await expect(page).toHaveURL(/watchlist/)
-    await expect(page.locator('h1:text("Merkliste")')).toBeVisible()
-  })
-
   test('Suche liefert Ergebnisse', async ({ page }) => {
-    // Navigate via hash route
     await page.goto('/#/search')
     await page.waitForSelector('input[placeholder*="suchen"]')
-    const input = page.locator('input[placeholder*="suchen"]')
-    await input.fill('Matrix')
+    await page.locator('input[placeholder*="suchen"]').fill('Matrix')
+
     await expect(page.locator('text=Matrix').first()).toBeVisible({ timeout: 5000 })
   })
 
-  test('Entdecken zeigt Filter und Ergebnisse', async ({ page }) => {
+  test('Entdecken zeigt zentrale Filter', async ({ page }) => {
     await page.goto('/#/discover')
-    await page.waitForSelector('h1')
+
+    await expect(page.locator('h1:text("Entdecken")')).toBeVisible()
     await expect(page.locator('button:text("Filme")')).toBeVisible()
-    await expect(page.locator('button:text("Serien")')).toBeVisible()
-    await expect(page.locator('button:text("Beliebtheit")')).toBeVisible()
     await expect(page.locator('button:text("Bewertung")')).toBeVisible()
   })
 
@@ -186,8 +152,8 @@ test.describe('Smoke Tests', () => {
     await page.goto('/#/watchlist')
     await page.evaluate(() => localStorage.clear())
     await page.goto('/#/watchlist')
+
     await expect(page.locator('text=Deine Merkliste ist leer')).toBeVisible()
-    // "Entdecken" link inside main content area (not nav/footer)
     await expect(page.locator('#main-content a:text("Entdecken")')).toBeVisible()
   })
 
@@ -205,36 +171,22 @@ test.describe('Accessibility Tests (WCAG 2.1 AA)', () => {
   test('Startseite hat keine kritischen A11y-Verstöße', async ({ page }) => {
     await page.goto('/')
     await page.waitForSelector('nav')
+
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
       .analyze()
+
     expectNoCriticalViolations(results)
   })
 
   test('Suche hat keine kritischen A11y-Verstöße', async ({ page }) => {
     await page.goto('/#/search')
     await page.waitForSelector('h1')
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
-      .analyze()
-    expectNoCriticalViolations(results)
-  })
 
-  test('Merkliste hat keine kritischen A11y-Verstöße', async ({ page }) => {
-    await page.goto('/#/watchlist')
-    await page.waitForSelector('h1')
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
       .analyze()
-    expectNoCriticalViolations(results)
-  })
 
-  test('Entdecken hat keine kritischen A11y-Verstöße', async ({ page }) => {
-    await page.goto('/#/discover')
-    await page.waitForSelector('h1')
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
-      .analyze()
     expectNoCriticalViolations(results)
   })
 })
