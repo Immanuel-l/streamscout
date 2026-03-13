@@ -4,7 +4,7 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 import { useDocumentTitle } from '../hooks/useDocumentTitle'
 import { discoverMovies } from '../api/movies'
 import { discoverTv } from '../api/tv'
-import { useGenres, useWatchProviders } from '../hooks/useProviders'
+import { useWatchProviders } from '../hooks/useProviders'
 import { getMoodBySlug } from '../utils/moods'
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll'
 import MediaCard from '../components/common/MediaCard'
@@ -33,15 +33,6 @@ const sortOptions = [
   { value: 'date', label: 'Erscheinungsdatum', sortByMovie: 'primary_release_date.desc', sortByTv: 'first_air_date.desc' },
 ]
 
-const ratingOptions = [
-  { value: '', label: 'Alle' },
-  { value: '9', label: '9+' },
-  { value: '8', label: '8+' },
-  { value: '7', label: '7+' },
-  { value: '6', label: '6+' },
-  { value: '5', label: '5+' },
-]
-
 const fskOptions = [
   { value: '', label: 'Alle' },
   ...FSK_VALUES.map((value) => ({ value, label: `FSK ${value}` })),
@@ -55,12 +46,8 @@ function Mood() {
 
   const [mediaType, setMediaType] = useState(() => searchParams.get('type') || 'movie')
   const [sortValue, setSortValue] = useState(() => searchParams.get('sort') || 'popularity')
-  const [selectedGenres, setSelectedGenres] = useState(() => {
-    const value = searchParams.get('genres')
-    return value ? value.split(',').map(Number).filter(Boolean) : []
-  })
+
   const [year, setYear] = useState(() => searchParams.get('year') || '')
-  const [rating, setRating] = useState(() => searchParams.get('rating') || '')
   const [selectedProviders, setSelectedProviders] = useState(() => {
     const value = searchParams.get('providers')
     return value ? value.split(',').map(Number).filter(Boolean) : []
@@ -69,15 +56,11 @@ function Mood() {
   const [fskMode, setFskMode] = useState(() => normalizeFskFilterMode(searchParams.get('fskMode')))
   const [startPage, setStartPage] = useState(1)
 
-  const genres = useGenres(mediaType)
   const providers = useWatchProviders(mediaType)
-
 
   function resetFilters() {
     setSortValue('popularity')
-    setSelectedGenres([])
     setYear('')
-    setRating('')
     setSelectedProviders([])
     setFsk('')
     setFskMode('lte')
@@ -88,17 +71,14 @@ function Mood() {
     const params = {}
     if (mediaType !== 'movie') params.type = mediaType
     if (sortValue !== 'popularity') params.sort = sortValue
-    if (selectedGenres.length > 0) params.genres = selectedGenres.join(',')
     if (year) params.year = year
-    if (rating) params.rating = rating
     if (selectedProviders.length > 0) params.providers = selectedProviders.join(',')
     if (fsk) {
       params.fsk = fsk
       if (fskMode !== 'lte') params.fskMode = fskMode
     }
     setSearchParams(params, { replace: true })
-  }, [mediaType, sortValue, selectedGenres, year, rating, selectedProviders, fsk, fskMode, setSearchParams])
-
+  }, [mediaType, sortValue, year, selectedProviders, fsk, fskMode, setSearchParams])
 
   const moodParams = mood?.[mediaType] || {}
   const sortOption = sortOptions.find((o) => o.value === sortValue) || sortOptions[0]
@@ -112,16 +92,13 @@ function Mood() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['mood', slug, mediaType, sortValue, selectedGenres, year, rating, selectedProviders, fsk, fskMode, startPage],
+    queryKey: ['mood', slug, mediaType, sortValue, year, selectedProviders, fsk, fskMode, startPage],
     queryFn: ({ pageParam }) => {
       const discoverParams = { ...moodParams, sort_by: apiSortBy, page: pageParam }
-
-      if (selectedGenres.length > 0) discoverParams.with_genres = selectedGenres.join(',')
       if (year) {
         if (mediaType === 'movie') discoverParams.primary_release_year = year
         else discoverParams.first_air_date_year = year
       }
-      if (rating) discoverParams['vote_average.gte'] = rating
       if (selectedProviders.length > 0) discoverParams.with_watch_providers = selectedProviders.join('|')
       if (fsk && mediaType === 'movie') setMovieFskFilterParams(discoverParams, fsk, fskMode)
 
@@ -156,16 +133,9 @@ function Mood() {
 
   function switchMediaType(type) {
     setMediaType(type)
-    setSelectedGenres([])
     setSelectedProviders([])
     setFsk('')
     setFskMode('lte')
-  }
-
-  function toggleGenre(id) {
-    setSelectedGenres((prev) =>
-      prev.includes(id) ? prev.filter((genreId) => genreId !== id) : [...prev, id]
-    )
   }
 
   function toggleProvider(id) {
@@ -178,11 +148,9 @@ function Mood() {
 
   if (!mood) return <Navigate to="/" replace />
 
-  const hasFilters = selectedGenres.length > 0 || year || rating || fsk || selectedProviders.length > 0 || sortValue !== 'popularity'
+  const hasFilters = year || fsk || selectedProviders.length > 0 || sortValue !== 'popularity'
   const activeFilterCount =
-    selectedGenres.length +
     (year ? 1 : 0) +
-    (rating ? 1 : 0) +
     (fsk ? 1 : 0) +
     selectedProviders.length +
     (sortValue !== 'popularity' ? 1 : 0)
@@ -236,18 +204,6 @@ function Mood() {
           <div>
             <h1 className="font-display text-5xl tracking-wide text-surface-100">{mood.title}</h1>
             <p className="text-surface-300 text-sm mt-1.5 max-w-2xl">{mood.description}</p>
-            {mood.tags?.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2.5">
-                {mood.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-2.5 py-0.5 rounded-full bg-surface-800 text-surface-300 text-xs font-medium"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -260,26 +216,21 @@ function Mood() {
         activeCount={activeFilterCount}
         onReset={hasFilters ? resetFilters : undefined}
       >
-        {genres.data && (
-          <FilterField label="Genre">
-            <div className="flex flex-wrap gap-2">
-              {genres.data.map((genreOption) => (
-                <button
-                  key={genreOption.id}
-                  onClick={() => toggleGenre(genreOption.id)}
-                  aria-pressed={selectedGenres.includes(genreOption.id)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-                    selectedGenres.includes(genreOption.id)
-                      ? 'bg-accent-500 text-black shadow-[0_0_12px_-3px_rgba(245,158,11,0.4)]'
-                      : 'bg-surface-800 text-surface-200 hover:bg-surface-700'
-                  }`}
-                >
-                  {genreOption.name}
-                </button>
-              ))}
-            </div>
-          </FilterField>
-        )}
+        <FilterField label="Mood-Vorgaben">
+          <div className="flex flex-wrap gap-2">
+            {mood.tags?.map((tag) => (
+              <span
+                key={`preset-${tag}`}
+                className="px-2.5 py-0.5 rounded-full bg-accent-500/25 text-accent-300 text-xs font-semibold border border-accent-500/40"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+          <p className="text-surface-400 text-xs mt-2">
+            Genre und Mindestbewertung werden durch die gewählte Stimmung festgelegt.
+          </p>
+        </FilterField>
 
         <div className="flex flex-wrap gap-4">
           <FilterField label="Jahr">
@@ -289,16 +240,6 @@ function Mood() {
               options={[{ value: '', label: 'Alle Jahre' }, ...years.map((itemYear) => ({ value: String(itemYear), label: String(itemYear) }))]}
               placeholder="Alle Jahre"
               ariaLabel="Jahr"
-            />
-          </FilterField>
-
-          <FilterField label="Bewertung">
-            <Select
-              value={rating}
-              onChange={setRating}
-              options={ratingOptions}
-              placeholder="Alle"
-              ariaLabel="Bewertung"
             />
           </FilterField>
         </div>
@@ -388,5 +329,3 @@ function Mood() {
 }
 
 export default Mood
-
-

@@ -108,7 +108,7 @@ describe('Mood Page', () => {
     renderMood()
 
     const config = mockUseInfiniteQuery.mock.calls[0][0]
-    expect(config.queryKey).toEqual(['mood', 'leichte-kost', 'movie', 'popularity', [], '', '', [], '', 'lte', 1])
+    expect(config.queryKey).toEqual(['mood', 'leichte-kost', 'movie', 'popularity', '', [], '', 'lte', 1])
     expect(config.enabled).toBe(true)
     expect(config.retry).toBe(1)
     expect(config.initialPageParam).toBe(1)
@@ -146,7 +146,7 @@ describe('Mood Page', () => {
 
     await waitFor(() => {
       const latestConfig = mockUseInfiniteQuery.mock.calls.at(-1)[0]
-      expect(latestConfig.queryKey).toEqual(['mood', 'leichte-kost', 'tv', 'date', [], '', '', [], '', 'lte', 1])
+      expect(latestConfig.queryKey).toEqual(['mood', 'leichte-kost', 'tv', 'date', '', [], '', 'lte', 1])
     })
 
     const config = mockUseInfiniteQuery.mock.calls.at(-1)[0]
@@ -274,7 +274,7 @@ describe('Mood Page', () => {
 
     await waitFor(() => {
       const latestConfig = mockUseInfiniteQuery.mock.calls.at(-1)[0]
-      expect(latestConfig.queryKey).toEqual(['mood', 'leichte-kost', 'movie', 'popularity', [], '', '', [], '', 'lte', 5])
+      expect(latestConfig.queryKey).toEqual(['mood', 'leichte-kost', 'movie', 'popularity', '', [], '', 'lte', 5])
       expect(latestConfig.initialPageParam).toBe(5)
     })
 
